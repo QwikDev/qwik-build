@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+103581c
+ * @builder.io/qwik/testing 2.0.0-0-dev+3b5d6d9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22308,7 +22308,7 @@ import { Fragment as Fragment2, _isJSXNode, _isStringifiable, isSignal as isSign
 import { expect } from "vitest";
 
 // packages/qwik/src/core/client/vnode.ts
-import { isDev as isDev6 } from "@builder.io/qwik/build";
+import { isDev as isDev7 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/server/utils.ts
 function createTimer() {
@@ -22341,6 +22341,7 @@ var versions = {
 };
 
 // packages/qwik/src/server/prefetch-strategy.ts
+import { isDev } from "@builder.io/qwik/build";
 function getPrefetchResources(qrls, opts, resolvedManifest) {
   if (!resolvedManifest) {
     return [];
@@ -22378,7 +22379,7 @@ function getAutoPrefetch(qrls, resolvedManifest, buildBase) {
   return prefetchResources;
 }
 function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
-  const url = buildBase + bundleFileName;
+  const url = isDev ? bundleFileName : buildBase + bundleFileName;
   let prefetchResource = urls.get(url);
   if (!prefetchResource) {
     prefetchResource = {
@@ -22415,7 +22416,7 @@ var seal = (obj) => {
 };
 
 // packages/qwik/src/core/shared/qrl/qrl-class.ts
-import { isDev as isDev4 } from "@builder.io/qwik/build";
+import { isDev as isDev5 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/shared/utils/log.ts
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
@@ -22710,7 +22711,7 @@ var isFunction = (v) => {
 };
 
 // packages/qwik/src/build/index.dev.ts
-var isDev = true;
+var isDev2 = true;
 
 // packages/qwik/src/core/shared/types.ts
 var DEBUG_TYPE = "q:type";
@@ -23824,7 +23825,7 @@ var ignoreErrorToPreventNodeFromCrashing = (err) => {
 };
 
 // packages/qwik/src/core/client/vnode-diff.ts
-import { isDev as isDev3 } from "@builder.io/qwik/build";
+import { isDev as isDev4 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/shared/jsx/slot.public.ts
 var Slot = (props) => {
@@ -24175,7 +24176,7 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 }
 
 // packages/qwik/src/core/shared/component-execution.ts
-import { isDev as isDev2 } from "@builder.io/qwik/build";
+import { isDev as isDev3 } from "@builder.io/qwik/build";
 var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
   const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
   iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
@@ -24246,7 +24247,7 @@ function addUseOnEvents(jsx2, useOnEvents) {
             if (jsxElement2) {
               addUseOnEvent(jsxElement2, key, useOnEvents[key]);
             }
-          } else if (isDev2) {
+          } else if (isDev3) {
             logWarn(
               'You are trying to add an event "' + key + '" using `useOn` hook, but a node to which you can add an event is not found. Please make sure that the component has a valid element node. '
             );
@@ -24586,8 +24587,8 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     );
     if (vCurrent == null) {
       vNewNode = vnode_newVirtual();
-      isDev3 && vnode_setProp(vNewNode, DEBUG_TYPE, "P" /* Projection */);
-      isDev3 && vnode_setProp(vNewNode, "q:code", "expectProjection");
+      isDev4 && vnode_setProp(vNewNode, DEBUG_TYPE, "P" /* Projection */);
+      isDev4 && vnode_setProp(vNewNode, "q:code", "expectProjection");
       vnode_setProp(vNewNode, QSlot, slotName);
       vnode_setProp(vNewNode, QSlotParent, vParent);
       vnode_setProp(vParent, slotName, vNewNode);
@@ -24613,8 +24614,8 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       );
       vnode_setProp(vNewNode, QSlot, slotNameKey);
       vHost && vnode_setProp(vHost, slotNameKey, vNewNode);
-      isDev3 && vnode_setProp(vNewNode, DEBUG_TYPE, "P" /* Projection */);
-      isDev3 && vnode_setProp(vNewNode, "q:code", "expectSlot" + count++);
+      isDev4 && vnode_setProp(vNewNode, DEBUG_TYPE, "P" /* Projection */);
+      isDev4 && vnode_setProp(vNewNode, "q:code", "expectSlot" + count++);
       return false;
     } else if (vProjectedNode === vCurrent) {
     } else {
@@ -24626,8 +24627,8 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       );
       vnode_setProp(vNewNode, QSlot, slotNameKey);
       vHost && vnode_setProp(vHost, slotNameKey, vNewNode);
-      isDev3 && vnode_setProp(vNewNode, DEBUG_TYPE, "P" /* Projection */);
-      isDev3 && vnode_setProp(vNewNode, "q:code", "expectSlot" + count++);
+      isDev4 && vnode_setProp(vNewNode, DEBUG_TYPE, "P" /* Projection */);
+      isDev4 && vnode_setProp(vNewNode, "q:code", "expectSlot" + count++);
     }
     return true;
   }
@@ -24737,7 +24738,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         }
         if (elementName === "textarea" && key2 === "value") {
           if (typeof value !== "string") {
-            if (isDev3) {
+            if (isDev4) {
               throwErrorAndStop("The value of the textarea must be a string");
             }
             continue;
@@ -24981,7 +24982,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       vCurrent && getInsertBefore()
     );
     vnode_setProp(vNewNode, ELEMENT_KEY, jsxKey);
-    isDev3 && vnode_setProp(vNewNode || vCurrent, DEBUG_TYPE, type);
+    isDev4 && vnode_setProp(vNewNode || vCurrent, DEBUG_TYPE, type);
   }
   function expectComponent(component) {
     const componentMeta = component[SERIALIZABLE_STATE];
@@ -25062,7 +25063,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       vNewNode = vnode_newVirtual(),
       vCurrent && getInsertBefore()
     );
-    isDev3 && vnode_setProp(vNewNode, DEBUG_TYPE, "C" /* Component */);
+    isDev4 && vnode_setProp(vNewNode, DEBUG_TYPE, "C" /* Component */);
     container.setHostProp(vNewNode, OnRenderProp, componentQRL);
     container.setHostProp(vNewNode, ELEMENT_PROPS, jsxProps);
     container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
@@ -25074,7 +25075,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       vNewNode = vnode_newVirtual(),
       vCurrent && getInsertBefore()
     );
-    isDev3 && vnode_setProp(vNewNode, DEBUG_TYPE, "I" /* InlineComponent */);
+    isDev4 && vnode_setProp(vNewNode, DEBUG_TYPE, "I" /* InlineComponent */);
     vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
     if (jsxValue.key) {
       vnode_setProp(vNewNode, ELEMENT_KEY, jsxValue.key);
@@ -26754,7 +26755,7 @@ function parseQRL(qrl2) {
   const symbol = captureStart > -1 ? qrl2.slice(hashIdx + 1, captureStart) : qrl2.slice(hashIdx + 1);
   const captureIds = captureStart > -1 && captureEnd > -1 ? qrl2.slice(captureStart + 1, captureEnd).split(" ").filter((v) => v.length).map((s) => parseInt(s, 10)) : null;
   let qrlRef = null;
-  if (isDev && chunk === QRL_RUNTIME_CHUNK) {
+  if (isDev2 && chunk === QRL_RUNTIME_CHUNK) {
     const backChannel = globalThis[QRL_RUNTIME_CHUNK];
     assertDefined(backChannel, "Missing QRL_RUNTIME_CHUNK");
     qrlRef = backChannel.get(symbol);
@@ -27161,7 +27162,7 @@ function serialize(serializationContext) {
       if (extraProps.length) {
         out.push(extraProps);
       }
-      if (isDev) {
+      if (isDev2) {
         out.push(value.stack);
       }
       output(12 /* Error */, out);
@@ -27264,7 +27265,7 @@ function qrlToString(serializationContext, value) {
     if (!chunk) {
       chunk = serializationContext.$symbolToChunkResolver$(value.$hash$);
     }
-    if (isDev) {
+    if (isDev2) {
       let backChannel = globalThis[QRL_RUNTIME_CHUNK];
       if (!backChannel) {
         backChannel = globalThis[QRL_RUNTIME_CHUNK] = /* @__PURE__ */ new Map();
@@ -27655,7 +27656,16 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
       const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
       symbolRef = maybeThen(imported, (ref) => qrl2.resolved = symbolRef = wrapFn(ref));
     }
-    symbolRef.finally(() => emitUsedSymbol(symbol, ctx?.$element$, start));
+    if (typeof symbolRef === "object" && isPromise(symbolRef)) {
+      symbolRef.then(
+        () => emitUsedSymbol(symbol, ctx?.$element$, start),
+        (err) => {
+          console.error(`qrl ${symbol} failed to load`, err);
+          symbolRef = null;
+          throw err;
+        }
+      );
+    }
     return symbolRef;
   };
   const resolveLazy = (containerEl) => {
@@ -27713,7 +27723,7 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
   if (symbolRef) {
     symbolRef = maybeThen(symbolRef, (resolved) => qrl2.resolved = symbolRef = wrapFn(resolved));
   }
-  if (isDev4) {
+  if (isDev5) {
     Object.defineProperty(qrl2, "_devOnlySymbolRef", {
       get() {
         return symbolRef;
@@ -27791,7 +27801,7 @@ var inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
 };
 
 // packages/qwik/src/core/ssr/ssr-render-jsx.ts
-import { isDev as isDev5 } from "@builder.io/qwik/build";
+import { isDev as isDev6 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/shared/component.public.ts
 var componentQrl = (componentQrl3) => {
@@ -29167,7 +29177,7 @@ function materializeFromVNodeData(vParent, vData, element, child) {
       }
       const id = consumeValue();
       container.$setRawState$(parseInt(id), vParent);
-      isDev6 && vnode_setAttr(null, vParent, ELEMENT_ID, id);
+      isDev7 && vnode_setAttr(null, vParent, ELEMENT_ID, id);
     } else if (peek() === VNodeDataChar.PROPS) {
       vnode_setAttr(null, vParent, ELEMENT_PROPS, consumeValue());
     } else if (peek() === VNodeDataChar.SLOT_REF) {
@@ -29314,7 +29324,7 @@ var VNodeArray = class VNode extends Array {
   constructor(flags, parent, previousSibling, nextSibling) {
     super();
     this.push(flags, parent, previousSibling, nextSibling);
-    if (isDev6) {
+    if (isDev7) {
       this.toString = vnode_toString;
     }
   }
@@ -30127,7 +30137,7 @@ import {
   isSignal as isSignal3,
   _EffectData as EffectData2
 } from "../core.mjs";
-import { isDev as isDev8 } from "@builder.io/qwik/build";
+import { isDev as isDev9 } from "@builder.io/qwik/build";
 import { getQwikLoaderScript } from "../server.mjs";
 
 // packages/qwik/src/server/prefetch-utils.ts
@@ -30229,8 +30239,12 @@ function prefetchUrlsEvent2(container, prefetchResources, nonce) {
 function linkHtmlImplementation2(container, prefetchResources, prefetchImpl) {
   const urls = flattenPrefetchResources(prefetchResources);
   const rel = prefetchImpl.linkRel || "prefetch";
+  const priority = prefetchImpl.linkFetchPriority;
   for (const url of urls) {
     const attributes = ["href", url, "rel", rel];
+    if (priority) {
+      attributes.push("fetchpriority", priority);
+    }
     if (rel === "prefetch" || rel === "preload") {
       if (url.endsWith(".js")) {
         attributes.push("as", "script");
@@ -30247,6 +30261,7 @@ function linkJsImplementation2(container, prefetchResources, prefetchImpl, nonce
   }
   container.openElement("script", null, scriptAttrs);
   const rel = prefetchImpl.linkRel || "prefetch";
+  const priority = prefetchImpl.linkFetchPriority;
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
     container.writer.write(`let supportsLinkRel = true;`);
   }
@@ -30255,6 +30270,9 @@ function linkJsImplementation2(container, prefetchResources, prefetchImpl, nonce
   container.writer.write(`const l=document.createElement('link');`);
   container.writer.write(`l.setAttribute("href",u);`);
   container.writer.write(`l.setAttribute("rel","${rel}");`);
+  if (priority) {
+    container.writer.write(`l.setAttribute("fetchpriority","${priority}");`);
+  }
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
     container.writer.write(`if(i===0){`);
     container.writer.write(`try{`);
@@ -30290,13 +30308,14 @@ function normalizePrefetchImplementation(input) {
 var PrefetchImplementationDefault = {
   linkInsert: null,
   linkRel: null,
+  linkFetchPriority: null,
   workerFetchInsert: null,
   prefetchEvent: "always"
 };
 
 // packages/qwik/src/server/ssr-node.ts
 import { _isJSXNode as isJSXNode2, _EMPTY_ARRAY } from "../core.mjs";
-import { isDev as isDev7 } from "@builder.io/qwik/build";
+import { isDev as isDev8 } from "@builder.io/qwik/build";
 var SsrNode = class {
   constructor(currentComponentNode, nodeType, id, attrs, cleanupQueue) {
     this.attrs = attrs;
@@ -30306,7 +30325,7 @@ var SsrNode = class {
     this.currentComponentNode = currentComponentNode;
     this.nodeType = nodeType;
     this.id = id;
-    if (isDev7 && id.indexOf("undefined") != -1) {
+    if (isDev8 && id.indexOf("undefined") != -1) {
       throw new Error(`Invalid SSR node id: ${id}`);
     }
   }
@@ -30952,7 +30971,7 @@ var SSRContainer = class extends _SharedContainer2 {
     containerAttributes[QContainerAttr] = "paused" /* PAUSED */;
     containerAttributes[QRuntimeAttr] = "2";
     containerAttributes[QVersionAttr] = this.$version$ ?? "dev";
-    containerAttributes[QRenderAttr] = (qRender ? qRender + "-" : "") + (isDev8 ? "ssr-dev" : "ssr");
+    containerAttributes[QRenderAttr] = (qRender ? qRender + "-" : "") + (isDev9 ? "ssr-dev" : "ssr");
     containerAttributes[QBaseAttr] = this.buildBase || "";
     containerAttributes[QLocaleAttr] = this.$locale$;
     containerAttributes[QManifestHashAttr] = this.resolvedManifest.manifest.manifestHash;
@@ -30986,7 +31005,7 @@ var SSRContainer = class extends _SharedContainer2 {
       innerHTML = this.writeAttrs(elementName, varAttrs, false);
     }
     this.write(" " + Q_PROPS_SEPARATOR);
-    isDev8 && this.write('=""');
+    isDev9 && this.write('=""');
     if (constAttrs && constAttrs.length) {
       innerHTML = this.writeAttrs(elementName, constAttrs, true) || innerHTML;
     }
@@ -31479,7 +31498,7 @@ var SSRContainer = class extends _SharedContainer2 {
             }
             this.unclaimedProjectionComponentFrameQueue.shift();
             this.openFragment(
-              isDev8 ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
+              isDev9 ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
             );
             ssrComponentNode?.setProp(value, this.getLastNode().id);
             _walkJSX2(this, children, {
@@ -31525,7 +31544,7 @@ var SSRContainer = class extends _SharedContainer2 {
   }
   createAndPushFrame(elementName, depthFirstElementIdx) {
     let tagNesting = 10 /* ANYTHING */;
-    if (isDev8) {
+    if (isDev9) {
       if (!this.currentElementFrame) {
         tagNesting = initialTag(elementName);
       } else {
@@ -31597,7 +31616,7 @@ var SSRContainer = class extends _SharedContainer2 {
         let value = attrs[i];
         let styleScopedId = null;
         if (isSSRUnsafeAttr(key)) {
-          if (isDev8) {
+          if (isDev9) {
             throw new Error("Attribute value is unsafe for SSR");
           }
           continue;
@@ -31635,7 +31654,7 @@ var SSRContainer = class extends _SharedContainer2 {
         }
         if (tag === "textarea" && key === "value") {
           if (typeof value !== "string") {
-            if (isDev8) {
+            if (isDev9) {
               throw new Error("The value of the textarea must be a string");
             }
             continue;
@@ -32073,7 +32092,7 @@ var useComputedQrl = (qrl2) => {
 var useComputed$ = implicit$FirstArg(useComputedQrl);
 
 // packages/qwik/src/core/shared/prefetch-service-worker/prefetch.ts
-import { isDev as isDev9 } from "@builder.io/qwik/build";
+import { isDev as isDev10 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/testing/rendering.unit-util.tsx
 async function domRender(jsx2, opts = {}) {

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+103581c
+ * @builder.io/qwik 2.0.0-0-dev+3b5d6d9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4785,7 +4785,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+103581c";
+    const version = "2.0.0-0-dev+3b5d6d9";
 
     /** @internal */
     class _SharedContainer {
@@ -9466,7 +9466,14 @@
                 const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
                 symbolRef = maybeThen(imported, (ref) => (qrl.resolved = symbolRef = wrapFn(ref)));
             }
-            symbolRef.finally(() => emitUsedSymbol(symbol, ctx?.$element$, start));
+            if (typeof symbolRef === 'object' && isPromise(symbolRef)) {
+                symbolRef.then(() => emitUsedSymbol(symbol, ctx?.$element$, start), (err) => {
+                    console.error(`qrl ${symbol} failed to load`, err);
+                    // We shouldn't cache rejections, we can try again later
+                    symbolRef = null;
+                    throw err;
+                });
+            }
             return symbolRef;
         };
         const resolveLazy = (containerEl) => {

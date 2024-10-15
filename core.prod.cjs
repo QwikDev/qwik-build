@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+103581c
+ * @builder.io/qwik 2.0.0-0-dev+3b5d6d9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2168,7 +2168,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+103581c", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+3b5d6d9", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -4647,8 +4647,9 @@
                 const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
                 symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
             }
-            return symbolRef.finally((() => emitUsedSymbol(symbol, ctx?.$element$, start))), 
-            symbolRef;
+            return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, ctx?.$element$, start)), (err => {
+                throw console.error(`qrl ${symbol} failed to load`, err), symbolRef = null, err;
+            })), symbolRef;
         };
         const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
         function invokeFn(currentCtx, beforeFn) {
@@ -5175,7 +5176,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+103581c", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+3b5d6d9", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

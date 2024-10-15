@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+103581c
+ * @builder.io/qwik 2.0.0-0-dev+3b5d6d9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2640,7 +2640,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+103581c";
+const version = "2.0.0-0-dev+3b5d6d9";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -5466,8 +5466,9 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
             symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
         }
-        return symbolRef.finally((() => emitUsedSymbol(symbol, ctx?.$element$, start))), 
-        symbolRef;
+        return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, ctx?.$element$, start)), (err => {
+            throw console.error(`qrl ${symbol} failed to load`, err), symbolRef = null, err;
+        })), symbolRef;
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
     function invokeFn(currentCtx, beforeFn) {
