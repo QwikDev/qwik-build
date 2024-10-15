@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+48b5156
+ * @builder.io/qwik/server 2.0.0-0-dev+103581c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -722,7 +722,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+48b5156",
+  qwik: "2.0.0-0-dev+103581c",
   qwikDom: "2.1.19"
 };
 
@@ -2190,27 +2190,32 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       }
       jsxValue.children != null && descendContentToProject(jsxValue.children, host);
     } else {
-      vnode_insertBefore(
-        journal,
-        vParent,
-        vNewNode = vnode_newVirtual(),
-        vCurrent && getInsertBefore()
-      );
-      import_build3.isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "I" /* InlineComponent */);
-      vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
-      host = vNewNode;
-      let component$Host = host;
-      while (component$Host && (vnode_isVirtualVNode(component$Host) ? vnode_getProp(component$Host, OnRenderProp, null) === null : true)) {
-        component$Host = vnode_getParent(component$Host);
+      const lookupKey = jsxValue.key;
+      const vNodeLookupKey = getKey(host);
+      const lookupKeysAreEqual = lookupKey === vNodeLookupKey;
+      if (!lookupKeysAreEqual) {
+        vNewNode = retrieveChildWithKey(null, lookupKey);
+        if (vNewNode) {
+          vnode_insertBefore(journal, vParent, vNewNode, vCurrent);
+        } else {
+          insertNewInlineComponent();
+        }
+        host = vNewNode;
       }
-      const jsxOutput = executeComponent(
-        container,
-        host,
-        component$Host || container.rootVNode,
-        component,
-        jsxValue.props
-      );
-      asyncQueue.push(jsxOutput, host);
+      if (host) {
+        let componentHost = host;
+        while (componentHost && (vnode_isVirtualVNode(componentHost) ? vnode_getProp(componentHost, OnRenderProp, null) === null : true)) {
+          componentHost = vnode_getParent(componentHost);
+        }
+        const jsxOutput = executeComponent(
+          container,
+          host,
+          componentHost || container.rootVNode,
+          component,
+          jsxValue.props
+        );
+        asyncQueue.push(jsxOutput, host);
+      }
     }
   }
   function insertNewComponent(host, componentQRL, jsxProps) {
@@ -2227,6 +2232,19 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     container.setHostProp(vNewNode, OnRenderProp, componentQRL);
     container.setHostProp(vNewNode, ELEMENT_PROPS, jsxProps);
     container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
+  }
+  function insertNewInlineComponent() {
+    vnode_insertBefore(
+      journal,
+      vParent,
+      vNewNode = vnode_newVirtual(),
+      vCurrent && getInsertBefore()
+    );
+    import_build3.isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "I" /* InlineComponent */);
+    vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
+    if (jsxValue.key) {
+      vnode_setProp(vNewNode, ELEMENT_KEY, jsxValue.key);
+    }
   }
   function expectText(text) {
     if (vCurrent !== null) {
@@ -3065,7 +3083,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+48b5156";
+var version = "2.0.0-0-dev+103581c";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+48b5156
+ * @builder.io/qwik 2.0.0-0-dev+103581c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1274,15 +1274,19 @@
                     }
                 }(jsxValue.children, host);
             } else {
-                vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
+                const lookupKey = jsxValue.key;
+                if (lookupKey === getKey(host) || (vNewNode = retrieveChildWithKey(null, lookupKey), 
+                vNewNode ? vnode_insertBefore(journal, vParent, vNewNode, vCurrent) : (vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
                 build.isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.InlineComponent), 
-                vnode_setProp(vNewNode, "q:props", jsxValue.props), host = vNewNode;
-                let component$Host = host;
-                for (;component$Host && (!vnode_isVirtualVNode(component$Host) || null === vnode_getProp(component$Host, "q:renderFn", null)); ) {
-                    component$Host = vnode_getParent(component$Host);
+                vnode_setProp(vNewNode, "q:props", jsxValue.props), jsxValue.key && vnode_setProp(vNewNode, ELEMENT_KEY, jsxValue.key)), 
+                host = vNewNode), host) {
+                    let componentHost = host;
+                    for (;componentHost && (!vnode_isVirtualVNode(componentHost) || null === vnode_getProp(componentHost, "q:renderFn", null)); ) {
+                        componentHost = vnode_getParent(componentHost);
+                    }
+                    const jsxOutput = executeComponent(container, host, componentHost || container.rootVNode, component, jsxValue.props);
+                    asyncQueue.push(jsxOutput, host);
                 }
-                const jsxOutput = executeComponent(container, host, component$Host || container.rootVNode, component, jsxValue.props);
-                asyncQueue.push(jsxOutput, host);
             }
         }
         function insertNewComponent(host, componentQRL, jsxProps) {
@@ -1911,9 +1915,9 @@
             throwErrorAndStop("WrappedSignal is read-only");
         }
     }
-    const applyInlineComponent = (ssr, component$Host, component, jsx) => {
+    const applyInlineComponent = (ssr, componentHost, inlineComponentFunction, jsx) => {
         const host = ssr.getLastNode();
-        return executeComponent(ssr, host, component$Host, component, jsx.props);
+        return executeComponent(ssr, host, componentHost, inlineComponentFunction, jsx.props);
     };
     const applyQwikComponentBody = (ssr, jsx, component) => {
         const host = ssr.getLastNode();
@@ -2081,7 +2085,8 @@
                         enqueue(ssr.closeComponent), enqueue(jsxOutput), isPromise(jsxOutput) && enqueue(Promise), 
                         enqueue(new ParentComponentData(compStyleComponentId, componentFrame));
                     } else {
-                        ssr.openFragment(build.isDev ? [ DEBUG_TYPE, VirtualType.InlineComponent ] : EMPTY_ARRAY), 
+                        const inlineComponentProps = [ ELEMENT_KEY, jsx.key ];
+                        ssr.openFragment(build.isDev ? [ DEBUG_TYPE, VirtualType.InlineComponent, ...inlineComponentProps ] : inlineComponentProps), 
                         enqueue(ssr.closeFragment);
                         const component = ssr.getComponentFrame(0);
                         const jsxOutput = applyInlineComponent(ssr, component && component.componentNode, type, jsx);
@@ -2163,7 +2168,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+48b5156", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+103581c", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -5170,7 +5175,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+48b5156", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+103581c", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

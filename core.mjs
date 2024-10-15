@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+48b5156
+ * @builder.io/qwik 2.0.0-0-dev+103581c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -3007,21 +3007,34 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             jsxValue.children != null && descendContentToProject(jsxValue.children, host);
         }
         else {
-            // Inline Component
-            vnode_insertBefore(journal, vParent, (vNewNode = vnode_newVirtual()), vCurrent && getInsertBefore());
-            isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.InlineComponent);
-            vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
-            host = vNewNode;
-            let component$Host = host;
-            // Find the closest component host which has `OnRender` prop.
-            while (component$Host &&
-                (vnode_isVirtualVNode(component$Host)
-                    ? vnode_getProp(component$Host, OnRenderProp, null) === null
-                    : true)) {
-                component$Host = vnode_getParent(component$Host);
+            const lookupKey = jsxValue.key;
+            const vNodeLookupKey = getKey(host);
+            const lookupKeysAreEqual = lookupKey === vNodeLookupKey;
+            if (!lookupKeysAreEqual) {
+                // See if we already have this inline component later on.
+                vNewNode = retrieveChildWithKey(null, lookupKey);
+                if (vNewNode) {
+                    // We found the inline component, move it up.
+                    vnode_insertBefore(journal, vParent, vNewNode, vCurrent);
+                }
+                else {
+                    // We did not find the inline component, create it.
+                    insertNewInlineComponent();
+                }
+                host = vNewNode;
             }
-            const jsxOutput = executeComponent(container, host, (component$Host || container.rootVNode), component, jsxValue.props);
-            asyncQueue.push(jsxOutput, host);
+            if (host) {
+                let componentHost = host;
+                // Find the closest component host which has `OnRender` prop. This is need for subscriptions context.
+                while (componentHost &&
+                    (vnode_isVirtualVNode(componentHost)
+                        ? vnode_getProp(componentHost, OnRenderProp, null) === null
+                        : true)) {
+                    componentHost = vnode_getParent(componentHost);
+                }
+                const jsxOutput = executeComponent(container, host, (componentHost || container.rootVNode), component, jsxValue.props);
+                asyncQueue.push(jsxOutput, host);
+            }
         }
     }
     function insertNewComponent(host, componentQRL, jsxProps) {
@@ -3033,6 +3046,14 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         container.setHostProp(vNewNode, OnRenderProp, componentQRL);
         container.setHostProp(vNewNode, ELEMENT_PROPS, jsxProps);
         container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
+    }
+    function insertNewInlineComponent() {
+        vnode_insertBefore(journal, vParent, (vNewNode = vnode_newVirtual()), vCurrent && getInsertBefore());
+        isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.InlineComponent);
+        vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
+        if (jsxValue.key) {
+            vnode_setProp(vNewNode, ELEMENT_KEY, jsxValue.key);
+        }
     }
     function expectText(text) {
         if (vCurrent !== null) {
@@ -4335,9 +4356,9 @@ class WrappedSignal extends Signal {
     }
 }
 
-const applyInlineComponent = (ssr, component$Host, component, jsx) => {
+const applyInlineComponent = (ssr, componentHost, inlineComponentFunction, jsx) => {
     const host = ssr.getLastNode();
-    return executeComponent(ssr, host, component$Host, component, jsx.props);
+    return executeComponent(ssr, host, componentHost, inlineComponentFunction, jsx.props);
 };
 const applyQwikComponentBody = (ssr, jsx, component) => {
     const host = ssr.getLastNode();
@@ -4563,7 +4584,10 @@ function processJSXNode(ssr, enqueue, value, options) {
                     enqueue(new ParentComponentData(compStyleComponentId, componentFrame));
                 }
                 else {
-                    ssr.openFragment(isDev ? [DEBUG_TYPE, VirtualType.InlineComponent] : EMPTY_ARRAY);
+                    const inlineComponentProps = [ELEMENT_KEY, jsx.key];
+                    ssr.openFragment(isDev
+                        ? [DEBUG_TYPE, VirtualType.InlineComponent, ...inlineComponentProps]
+                        : inlineComponentProps);
                     enqueue(ssr.closeFragment);
                     const component = ssr.getComponentFrame(0);
                     const jsxOutput = applyInlineComponent(ssr, component && component.componentNode, type, jsx);
@@ -4757,7 +4781,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+48b5156";
+const version = "2.0.0-0-dev+103581c";
 
 /** @internal */
 class _SharedContainer {
