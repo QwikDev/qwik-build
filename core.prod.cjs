@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+4dfcba5
+ * @builder.io/qwik 1.9.1-dev+8f806b1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,7 @@
             return value;
         }
     };
-    const version = "1.9.1-dev+4dfcba5";
+    const version = "1.9.1-dev+8f806b1";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4327,8 +4327,9 @@
                 const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
                 symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
             }
-            return symbolRef.finally((() => emitUsedSymbol(symbol, ctx?.$element$, start))), 
-            symbolRef;
+            return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, ctx?.$element$, start)), (err => {
+                throw console.error(`qrl ${symbol} failed to load`, err), symbolRef = null, err;
+            })), symbolRef;
         };
         const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
         function invokeFn(currentCtx, beforeFn) {

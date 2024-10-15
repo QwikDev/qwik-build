@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+4dfcba5
+ * @builder.io/qwik 1.9.1-dev+8f806b1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1005,7 +1005,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.9.1-dev+4dfcba5";
+const version = "1.9.1-dev+8f806b1";
 
 /**
  * @internal
@@ -8626,7 +8626,6 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                 if (context.$event$ === undefined) {
                     context.$event$ = this;
                 }
-                // const result = invoke.call(this, context, f, ...(args as Parameters<typeof f>));
                 try {
                     return fn.apply(this, args);
                 }
@@ -8667,7 +8666,14 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
             symbolRef = maybeThen(imported, (ref) => (qrl.resolved = symbolRef = wrapFn(ref)));
         }
-        symbolRef.finally(() => emitUsedSymbol(symbol, ctx?.$element$, start));
+        if (typeof symbolRef === 'object' && isPromise(symbolRef)) {
+            symbolRef.then(() => emitUsedSymbol(symbol, ctx?.$element$, start), (err) => {
+                console.error(`qrl ${symbol} failed to load`, err);
+                // We shouldn't cache rejections, we can try again later
+                symbolRef = null;
+                throw err;
+            });
+        }
         return symbolRef;
     };
     const resolveLazy = (containerEl) => {
