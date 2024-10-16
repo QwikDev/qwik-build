@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+3b5d6d9
+ * @builder.io/qwik 2.0.0-0-dev+d271212
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2640,7 +2640,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+3b5d6d9";
+const version = "2.0.0-0-dev+d271212";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -4587,7 +4587,7 @@ const inflate = (container, target, typeId, data) => {
                 const computed = target;
                 const d = data;
                 computed.$computeQrl$ = d[0], computed.$untrackedValue$ = d[1], computed.$invalid$ = d[2], 
-                computed.$effects$ = d.slice(3);
+                computed.$effects$ = d.slice(3), computed.$computeQrl$.resolve(), container.$scheduler$?.(ChoreType.QRL_RESOLVE, null, computed.$computeQrl$);
                 break;
             }
 

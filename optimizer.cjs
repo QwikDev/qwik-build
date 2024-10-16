@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+3b5d6d9
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+d271212
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+3b5d6d9"
+    qwik: "2.0.0-0-dev+d271212"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5153,7 +5153,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+3b5d6d9";
+  var version = "2.0.0-0-dev+d271212";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;
@@ -7038,6 +7038,7 @@ globalThis.qwikOptimizer = function(module) {
   };
   var resolvers = new WeakMap;
   var inflate = (container, target, typeId, data) => {
+    var _a;
     if (void 0 === typeId) {
       return;
     }
@@ -7140,6 +7141,8 @@ globalThis.qwikOptimizer = function(module) {
         computed.$untrackedValue$ = d[1];
         computed.$invalid$ = d[2];
         computed.$effects$ = d.slice(3);
+        computed.$computeQrl$.resolve();
+        null == (_a = container.$scheduler$) || _a.call(container, 1, null, computed.$computeQrl$);
         break;
       }
 

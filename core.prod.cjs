@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+3b5d6d9
+ * @builder.io/qwik 2.0.0-0-dev+d271212
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2168,7 +2168,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+3b5d6d9", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+d271212", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -3834,7 +3834,7 @@
                     const computed = target;
                     const d = data;
                     computed.$computeQrl$ = d[0], computed.$untrackedValue$ = d[1], computed.$invalid$ = d[2], 
-                    computed.$effects$ = d.slice(3);
+                    computed.$effects$ = d.slice(3), computed.$computeQrl$.resolve(), container.$scheduler$?.(ChoreType.QRL_RESOLVE, null, computed.$computeQrl$);
                     break;
                 }
 
@@ -5176,7 +5176,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+3b5d6d9", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+d271212", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

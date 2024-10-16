@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+3b5d6d9
+ * @builder.io/qwik/server 2.0.0-0-dev+d271212
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -722,7 +722,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+3b5d6d9",
+  qwik: "2.0.0-0-dev+d271212",
   qwikDom: "2.1.19"
 };
 
@@ -3084,7 +3084,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+3b5d6d9";
+var version = "2.0.0-0-dev+d271212";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -5598,6 +5598,7 @@ var _eagerDeserializeArray = (container, data) => {
 };
 var resolvers = /* @__PURE__ */ new WeakMap();
 var inflate = (container, target, typeId, data) => {
+  var _a;
   if (typeId === void 0) {
     return;
   }
@@ -5702,6 +5703,8 @@ var inflate = (container, target, typeId, data) => {
       computed.$untrackedValue$ = d[1];
       computed.$invalid$ = d[2];
       computed.$effects$ = d.slice(3);
+      computed.$computeQrl$.resolve();
+      (_a = container.$scheduler$) == null ? void 0 : _a.call(container, 1 /* QRL_RESOLVE */, null, computed.$computeQrl$);
       break;
     }
     case 12 /* Error */: {

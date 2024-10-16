@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+3b5d6d9
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+d271212
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+3b5d6d9"
+  qwik: "2.0.0-0-dev+d271212"
 };
 
 async function getSystem() {
@@ -3316,7 +3316,7 @@ function setLocale(locale) {
 }
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+3b5d6d9",
+  qwik: "2.0.0-0-dev+d271212",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -5468,7 +5468,7 @@ var WrappedSignal = class extends Signal {
   }
 };
 
-var version = "2.0.0-0-dev+3b5d6d9";
+var version = "2.0.0-0-dev+d271212";
 
 var _SharedContainer = class {
   constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -7584,6 +7584,8 @@ var inflate = (container, target, typeId, data) => {
       computed.$untrackedValue$ = d[1];
       computed.$invalid$ = d[2];
       computed.$effects$ = d.slice(3);
+      computed.$computeQrl$.resolve();
+      container.$scheduler$?.(1, null, computed.$computeQrl$);
       break;
     }
 

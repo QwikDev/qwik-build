@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+3b5d6d9
+ * @builder.io/qwik 2.0.0-0-dev+d271212
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4781,7 +4781,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+3b5d6d9";
+const version = "2.0.0-0-dev+d271212";
 
 /** @internal */
 class _SharedContainer {
@@ -8092,6 +8092,15 @@ const inflate = (container, target, typeId, data) => {
             computed.$untrackedValue$ = d[1];
             computed.$invalid$ = d[2];
             computed.$effects$ = d.slice(3);
+            /**
+             * If we try to compute value and the qrl is not resolved, then system throws an error with
+             * qrl promise. To prevent that we should early resolve computed qrl while computed
+             * deserialization. This also prevents anything from firing while computed qrls load, because
+             * of scheduler
+             */
+            // try to download qrl in this tick
+            computed.$computeQrl$.resolve();
+            container.$scheduler$?.(ChoreType.QRL_RESOLVE, null, computed.$computeQrl$);
             break;
         }
         case TypeIds.Error: {
