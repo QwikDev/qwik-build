@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+d271212
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+c97cb71
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+d271212"
+    qwik: "2.0.0-0-dev+c97cb71"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -4399,7 +4399,10 @@ globalThis.qwikOptimizer = function(module) {
         if (host) {
           const vNodeProps = vnode_getProp(host, ELEMENT_PROPS, container.$getObjectById$);
           shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps);
-          shouldRender && container.$scheduler$(7, host, componentQRL, jsxProps);
+          if (shouldRender) {
+            host[0] &= -33;
+            container.$scheduler$(7, host, componentQRL, jsxProps);
+          }
         }
         null != jsxValue.children && descendContentToProject(jsxValue.children, host);
       } else {
@@ -5153,7 +5156,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+d271212";
+  var version = "2.0.0-0-dev+c97cb71";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;

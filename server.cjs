@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+d271212
+ * @builder.io/qwik/server 2.0.0-0-dev+c97cb71
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -722,7 +722,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+d271212",
+  qwik: "2.0.0-0-dev+c97cb71",
   qwikDom: "2.1.19"
 };
 
@@ -2186,6 +2186,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         const vNodeProps = vnode_getProp(host, ELEMENT_PROPS, container.$getObjectById$);
         shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps);
         if (shouldRender) {
+          host[0 /* flags */] &= ~32 /* Deleted */;
           container.$scheduler$(7 /* COMPONENT */, host, componentQRL, jsxProps);
         }
       }
@@ -3084,7 +3085,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+d271212";
+var version = "2.0.0-0-dev+c97cb71";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {

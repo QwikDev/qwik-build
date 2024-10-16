@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+d271212
+ * @builder.io/qwik 2.0.0-0-dev+c97cb71
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1615,7 +1615,8 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             shouldRender = !0)) : (vNewNode = retrieveChildWithKey(null, lookupKey), vNewNode ? vnode_insertBefore(journal, vParent, vNewNode, vCurrent) : insertNewComponent(host, componentQRL, jsxProps), 
             host = vNewNode, shouldRender = !0), host) {
                 const vNodeProps = vnode_getProp(host, "q:props", container.$getObjectById$);
-                shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps), shouldRender && container.$scheduler$(ChoreType.COMPONENT, host, componentQRL, jsxProps);
+                shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps), shouldRender && (host[VNodeProps.flags] &= ~VNodeFlags.Deleted, 
+                container.$scheduler$(ChoreType.COMPONENT, host, componentQRL, jsxProps));
             }
             null != jsxValue.children && function(children, host) {
                 if (Array.isArray(children) || (children = [ children ]), children.length) {
@@ -2640,7 +2641,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+d271212";
+const version = "2.0.0-0-dev+c97cb71";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {

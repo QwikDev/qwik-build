@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+d271212
+ * @builder.io/qwik 2.0.0-0-dev+c97cb71
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -3001,6 +3001,12 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                 const vNodeProps = vnode_getProp(host, ELEMENT_PROPS, container.$getObjectById$);
                 shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps);
                 if (shouldRender) {
+                    /**
+                     * Mark host as not deleted. The host could have been marked as deleted if it there was a
+                     * cleanup run. Now we found it and want to reuse it, so we need to mark it as not
+                     * deleted.
+                     */
+                    host[VNodeProps.flags] &= ~VNodeFlags.Deleted;
                     container.$scheduler$(ChoreType.COMPONENT, host, componentQRL, jsxProps);
                 }
             }
@@ -4781,7 +4787,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+d271212";
+const version = "2.0.0-0-dev+c97cb71";
 
 /** @internal */
 class _SharedContainer {

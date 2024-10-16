@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+d271212
+ * @builder.io/qwik/testing 2.0.0-0-dev+c97cb71
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -25042,6 +25042,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         const vNodeProps = vnode_getProp(host, ELEMENT_PROPS, container.$getObjectById$);
         shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps);
         if (shouldRender) {
+          host[0 /* flags */] &= ~32 /* Deleted */;
           container.$scheduler$(7 /* COMPONENT */, host, componentQRL, jsxProps);
         }
       }

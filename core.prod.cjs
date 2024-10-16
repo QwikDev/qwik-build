@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+d271212
+ * @builder.io/qwik 2.0.0-0-dev+c97cb71
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1244,7 +1244,8 @@
                             }
                         }
                         return !1;
-                    }(jsxProps, vNodeProps), shouldRender && container.$scheduler$(ChoreType.COMPONENT, host, componentQRL, jsxProps);
+                    }(jsxProps, vNodeProps), shouldRender && (host[VNodeProps.flags] &= ~VNodeFlags.Deleted, 
+                    container.$scheduler$(ChoreType.COMPONENT, host, componentQRL, jsxProps));
                 }
                 null != jsxValue.children && function(children, host) {
                     if (Array.isArray(children) || (children = [ children ]), children.length) {
@@ -2168,7 +2169,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+d271212", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+c97cb71", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -5176,7 +5177,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+d271212", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+c97cb71", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
