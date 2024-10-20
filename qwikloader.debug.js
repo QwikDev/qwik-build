@@ -134,18 +134,21 @@
                     }
                     const previousCtx = doc[Q_CONTEXT];
                     if (element.isConnected) {
-                        try {
-                            doc[Q_CONTEXT] = [ element, ev, url ];
-                            isSync || emitEvent("qsymbol", __spreadValues({}, eventData));
-                            const results = handler(ev, element);
-                            isPromise(results) && await results;
-                        } catch (error2) {
-                            emitEvent("qerror", __spreadValues({
-                                error: error2
-                            }, eventData));
-                        } finally {
-                            doc[Q_CONTEXT] = previousCtx;
-                        }
+                        const handleEvent = async () => {
+                            try {
+                                doc[Q_CONTEXT] = [ element, ev, url ];
+                                isSync || emitEvent("qsymbol", __spreadValues({}, eventData));
+                                const results = handler(ev, element);
+                                isPromise(results) && await results;
+                            } catch (error2) {
+                                isPromise(error2) ? error2.then((() => handleEvent())) : emitEvent("qerror", __spreadValues({
+                                    error: error2
+                                }, eventData));
+                            } finally {
+                                doc[Q_CONTEXT] = previousCtx;
+                            }
+                        };
+                        handleEvent();
                     }
                 }
             }

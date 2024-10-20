@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+c97cb71
+ * @builder.io/qwik/testing 2.0.0-0-dev+80086ce
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -26555,8 +26555,15 @@ var inflate = (container, target, typeId, data) => {
       computed.$untrackedValue$ = d[1];
       computed.$invalid$ = d[2];
       computed.$effects$ = d.slice(3);
-      computed.$computeQrl$.resolve();
-      (_a = container.$scheduler$) == null ? void 0 : _a.call(container, 1 /* QRL_RESOLVE */, null, computed.$computeQrl$);
+      if (computed.$invalid$) {
+        computed.$computeQrl$.resolve();
+        (_a = container.$scheduler$) == null ? void 0 : _a.call(
+          container,
+          1 /* QRL_RESOLVE */,
+          null,
+          computed.$computeQrl$
+        );
+      }
       break;
     }
     case 12 /* Error */: {
