@@ -1,7 +1,7 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+80086ce
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * @qwik.dev/core/server 2.0.0-0-dev+1deebe2
+ * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
@@ -14,10 +14,10 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
 });
 
 // packages/qwik/src/server/index.ts
-import { setPlatform as setPlatform2 } from "@builder.io/qwik";
+import { setPlatform as setPlatform2 } from "@qwik.dev/core";
 
 // packages/qwik/src/server/platform.ts
-import { setPlatform } from "@builder.io/qwik";
+import { setPlatform } from "@qwik.dev/core";
 var SYNC_QRL = "<sync>";
 function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest?.mapper;
@@ -403,7 +403,7 @@ var isUnitlessNumber = (name) => {
 };
 
 // packages/qwik/src/core/shared/qrl/qrl-class.ts
-import { isDev as isDev7 } from "@builder.io/qwik/build";
+import { isDev as isDev7 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/core/shared/error/assert.ts
 var ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
@@ -441,7 +441,7 @@ function assertFalse(value1, text, ...parts) {
 }
 
 // packages/qwik/src/core/shared/platform/platform.ts
-import { isServer } from "@builder.io/qwik/build";
+import { isServer } from "@qwik.dev/core/build";
 var createPlatform2 = () => {
   return {
     isServer,
@@ -648,7 +648,7 @@ function setLocale(locale) {
 }
 
 // packages/qwik/src/core/client/vnode.ts
-import { isDev as isDev6 } from "@builder.io/qwik/build";
+import { isDev as isDev6 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/server/utils.ts
 function createTimer() {
@@ -676,12 +676,12 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+80086ce",
+  qwik: "2.0.0-0-dev+1deebe2",
   qwikDom: "2.1.19"
 };
 
 // packages/qwik/src/server/prefetch-strategy.ts
-import { isDev as isDev2 } from "@builder.io/qwik/build";
+import { isDev as isDev2 } from "@qwik.dev/core/build";
 function getPrefetchResources(qrls, opts, resolvedManifest) {
   if (!resolvedManifest) {
     return [];
@@ -749,7 +749,7 @@ Object.freeze(EMPTY_ARRAY);
 Object.freeze(EMPTY_OBJ);
 
 // packages/qwik/src/core/ssr/ssr-render-jsx.ts
-import { isDev as isDev5 } from "@builder.io/qwik/build";
+import { isDev as isDev5 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/core/shared/jsx/slot.public.ts
 var Slot = (props) => {
@@ -1116,7 +1116,7 @@ var ignoreErrorToPreventNodeFromCrashing = (err) => {
 };
 
 // packages/qwik/src/core/client/vnode-diff.ts
-import { isDev as isDev4 } from "@builder.io/qwik/build";
+import { isDev as isDev4 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/core/client/vnode-namespace.ts
 var isForeignObjectElement = (elementName) => elementName.toLowerCase() === "foreignobject";
@@ -1288,7 +1288,7 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 }
 
 // packages/qwik/src/core/shared/component-execution.ts
-import { isDev as isDev3 } from "@builder.io/qwik/build";
+import { isDev as isDev3 } from "@qwik.dev/core/build";
 var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
   const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
   iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
@@ -3033,7 +3033,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+80086ce";
+var version = "2.0.0-0-dev+1deebe2";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -6875,8 +6875,8 @@ import {
   _walkJSX as _walkJSX2,
   isSignal as isSignal2,
   _EffectData as EffectData2
-} from "@builder.io/qwik";
-import { isDev as isDev9 } from "@builder.io/qwik/build";
+} from "@qwik.dev/core";
+import { isDev as isDev9 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/server/prefetch-utils.ts
 function workerFetchScript() {
@@ -7052,8 +7052,8 @@ var PrefetchImplementationDefault = {
 };
 
 // packages/qwik/src/server/ssr-node.ts
-import { _isJSXNode as isJSXNode2, _EMPTY_ARRAY } from "@builder.io/qwik";
-import { isDev as isDev8 } from "@builder.io/qwik/build";
+import { _isJSXNode as isJSXNode2, _EMPTY_ARRAY } from "@qwik.dev/core";
+import { isDev as isDev8 } from "@qwik.dev/core/build";
 var SsrNode = class {
   constructor(currentComponentNode, nodeType, id, attrs, cleanupQueue) {
     this.attrs = attrs;

@@ -1,7 +1,7 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+80086ce
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * @qwik.dev/core/testing 2.0.0-0-dev+1deebe2
+ * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
@@ -22320,11 +22320,11 @@ __export(testing_exports, {
 module.exports = __toCommonJS(testing_exports);
 
 // packages/qwik/src/testing/vdom-diff.unit-util.ts
-var import_qwik = require("../core.cjs");
+var import_core = require("../core.cjs");
 var import_vitest = require("vitest");
 
 // packages/qwik/src/core/client/vnode.ts
-var import_build8 = require("@builder.io/qwik/build");
+var import_build8 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/server/utils.ts
 var import_meta = {};
@@ -22358,7 +22358,7 @@ var versions = {
 };
 
 // packages/qwik/src/server/prefetch-strategy.ts
-var import_build = require("@builder.io/qwik/build");
+var import_build = require("@qwik.dev/core/build");
 function getPrefetchResources(qrls, opts, resolvedManifest) {
   if (!resolvedManifest) {
     return [];
@@ -22433,7 +22433,7 @@ var seal = (obj) => {
 };
 
 // packages/qwik/src/core/shared/qrl/qrl-class.ts
-var import_build6 = require("@builder.io/qwik/build");
+var import_build6 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/core/shared/utils/log.ts
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
@@ -22599,7 +22599,7 @@ var qError = (code2, ...parts) => {
 };
 
 // packages/qwik/src/core/shared/platform/platform.ts
-var import_build2 = require("@builder.io/qwik/build");
+var import_build2 = require("@qwik.dev/core/build");
 var createPlatform = () => {
   return {
     isServer: import_build2.isServer,
@@ -22668,12 +22668,6 @@ var isServerPlatform = () => {
 // packages/qwik/src/core/shared/utils/element.ts
 var isNode = (value) => {
   return value && typeof value.nodeType === "number";
-};
-var isDocument = (value) => {
-  return value.nodeType === 9;
-};
-var isElement = (value) => {
-  return value.nodeType === 1;
 };
 var isText = (value) => {
   return value.nodeType === 3;
@@ -23847,7 +23841,7 @@ var ignoreErrorToPreventNodeFromCrashing = (err) => {
 };
 
 // packages/qwik/src/core/client/vnode-diff.ts
-var import_build4 = require("@builder.io/qwik/build");
+var import_build4 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/core/shared/jsx/slot.public.ts
 var Slot = (props) => {
@@ -24198,7 +24192,7 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 }
 
 // packages/qwik/src/core/shared/component-execution.ts
-var import_build3 = require("@builder.io/qwik/build");
+var import_build3 = require("@qwik.dev/core/build");
 var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
   const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
   iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
@@ -27839,7 +27833,7 @@ var inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
 };
 
 // packages/qwik/src/core/ssr/ssr-render-jsx.ts
-var import_build7 = require("@builder.io/qwik/build");
+var import_build7 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/core/shared/component.public.ts
 var componentQrl = (componentQrl3) => {
@@ -29378,7 +29372,7 @@ var VNodeArray = class VNode extends Array {
 var import_prettier = require("prettier");
 
 // packages/qwik/src/testing/document.ts
-var import_qwik_dom = __toESM(require_lib(), 1);
+var import_dom = __toESM(require_lib(), 1);
 
 // packages/qwik/src/testing/util.ts
 function normalizeUrl(url) {
@@ -29397,7 +29391,7 @@ var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefi
 
 // packages/qwik/src/testing/document.ts
 function createDocument(opts) {
-  const doc = import_qwik_dom.default.createDocument(opts == null ? void 0 : opts.html);
+  const doc = import_dom.default.createDocument(opts == null ? void 0 : opts.html);
   ensureGlobals(doc, opts);
   return doc;
 }
@@ -29496,7 +29490,7 @@ function diffJsxVNode(received, expected, path = []) {
     }
   } else {
     path.push(tagToString(expected.type));
-    const receivedTag = vnode_isElementVNode(received) ? vnode_getElementName(received) : vnode_isVirtualVNode(received) ? import_qwik.Fragment : void 0;
+    const receivedTag = vnode_isElementVNode(received) ? vnode_getElementName(received) : vnode_isVirtualVNode(received) ? import_core.Fragment : void 0;
     const isTagSame = String(expected.type).toLowerCase() == String(receivedTag).toLowerCase();
     if (!isTagSame) {
       diffs.push(path.join(" > ") + " expecting=" + expected.type + " received=" + receivedTag);
@@ -29591,7 +29585,7 @@ function vnodeToHTML(vNode, pad2 = "") {
   return html.join("");
 }
 function tagToString(tag) {
-  if (tag === import_qwik.Fragment) {
+  if (tag === import_core.Fragment) {
     return "Fragment";
   }
   return String(tag);
@@ -29606,7 +29600,7 @@ function shouldSkip(vNode) {
   return false;
 }
 function walkJSX(jsx2, apply) {
-  if ((0, import_qwik._isJSXNode)(jsx2)) {
+  if ((0, import_core._isJSXNode)(jsx2)) {
     apply.enter(jsx2);
     if (Array.isArray(jsx2.children)) {
       for (const child of jsx2.children) {
@@ -29620,12 +29614,12 @@ function walkJSX(jsx2, apply) {
     throw new Error("unsupported: " + jsx2);
   }
   function processChild(child) {
-    if ((0, import_qwik.isSignal)(child)) {
+    if ((0, import_core.isSignal)(child)) {
       child = child.value;
     }
-    if ((0, import_qwik._isStringifiable)(child)) {
+    if ((0, import_core._isStringifiable)(child)) {
       apply.text(child);
-    } else if ((0, import_qwik._isJSXNode)(child)) {
+    } else if ((0, import_core._isJSXNode)(child)) {
       walkJSX(child, apply);
     } else {
       throw new Error("Unknown type: " + child);
@@ -29831,13 +29825,13 @@ function attrsEqual(expectedValue, receivedValue) {
 
 // packages/qwik/src/testing/element-fixture.ts
 var import_vitest2 = require("vitest");
-var import_qwik2 = require("../core.cjs");
+var import_core2 = require("../core.cjs");
 
 // packages/qwik/src/testing/platform.ts
 var import_node_fs = require("node:fs");
 var import_node_url = require("node:url");
 function createPlatform2() {
-  let render2 = null;
+  let render3 = null;
   const moduleCache = /* @__PURE__ */ new Map();
   const testPlatform2 = {
     isServer: false,
@@ -29866,23 +29860,23 @@ function createPlatform2() {
       });
     },
     nextTick: (renderMarked) => {
-      if (!render2) {
-        render2 = {
+      if (!render3) {
+        render3 = {
           fn: renderMarked,
           promise: null,
           resolve: null,
           reject: null
         };
-        render2.promise = new Promise((resolve, reject) => {
-          render2.resolve = resolve;
-          render2.reject = reject;
+        render3.promise = new Promise((resolve, reject) => {
+          render3.resolve = resolve;
+          render3.reject = reject;
         });
-      } else if (renderMarked !== render2.fn) {
+      } else if (renderMarked !== render3.fn) {
         throw new Error(
           "Must be same function\nIt looks like previous test has not drained all ticks, and new test has started?"
         );
       }
-      return render2.promise;
+      return render3.promise;
     },
     raf: (fn) => {
       return new Promise((resolve) => {
@@ -29893,13 +29887,13 @@ function createPlatform2() {
     },
     flush: async () => {
       await Promise.resolve();
-      if (render2) {
+      if (render3) {
         try {
-          render2.resolve(await render2.fn());
+          render3.resolve(await render3.fn());
         } catch (e) {
-          render2.reject(e);
+          render3.reject(e);
         }
-        render2 = null;
+        render3 = null;
       }
     },
     chunkForSymbol() {
@@ -30017,7 +30011,7 @@ var dispatch = async (element, attrName, event, scope) => {
       await delay(0);
       return;
     } else if (element.hasAttribute(attrName)) {
-      const container = (0, import_qwik2.getDomContainer)(element);
+      const container = (0, import_core2.getDomContainer)(element);
       const qrl2 = element.getAttribute(attrName);
       qrl2.split("\n").map((qrl3) => container.parseQRL(qrl3.trim())).map((qrl3) => qrl3(event, element));
       return;
@@ -30062,33 +30056,11 @@ async function expectDOM(actual, expected) {
 }
 
 // packages/qwik/src/testing/rendering.unit-util.tsx
-var import_qwik6 = require("../core.cjs");
+var import_core7 = require("../core.cjs");
 var import_vitest4 = require("vitest");
 
-// packages/qwik/src/core/client/dom-render.ts
-var render = async (parent, jsxNode, opts = {}) => {
-  if (isDocument(parent)) {
-    let child = parent.firstChild;
-    while (child && !isElement(child)) {
-      child = child.nextSibling;
-    }
-    parent = child;
-  }
-  parent.setAttribute(QContainerAttr, "resumed" /* RESUMED */);
-  const container = getDomContainer(parent);
-  container.$serverData$ = opts.serverData || {};
-  const host = container.rootVNode;
-  container.$scheduler$(4 /* NODE_DIFF */, host, host, jsxNode);
-  await container.$scheduler$(127 /* WAIT_FOR_ALL */);
-  return {
-    cleanup: () => {
-      cleanup(container, container.rootVNode);
-    }
-  };
-};
-
 // packages/qwik/src/server/platform.ts
-var import_qwik3 = require("../core.cjs");
+var import_core3 = require("../core.cjs");
 var SYNC_QRL2 = "<sync>";
 function createPlatform3(opts, resolvedManifest) {
   const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
@@ -30151,7 +30123,7 @@ function createPlatform3(opts, resolvedManifest) {
 }
 async function setServerPlatform(opts, manifest) {
   const platform = createPlatform3(opts, manifest);
-  (0, import_qwik3.setPlatform)(platform);
+  (0, import_core3.setPlatform)(platform);
 }
 var getSymbolHash2 = (symbolName) => {
   const index = symbolName.lastIndexOf("_");
@@ -30175,8 +30147,8 @@ function getValidManifest(manifest) {
 }
 
 // packages/qwik/src/server/ssr-container.ts
-var import_qwik5 = require("../core.cjs");
-var import_build10 = require("@builder.io/qwik/build");
+var import_core5 = require("../core.cjs");
+var import_build10 = require("@qwik.dev/core/build");
 var import_server = require("../server.cjs");
 
 // packages/qwik/src/server/prefetch-utils.ts
@@ -30353,8 +30325,8 @@ var PrefetchImplementationDefault = {
 };
 
 // packages/qwik/src/server/ssr-node.ts
-var import_qwik4 = require("../core.cjs");
-var import_build9 = require("@builder.io/qwik/build");
+var import_core4 = require("../core.cjs");
+var import_build9 = require("@qwik.dev/core/build");
 var SsrNode = class {
   constructor(currentComponentNode, nodeType, id, attrs, cleanupQueue) {
     this.attrs = attrs;
@@ -30369,7 +30341,7 @@ var SsrNode = class {
     }
   }
   setProp(name, value) {
-    if (this.attrs === import_qwik4._EMPTY_ARRAY) {
+    if (this.attrs === import_core4._EMPTY_ARRAY) {
       this.attrs = [];
     }
     if (name.startsWith(NON_SERIALIZABLE_MARKER_PREFIX)) {
@@ -30427,14 +30399,14 @@ var SsrComponentFrame = class {
   distributeChildrenIntoSlots(children, projectionScopedStyle, projectionComponentFrame) {
     this.projectionScopedStyle = projectionScopedStyle;
     this.projectionComponentFrame = projectionComponentFrame;
-    if ((0, import_qwik4._isJSXNode)(children)) {
+    if ((0, import_core4._isJSXNode)(children)) {
       const slotName = this.getSlotName(children);
       mapArray_set(this.slots, slotName, children, 0);
     } else if (Array.isArray(children)) {
       const defaultSlot = [];
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        if ((0, import_qwik4._isJSXNode)(child)) {
+        if ((0, import_core4._isJSXNode)(child)) {
           const slotName = this.getSlotName(child);
           if (slotName === QDefaultSlot) {
             defaultSlot.push(child);
@@ -30888,7 +30860,7 @@ var StringBufferWriter = class {
   }
 };
 var EMPTY_OBJ2 = {};
-var SSRContainer = class extends import_qwik5._SharedContainer {
+var SSRContainer = class extends import_core5._SharedContainer {
   constructor(opts) {
     super(
       () => null,
@@ -30956,7 +30928,7 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
   }
   async render(jsx2) {
     this.openContainer();
-    await (0, import_qwik5._walkJSX)(this, jsx2, {
+    await (0, import_core5._walkJSX)(this, jsx2, {
       allowPromises: true,
       currentStyleScoped: null,
       parentComponentFrame: this.getComponentFrame()
@@ -31195,7 +31167,7 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
     }
     for (let i = 0; i < injections.length; i++) {
       const injection = injections[i];
-      const jsxNode = (0, import_qwik5._jsxSplit)(injection.tag, null, injection.attributes || {}, null, 0, null);
+      const jsxNode = (0, import_core5._jsxSplit)(injection.tag, null, injection.attributes || {}, null, 0, null);
       if (injection.location === "head") {
         this.additionalHeadNodes.push(jsxNode);
       } else {
@@ -31215,7 +31187,7 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
       this.styleIds.add(styleId);
       if (((_a = this.currentElementFrame) == null ? void 0 : _a.elementName) === "html") {
         this.additionalHeadNodes.push(
-          (0, import_qwik5._jsxSorted)(
+          (0, import_core5._jsxSorted)(
             "style",
             null,
             { dangerouslySetInnerHTML: content, [QStyle]: styleId },
@@ -31548,7 +31520,7 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
               import_build10.isDev ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
             );
             ssrComponentNode == null ? void 0 : ssrComponentNode.setProp(value, this.getLastNode().id);
-            (0, import_qwik5._walkJSX)(this, children, {
+            (0, import_core5._walkJSX)(this, children, {
               allowPromises: false,
               currentStyleScoped: scopedStyleId,
               parentComponentFrame: null
@@ -31675,7 +31647,7 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
         }
         if (key === "ref") {
           const lastNode = this.getLastNode();
-          if ((0, import_qwik5.isSignal)(value)) {
+          if ((0, import_core5.isSignal)(value)) {
             value.value = lastNode;
             continue;
           } else if (typeof value === "function") {
@@ -31683,9 +31655,9 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
             continue;
           }
         }
-        if ((0, import_qwik5.isSignal)(value)) {
+        if ((0, import_core5.isSignal)(value)) {
           const lastNode = this.getLastNode();
-          const signalData = new import_qwik5._EffectData({
+          const signalData = new import_core5._EffectData({
             $scopedStyleIdPrefix$: styleScopedId,
             $isConst$: isConst
           });
@@ -32141,15 +32113,15 @@ var useComputedQrl = (qrl2) => {
 var useComputed$ = implicit$FirstArg(useComputedQrl);
 
 // packages/qwik/src/core/shared/prefetch-service-worker/prefetch.ts
-var import_build11 = require("@builder.io/qwik/build");
+var import_build11 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/testing/rendering.unit-util.tsx
 async function domRender(jsx2, opts = {}) {
   const document2 = createDocument();
-  await render(document2.body, jsx2);
+  await (0, import_core7.render)(document2.body, jsx2);
   await getTestPlatform().flush();
   const getStyles = getStylesFactory(document2);
-  const container = (0, import_qwik6._getDomContainer)(document2.body);
+  const container = (0, import_core7._getDomContainer)(document2.body);
   if (opts.debug) {
     console.log("========================================================");
     console.log("------------------------- CSR --------------------------");
@@ -32199,7 +32171,7 @@ async function ssrRenderToDom(jsx2, opts = {}) {
   const document2 = createDocument({ html });
   const containerElement2 = document2.querySelector("[q\\:container]");
   emulateExecutionOfQwikFuncs(document2);
-  const container = (0, import_qwik6._getDomContainer)(containerElement2);
+  const container = (0, import_core7._getDomContainer)(containerElement2);
   const getStyles = getStylesFactory(document2);
   if (opts.debug) {
     console.log("========================================================");
@@ -32247,7 +32219,7 @@ function renderStyles(getStyles) {
   });
 }
 async function rerenderComponent(element) {
-  const container = (0, import_qwik6._getDomContainer)(element);
+  const container = (0, import_core7._getDomContainer)(element);
   const vElement = vnode_locate(container.rootVNode, element);
   const host = getHostVNode(vElement);
   const qrl2 = container.getHostProp(host, OnRenderProp);
@@ -32265,11 +32237,11 @@ function getHostVNode(vElement) {
   return vElement;
 }
 var ErrorProvider = Object.assign(
-  (0, import_qwik6.componentQrl)(
+  (0, import_core7.componentQrl)(
     inlinedQrl(() => {
       ErrorProvider.error = null;
       useContextProvider(ERROR_CONTEXT, ErrorProvider);
-      return /* @__PURE__ */ jsx(Slot, {});
+      return /* @__PURE__ */ jsx(import_core7.Slot, {});
     }, "s_ErrorProvider")
   ),
   { error: null }

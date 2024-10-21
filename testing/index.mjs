@@ -1,7 +1,7 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+80086ce
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * @qwik.dev/core/testing 2.0.0-0-dev+1deebe2
+ * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
@@ -22308,7 +22308,7 @@ import { Fragment as Fragment2, _isJSXNode, _isStringifiable, isSignal as isSign
 import { expect } from "vitest";
 
 // packages/qwik/src/core/client/vnode.ts
-import { isDev as isDev7 } from "@builder.io/qwik/build";
+import { isDev as isDev7 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/server/utils.ts
 function createTimer() {
@@ -22341,7 +22341,7 @@ var versions = {
 };
 
 // packages/qwik/src/server/prefetch-strategy.ts
-import { isDev } from "@builder.io/qwik/build";
+import { isDev } from "@qwik.dev/core/build";
 function getPrefetchResources(qrls, opts, resolvedManifest) {
   if (!resolvedManifest) {
     return [];
@@ -22416,7 +22416,7 @@ var seal = (obj) => {
 };
 
 // packages/qwik/src/core/shared/qrl/qrl-class.ts
-import { isDev as isDev5 } from "@builder.io/qwik/build";
+import { isDev as isDev5 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/core/shared/utils/log.ts
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
@@ -22582,7 +22582,7 @@ var qError = (code2, ...parts) => {
 };
 
 // packages/qwik/src/core/shared/platform/platform.ts
-import { isServer } from "@builder.io/qwik/build";
+import { isServer } from "@qwik.dev/core/build";
 var createPlatform = () => {
   return {
     isServer,
@@ -22650,12 +22650,6 @@ var isServerPlatform = () => {
 // packages/qwik/src/core/shared/utils/element.ts
 var isNode = (value) => {
   return value && typeof value.nodeType === "number";
-};
-var isDocument = (value) => {
-  return value.nodeType === 9;
-};
-var isElement = (value) => {
-  return value.nodeType === 1;
 };
 var isText = (value) => {
   return value.nodeType === 3;
@@ -23825,7 +23819,7 @@ var ignoreErrorToPreventNodeFromCrashing = (err) => {
 };
 
 // packages/qwik/src/core/client/vnode-diff.ts
-import { isDev as isDev4 } from "@builder.io/qwik/build";
+import { isDev as isDev4 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/core/shared/jsx/slot.public.ts
 var Slot = (props) => {
@@ -24176,7 +24170,7 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 }
 
 // packages/qwik/src/core/shared/component-execution.ts
-import { isDev as isDev3 } from "@builder.io/qwik/build";
+import { isDev as isDev3 } from "@qwik.dev/core/build";
 var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
   const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
   iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
@@ -27810,7 +27804,7 @@ var inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
 };
 
 // packages/qwik/src/core/ssr/ssr-render-jsx.ts
-import { isDev as isDev6 } from "@builder.io/qwik/build";
+import { isDev as isDev6 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/core/shared/component.public.ts
 var componentQrl = (componentQrl3) => {
@@ -29343,7 +29337,7 @@ var VNodeArray = class VNode extends Array {
 import { format } from "prettier";
 
 // packages/qwik/src/testing/document.ts
-var import_qwik_dom = __toESM(require_lib(), 1);
+var import_dom = __toESM(require_lib(), 1);
 
 // packages/qwik/src/testing/util.ts
 function normalizeUrl(url) {
@@ -29362,7 +29356,7 @@ var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefi
 
 // packages/qwik/src/testing/document.ts
 function createDocument(opts) {
-  const doc = import_qwik_dom.default.createDocument(opts?.html);
+  const doc = import_dom.default.createDocument(opts?.html);
   ensureGlobals(doc, opts);
   return doc;
 }
@@ -29802,7 +29796,7 @@ import { getDomContainer as getDomContainer2 } from "../core.mjs";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 function createPlatform2() {
-  let render2 = null;
+  let render3 = null;
   const moduleCache = /* @__PURE__ */ new Map();
   const testPlatform2 = {
     isServer: false,
@@ -29831,23 +29825,23 @@ function createPlatform2() {
       });
     },
     nextTick: (renderMarked) => {
-      if (!render2) {
-        render2 = {
+      if (!render3) {
+        render3 = {
           fn: renderMarked,
           promise: null,
           resolve: null,
           reject: null
         };
-        render2.promise = new Promise((resolve, reject) => {
-          render2.resolve = resolve;
-          render2.reject = reject;
+        render3.promise = new Promise((resolve, reject) => {
+          render3.resolve = resolve;
+          render3.reject = reject;
         });
-      } else if (renderMarked !== render2.fn) {
+      } else if (renderMarked !== render3.fn) {
         throw new Error(
           "Must be same function\nIt looks like previous test has not drained all ticks, and new test has started?"
         );
       }
-      return render2.promise;
+      return render3.promise;
     },
     raf: (fn) => {
       return new Promise((resolve) => {
@@ -29858,13 +29852,13 @@ function createPlatform2() {
     },
     flush: async () => {
       await Promise.resolve();
-      if (render2) {
+      if (render3) {
         try {
-          render2.resolve(await render2.fn());
+          render3.resolve(await render3.fn());
         } catch (e) {
-          render2.reject(e);
+          render3.reject(e);
         }
-        render2 = null;
+        render3 = null;
       }
     },
     chunkForSymbol() {
@@ -30027,30 +30021,8 @@ async function expectDOM(actual, expected) {
 }
 
 // packages/qwik/src/testing/rendering.unit-util.tsx
-import { _getDomContainer, componentQrl as componentQrl2 } from "../core.mjs";
+import { Slot as Slot2, _getDomContainer, componentQrl as componentQrl2, render as render2 } from "../core.mjs";
 import { expect as expect2 } from "vitest";
-
-// packages/qwik/src/core/client/dom-render.ts
-var render = async (parent, jsxNode, opts = {}) => {
-  if (isDocument(parent)) {
-    let child = parent.firstChild;
-    while (child && !isElement(child)) {
-      child = child.nextSibling;
-    }
-    parent = child;
-  }
-  parent.setAttribute(QContainerAttr, "resumed" /* RESUMED */);
-  const container = getDomContainer(parent);
-  container.$serverData$ = opts.serverData || {};
-  const host = container.rootVNode;
-  container.$scheduler$(4 /* NODE_DIFF */, host, host, jsxNode);
-  await container.$scheduler$(127 /* WAIT_FOR_ALL */);
-  return {
-    cleanup: () => {
-      cleanup(container, container.rootVNode);
-    }
-  };
-};
 
 // packages/qwik/src/server/platform.ts
 import { setPlatform as setPlatform2 } from "../core.mjs";
@@ -30146,7 +30118,7 @@ import {
   isSignal as isSignal3,
   _EffectData as EffectData2
 } from "../core.mjs";
-import { isDev as isDev9 } from "@builder.io/qwik/build";
+import { isDev as isDev9 } from "@qwik.dev/core/build";
 import { getQwikLoaderScript } from "../server.mjs";
 
 // packages/qwik/src/server/prefetch-utils.ts
@@ -30324,7 +30296,7 @@ var PrefetchImplementationDefault = {
 
 // packages/qwik/src/server/ssr-node.ts
 import { _isJSXNode as isJSXNode2, _EMPTY_ARRAY } from "../core.mjs";
-import { isDev as isDev8 } from "@builder.io/qwik/build";
+import { isDev as isDev8 } from "@qwik.dev/core/build";
 var SsrNode = class {
   constructor(currentComponentNode, nodeType, id, attrs, cleanupQueue) {
     this.attrs = attrs;
@@ -32101,12 +32073,12 @@ var useComputedQrl = (qrl2) => {
 var useComputed$ = implicit$FirstArg(useComputedQrl);
 
 // packages/qwik/src/core/shared/prefetch-service-worker/prefetch.ts
-import { isDev as isDev10 } from "@builder.io/qwik/build";
+import { isDev as isDev10 } from "@qwik.dev/core/build";
 
 // packages/qwik/src/testing/rendering.unit-util.tsx
 async function domRender(jsx2, opts = {}) {
   const document2 = createDocument();
-  await render(document2.body, jsx2);
+  await render2(document2.body, jsx2);
   await getTestPlatform().flush();
   const getStyles = getStylesFactory(document2);
   const container = _getDomContainer(document2.body);
@@ -32228,7 +32200,7 @@ var ErrorProvider = Object.assign(
     inlinedQrl(() => {
       ErrorProvider.error = null;
       useContextProvider(ERROR_CONTEXT, ErrorProvider);
-      return /* @__PURE__ */ jsx(Slot, {});
+      return /* @__PURE__ */ jsx(Slot2, {});
     }, "s_ErrorProvider")
   ),
   { error: null }

@@ -1,13 +1,13 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+80086ce
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * @qwik.dev/core 2.0.0-0-dev+1deebe2
+ * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@builder.io/qwik/build')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@builder.io/qwik/build'], factory) :
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@qwik.dev/core/build')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@qwik.dev/core/build'], factory) :
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.qwikCore = {}, global.qwikBuild));
 })(this, (function (exports, build) { 'use strict';
 
@@ -4791,7 +4791,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+80086ce";
+    const version = "2.0.0-0-dev+1deebe2";
 
     /** @internal */
     class _SharedContainer {

@@ -2172,7 +2172,7 @@ declare interface QwikIntrinsicAttributes {
  * example showing how to define a customizable wrapper component:
  *
  * ```tsx
- * import { component$, Slot, type QwikIntrinsicElements } from "@builder.io/qwik";
+ * import { component$, Slot, type QwikIntrinsicElements } from "@qwik.dev/core";
  *
  * type WrapperProps = {
  *   attributes?: QwikIntrinsicElements["div"];
@@ -4126,7 +4126,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+80086ce
+ * 2.0.0-0-dev+1deebe2
  *
  * @public
  */

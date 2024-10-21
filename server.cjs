@@ -1,7 +1,7 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+80086ce
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * @qwik.dev/core/server 2.0.0-0-dev+1deebe2
+ * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
@@ -10,13 +10,13 @@ globalThis.qwikServer = (function (module) {
 if (typeof require !== 'function' && typeof location !== 'undefined' && typeof navigator !== 'undefined') {
   // shim cjs require() for core.cjs within a browser
   globalThis.require = function(path) {
-    if (path === './core.cjs' || path === '@builder.io/qwik') {
+    if (path === './core.cjs' || path === '@qwik.dev/core') {
       if (!self.qwikCore) {
         throw new Error('Qwik Core global, "globalThis.qwikCore", must already be loaded for the Qwik Server to be used within a browser.');
       }
       return self.qwikCore;
     }
-    if (path === '@builder.io/qwik/build') {
+    if (path === '@qwik.dev/core/build') {
       if (!self.qwikBuild) {
         throw new Error('Qwik Build global, "globalThis.qwikBuild", must already be loaded for the Qwik Server to be used within a browser.');
       }
@@ -56,10 +56,10 @@ __export(server_exports, {
   versions: () => versions
 });
 module.exports = __toCommonJS(server_exports);
-var import_qwik4 = require("@builder.io/qwik");
+var import_core4 = require("@qwik.dev/core");
 
 // packages/qwik/src/server/platform.ts
-var import_qwik = require("@builder.io/qwik");
+var import_core = require("@qwik.dev/core");
 var SYNC_QRL = "<sync>";
 function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
@@ -122,7 +122,7 @@ function createPlatform(opts, resolvedManifest) {
 }
 async function setServerPlatform(opts, manifest) {
   const platform = createPlatform(opts, manifest);
-  (0, import_qwik.setPlatform)(platform);
+  (0, import_core.setPlatform)(platform);
 }
 var getSymbolHash = (symbolName) => {
   const index = symbolName.lastIndexOf("_");
@@ -447,7 +447,7 @@ var isUnitlessNumber = (name) => {
 };
 
 // packages/qwik/src/core/shared/qrl/qrl-class.ts
-var import_build8 = require("@builder.io/qwik/build");
+var import_build8 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/core/shared/error/assert.ts
 var ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
@@ -485,7 +485,7 @@ function assertFalse(value1, text, ...parts) {
 }
 
 // packages/qwik/src/core/shared/platform/platform.ts
-var import_build = require("@builder.io/qwik/build");
+var import_build = require("@qwik.dev/core/build");
 var createPlatform2 = () => {
   return {
     isServer: import_build.isServer,
@@ -693,7 +693,7 @@ function setLocale(locale) {
 }
 
 // packages/qwik/src/core/client/vnode.ts
-var import_build6 = require("@builder.io/qwik/build");
+var import_build6 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/server/utils.ts
 var import_meta = {};
@@ -722,12 +722,12 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+80086ce",
+  qwik: "2.0.0-0-dev+1deebe2",
   qwikDom: "2.1.19"
 };
 
 // packages/qwik/src/server/prefetch-strategy.ts
-var import_build2 = require("@builder.io/qwik/build");
+var import_build2 = require("@qwik.dev/core/build");
 function getPrefetchResources(qrls, opts, resolvedManifest) {
   if (!resolvedManifest) {
     return [];
@@ -795,7 +795,7 @@ Object.freeze(EMPTY_ARRAY);
 Object.freeze(EMPTY_OBJ);
 
 // packages/qwik/src/core/ssr/ssr-render-jsx.ts
-var import_build5 = require("@builder.io/qwik/build");
+var import_build5 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/core/shared/jsx/slot.public.ts
 var Slot = (props) => {
@@ -1162,7 +1162,7 @@ var ignoreErrorToPreventNodeFromCrashing = (err) => {
 };
 
 // packages/qwik/src/core/client/vnode-diff.ts
-var import_build4 = require("@builder.io/qwik/build");
+var import_build4 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/core/client/vnode-namespace.ts
 var isForeignObjectElement = (elementName) => elementName.toLowerCase() === "foreignobject";
@@ -1334,7 +1334,7 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 }
 
 // packages/qwik/src/core/shared/component-execution.ts
-var import_build3 = require("@builder.io/qwik/build");
+var import_build3 = require("@qwik.dev/core/build");
 var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
   const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
   iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
@@ -3085,7 +3085,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+80086ce";
+var version = "2.0.0-0-dev+1deebe2";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -6931,8 +6931,8 @@ function getValidManifest(manifest) {
 }
 
 // packages/qwik/src/server/ssr-container.ts
-var import_qwik3 = require("@builder.io/qwik");
-var import_build10 = require("@builder.io/qwik/build");
+var import_core3 = require("@qwik.dev/core");
+var import_build10 = require("@qwik.dev/core/build");
 
 // packages/qwik/src/server/prefetch-utils.ts
 function workerFetchScript() {
@@ -7108,8 +7108,8 @@ var PrefetchImplementationDefault = {
 };
 
 // packages/qwik/src/server/ssr-node.ts
-var import_qwik2 = require("@builder.io/qwik");
-var import_build9 = require("@builder.io/qwik/build");
+var import_core2 = require("@qwik.dev/core");
+var import_build9 = require("@qwik.dev/core/build");
 var SsrNode = class {
   constructor(currentComponentNode, nodeType, id, attrs, cleanupQueue) {
     this.attrs = attrs;
@@ -7124,7 +7124,7 @@ var SsrNode = class {
     }
   }
   setProp(name, value) {
-    if (this.attrs === import_qwik2._EMPTY_ARRAY) {
+    if (this.attrs === import_core2._EMPTY_ARRAY) {
       this.attrs = [];
     }
     if (name.startsWith(NON_SERIALIZABLE_MARKER_PREFIX)) {
@@ -7182,14 +7182,14 @@ var SsrComponentFrame = class {
   distributeChildrenIntoSlots(children, projectionScopedStyle, projectionComponentFrame) {
     this.projectionScopedStyle = projectionScopedStyle;
     this.projectionComponentFrame = projectionComponentFrame;
-    if ((0, import_qwik2._isJSXNode)(children)) {
+    if ((0, import_core2._isJSXNode)(children)) {
       const slotName = this.getSlotName(children);
       mapArray_set(this.slots, slotName, children, 0);
     } else if (Array.isArray(children)) {
       const defaultSlot = [];
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        if ((0, import_qwik2._isJSXNode)(child)) {
+        if ((0, import_core2._isJSXNode)(child)) {
           const slotName = this.getSlotName(child);
           if (slotName === QDefaultSlot) {
             defaultSlot.push(child);
@@ -7643,7 +7643,7 @@ var StringBufferWriter = class {
   }
 };
 var EMPTY_OBJ2 = {};
-var SSRContainer = class extends import_qwik3._SharedContainer {
+var SSRContainer = class extends import_core3._SharedContainer {
   constructor(opts) {
     super(
       () => null,
@@ -7711,7 +7711,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
   }
   async render(jsx2) {
     this.openContainer();
-    await (0, import_qwik3._walkJSX)(this, jsx2, {
+    await (0, import_core3._walkJSX)(this, jsx2, {
       allowPromises: true,
       currentStyleScoped: null,
       parentComponentFrame: this.getComponentFrame()
@@ -7950,7 +7950,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
     }
     for (let i = 0; i < injections.length; i++) {
       const injection = injections[i];
-      const jsxNode = (0, import_qwik3._jsxSplit)(injection.tag, null, injection.attributes || {}, null, 0, null);
+      const jsxNode = (0, import_core3._jsxSplit)(injection.tag, null, injection.attributes || {}, null, 0, null);
       if (injection.location === "head") {
         this.additionalHeadNodes.push(jsxNode);
       } else {
@@ -7970,7 +7970,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
       this.styleIds.add(styleId);
       if (((_a = this.currentElementFrame) == null ? void 0 : _a.elementName) === "html") {
         this.additionalHeadNodes.push(
-          (0, import_qwik3._jsxSorted)(
+          (0, import_core3._jsxSorted)(
             "style",
             null,
             { dangerouslySetInnerHTML: content, [QStyle]: styleId },
@@ -8303,7 +8303,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
               import_build10.isDev ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
             );
             ssrComponentNode == null ? void 0 : ssrComponentNode.setProp(value, this.getLastNode().id);
-            (0, import_qwik3._walkJSX)(this, children, {
+            (0, import_core3._walkJSX)(this, children, {
               allowPromises: false,
               currentStyleScoped: scopedStyleId,
               parentComponentFrame: null
@@ -8430,7 +8430,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
         }
         if (key === "ref") {
           const lastNode = this.getLastNode();
-          if ((0, import_qwik3.isSignal)(value)) {
+          if ((0, import_core3.isSignal)(value)) {
             value.value = lastNode;
             continue;
           } else if (typeof value === "function") {
@@ -8438,9 +8438,9 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
             continue;
           }
         }
-        if ((0, import_qwik3.isSignal)(value)) {
+        if ((0, import_core3.isSignal)(value)) {
           const lastNode = this.getLastNode();
-          const signalData = new import_qwik3._EffectData({
+          const signalData = new import_core3._EffectData({
             $scopedStyleIdPrefix$: styleScopedId,
             $isConst$: isConst
           });
@@ -8724,7 +8724,7 @@ function getQwikPrefetchWorkerScript(opts = {}) {
 // packages/qwik/src/server/index.ts
 async function setServerPlatform2(manifest) {
   const platform = createPlatform({ manifest }, resolveManifest(manifest));
-  (0, import_qwik4.setPlatform)(platform);
+  (0, import_core4.setPlatform)(platform);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

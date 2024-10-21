@@ -1,11 +1,11 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+80086ce
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * @qwik.dev/core 2.0.0-0-dev+1deebe2
+ * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
-import { isServer, isDev } from "@builder.io/qwik/build";
+import { isServer, isDev } from "@qwik.dev/core/build";
 
 const qDev = !1;
 
@@ -2641,7 +2641,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+80086ce";
+const version = "2.0.0-0-dev+1deebe2";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {

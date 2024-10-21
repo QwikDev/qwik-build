@@ -45,7 +45,11 @@ export declare enum ExperimentalFeatures {
     /** Enable the Valibot form validation */
     valibot = "valibot",
     /** Disable SPA navigation handler in Qwik City */
-    noSPA = "noSPA"
+    noSPA = "noSPA",
+    /** Enable worker$ */
+    webWorker = "webWorker",
+    /** Enable the ability to use the Qwik Insights vite plugin and <Insights/> component */
+    insights = "insights"
 }
 
 /** @public */
