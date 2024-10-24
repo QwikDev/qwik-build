@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+1deebe2
+ * @qwik.dev/core 2.0.0-0-dev+e0aeb11
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -289,6 +289,7 @@ const isElement$1 = (value) => {
     return value.nodeType === 1;
 };
 
+const MAX_RETRY_ON_PROMISE_COUNT = 10;
 const isPromise = (value) => {
     // not using "value instanceof Promise" to have zone.js support
     return !!value && typeof value == 'object' && typeof value.then === 'function';
@@ -325,6 +326,17 @@ const delay = (timeout) => {
         setTimeout(resolve, timeout);
     });
 };
+function retryOnPromise(fn, retryCount = 0) {
+    try {
+        return fn();
+    }
+    catch (e) {
+        if (isPromise(e) && retryCount < MAX_RETRY_ON_PROMISE_COUNT) {
+            return e.then(retryOnPromise.bind(null, fn, retryCount++));
+        }
+        throw e;
+    }
+}
 
 /** @private */
 const isSerializableObject = (v) => {
@@ -4195,17 +4207,11 @@ const triggerEffects = (container, signal, effects) => {
                         container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$);
                     }
                 }
-                effect.$invalid$ = true;
-                const previousSignal = signal;
                 try {
-                    signal = effect;
-                    effect.$effects$?.forEach(scheduleEffect);
+                    retryOnPromise(() => effect.$invalidate$());
                 }
                 catch (e) {
                     logError(e);
-                }
-                finally {
-                    signal = previousSignal;
                 }
             }
             else if (property === EffectProperty.COMPONENT) {
@@ -4294,7 +4300,9 @@ class ComputedSignal extends Signal {
             DEBUG && log('Signal.$compute$', untrackedValue);
             this.$invalid$ = false;
             const didChange = untrackedValue !== this.$untrackedValue$;
-            this.$untrackedValue$ = untrackedValue;
+            if (didChange) {
+                this.$untrackedValue$ = untrackedValue;
+            }
             return didChange;
         }
         finally {
@@ -4351,7 +4359,12 @@ class WrappedSignal extends Signal {
         if (!this.$invalid$) {
             return false;
         }
-        this.$untrackedValue$ = trackSignal(() => this.$func$(...this.$args$), this, EffectProperty.VNODE, this.$container$);
+        const untrackedValue = trackSignal(() => this.$func$(...this.$args$), this, EffectProperty.VNODE, this.$container$);
+        const didChange = untrackedValue !== this.$untrackedValue$;
+        if (didChange) {
+            this.$untrackedValue$ = untrackedValue;
+        }
+        return didChange;
     }
     // Getters don't get inherited
     get value() {
@@ -4787,7 +4800,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+1deebe2";
+const version = "2.0.0-0-dev+e0aeb11";
 
 /** @internal */
 class _SharedContainer {

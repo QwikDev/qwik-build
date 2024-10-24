@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+1deebe2
+ * @qwik.dev/core 2.0.0-0-dev+e0aeb11
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -136,6 +136,16 @@
     const delay = timeout => new Promise((resolve => {
         setTimeout(resolve, timeout);
     }));
+    function retryOnPromise(fn, retryCount = 0) {
+        try {
+            return fn();
+        } catch (e) {
+            if (isPromise(e) && retryCount < 10) {
+                return e.then(retryOnPromise.bind(null, fn, retryCount++));
+            }
+            throw e;
+        }
+    }
     const isSerializableObject = v => {
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || proto === Array.prototype || null === proto;
@@ -1816,15 +1826,11 @@
                     effect.$flags$ & TaskFlags.VISIBLE_TASK ? choreType = ChoreType.VISIBLE : effect.$flags$ & TaskFlags.RESOURCE && (choreType = ChoreType.RESOURCE), 
                     container.$scheduler$(choreType, effect);
                 } else if (effect instanceof Signal) {
-                    effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$)), 
-                    effect.$invalid$ = !0;
-                    const previousSignal = signal;
+                    effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$));
                     try {
-                        signal = effect, effect.$effects$?.forEach(scheduleEffect);
+                        retryOnPromise((() => effect.$invalidate$()));
                     } catch (e) {
                         logError(e);
-                    } finally {
-                        signal = previousSignal;
                     }
                 } else if (property === EffectProperty.COMPONENT) {
                     const host = effect;
@@ -1876,7 +1882,7 @@
                 isPromise(untrackedValue) && throwErrorAndStop(`useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ""}${computeQrl.$hash$} returned a Promise`), 
                 this.$invalid$ = !1;
                 const didChange = untrackedValue !== this.$untrackedValue$;
-                return this.$untrackedValue$ = untrackedValue, didChange;
+                return didChange && (this.$untrackedValue$ = untrackedValue), didChange;
             } finally {
                 ctx && (ctx.$effectSubscriber$ = previousEffectSubscription);
             }
@@ -1907,7 +1913,9 @@
             if (!this.$invalid$) {
                 return !1;
             }
-            this.$untrackedValue$ = trackSignal((() => this.$func$(...this.$args$)), this, EffectProperty.VNODE, this.$container$);
+            const untrackedValue = trackSignal((() => this.$func$(...this.$args$)), this, EffectProperty.VNODE, this.$container$);
+            const didChange = untrackedValue !== this.$untrackedValue$;
+            return didChange && (this.$untrackedValue$ = untrackedValue), didChange;
         }
         get value() {
             return super.value;
@@ -2169,7 +2177,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+1deebe2", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+e0aeb11", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -5178,7 +5186,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+1deebe2", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+e0aeb11", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

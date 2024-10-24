@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+1deebe2
+ * @qwik.dev/core 2.0.0-0-dev+e0aeb11
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -185,6 +185,8 @@ const isDocument = value => 9 === value.nodeType;
 
 const isElement$1 = value => 1 === value.nodeType;
 
+const MAX_RETRY_ON_PROMISE_COUNT = 10;
+
 const isPromise = value => !!value && "object" == typeof value && "function" == typeof value.then;
 
 const safeCall = (call, thenFn, rejectFn) => {
@@ -207,6 +209,17 @@ const shouldNotError = reason => {
 const delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
 }));
+
+function retryOnPromise(fn, retryCount = 0) {
+    try {
+        return fn();
+    } catch (e) {
+        if (isPromise(e) && retryCount < 10) {
+            return e.then(retryOnPromise.bind(null, fn, retryCount++));
+        }
+        throw e;
+    }
+}
 
 const isSerializableObject = v => {
     const proto = Object.getPrototypeOf(v);
@@ -2268,15 +2281,11 @@ const triggerEffects = (container, signal, effects) => {
                 effect.$flags$ & TaskFlags.VISIBLE_TASK ? choreType = ChoreType.VISIBLE : effect.$flags$ & TaskFlags.RESOURCE && (choreType = ChoreType.RESOURCE), 
                 container.$scheduler$(choreType, effect);
             } else if (effect instanceof Signal) {
-                effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$)), 
-                effect.$invalid$ = !0;
-                const previousSignal = signal;
+                effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$));
                 try {
-                    signal = effect, effect.$effects$?.forEach(scheduleEffect);
+                    retryOnPromise((() => effect.$invalidate$()));
                 } catch (e) {
                     logError(e);
-                } finally {
-                    signal = previousSignal;
                 }
             } else if (property === EffectProperty.COMPONENT) {
                 const host = effect;
@@ -2329,7 +2338,7 @@ class ComputedSignal extends Signal {
             isPromise(untrackedValue) && throwErrorAndStop(`useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ""}${computeQrl.$hash$} returned a Promise`), 
             this.$invalid$ = !1;
             const didChange = untrackedValue !== this.$untrackedValue$;
-            return this.$untrackedValue$ = untrackedValue, didChange;
+            return didChange && (this.$untrackedValue$ = untrackedValue), didChange;
         } finally {
             ctx && (ctx.$effectSubscriber$ = previousEffectSubscription);
         }
@@ -2361,7 +2370,9 @@ class WrappedSignal extends Signal {
         if (!this.$invalid$) {
             return !1;
         }
-        this.$untrackedValue$ = trackSignal((() => this.$func$(...this.$args$)), this, EffectProperty.VNODE, this.$container$);
+        const untrackedValue = trackSignal((() => this.$func$(...this.$args$)), this, EffectProperty.VNODE, this.$container$);
+        const didChange = untrackedValue !== this.$untrackedValue$;
+        return didChange && (this.$untrackedValue$ = untrackedValue), didChange;
     }
     get value() {
         return super.value;
@@ -2641,7 +2652,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+1deebe2";
+const version = "2.0.0-0-dev+e0aeb11";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {

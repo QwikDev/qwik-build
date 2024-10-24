@@ -16,6 +16,16 @@ function assertTrue(value1, text, ...parts) {
 function assertFalse(value1, text, ...parts) {
 }
 const isPromise = (value) => !!value && "object" == typeof value && "function" == typeof value.then;
+function retryOnPromise(fn, retryCount = 0) {
+  try {
+    return fn();
+  } catch (e) {
+    if (isPromise(e) && retryCount < 10) {
+      return e.then(retryOnPromise.bind(null, fn, retryCount++));
+    }
+    throw e;
+  }
+}
 const isArray = (v) => Array.isArray(v);
 const DEBUG_TYPE = "q:type";
 var VirtualType;
@@ -206,14 +216,11 @@ const triggerEffects = (container, signal, effects) => {
         let choreType = ChoreType.TASK;
         effect.$flags$ & TaskFlags.VISIBLE_TASK ? choreType = ChoreType.VISIBLE : effect.$flags$ & TaskFlags.RESOURCE && (choreType = ChoreType.RESOURCE), container.$scheduler$(choreType, effect);
       } else if (effect instanceof Signal) {
-        effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$)), effect.$invalid$ = true;
-        const previousSignal = signal;
+        effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$));
         try {
-          signal = effect, effect.$effects$?.forEach(scheduleEffect);
+          retryOnPromise(() => effect.$invalidate$());
         } catch (e) {
           logError(e);
-        } finally {
-          signal = previousSignal;
         }
       } else if (property === EffectProperty.COMPONENT) {
         const host = effect;
@@ -262,7 +269,7 @@ class ComputedSignal extends Signal {
       const untrackedValue = computeQrl.getFn(ctx)();
       isPromise(untrackedValue) && throwErrorAndStop(`useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ""}${computeQrl.$hash$} returned a Promise`), this.$invalid$ = false;
       const didChange = untrackedValue !== this.$untrackedValue$;
-      return this.$untrackedValue$ = untrackedValue, didChange;
+      return didChange && (this.$untrackedValue$ = untrackedValue), didChange;
     } finally {
       ctx && (ctx.$effectSubscriber$ = previousEffectSubscription);
     }
@@ -291,7 +298,9 @@ class WrappedSignal extends Signal {
     if (!this.$invalid$) {
       return false;
     }
-    this.$untrackedValue$ = trackSignal(() => this.$func$(...this.$args$), this, EffectProperty.VNODE, this.$container$);
+    const untrackedValue = trackSignal(() => this.$func$(...this.$args$), this, EffectProperty.VNODE, this.$container$);
+    const didChange = untrackedValue !== this.$untrackedValue$;
+    return didChange && (this.$untrackedValue$ = untrackedValue), didChange;
   }
   get value() {
     return super.value;

@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/cli 2.0.0-0-dev+1deebe2
+ * @qwik.dev/core/cli 2.0.0-0-dev+e0aeb11
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4905,7 +4905,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("2.0.0-0-dev+1deebe2");
+  console.log("2.0.0-0-dev+e0aeb11");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

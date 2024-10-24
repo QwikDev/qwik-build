@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/optimizer 2.0.0-0-dev+1deebe2
+ * @qwik.dev/core/optimizer 2.0.0-0-dev+e0aeb11
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+1deebe2"
+    qwik: "2.0.0-0-dev+e0aeb11"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3027,6 +3027,7 @@ globalThis.qwikOptimizer = function(module) {
     return false;
   };
   var isNode = value => value && "number" === typeof value.nodeType;
+  var MAX_RETRY_ON_PROMISE_COUNT = 10;
   var isPromise = value => !!value && "object" == typeof value && "function" === typeof value.then;
   var safeCall = (call, thenFn, rejectFn) => {
     try {
@@ -3044,6 +3045,16 @@ globalThis.qwikOptimizer = function(module) {
   var delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
   }));
+  function retryOnPromise(fn, retryCount = 0) {
+    try {
+      return fn();
+    } catch (e) {
+      if (isPromise(e) && retryCount < MAX_RETRY_ON_PROMISE_COUNT) {
+        return e.then(retryOnPromise.bind(null, fn, retryCount++));
+      }
+      throw e;
+    }
+  }
   var isSerializableObject = v => {
     const proto = Object.getPrototypeOf(v);
     return proto === Object.prototype || proto === Array.prototype || null === proto;
@@ -5014,7 +5025,6 @@ globalThis.qwikOptimizer = function(module) {
   var triggerEffects = (container, signal, effects) => {
     if (effects) {
       const scheduleEffect = effectSubscriptions => {
-        var _a;
         const effect = effectSubscriptions[0];
         const property = effectSubscriptions[1];
         assertDefined(container, "Container must be defined.");
@@ -5026,15 +5036,10 @@ globalThis.qwikOptimizer = function(module) {
           container.$scheduler$(choreType, effect);
         } else if (effect instanceof Signal) {
           effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(1, null, effect.$computeQrl$));
-          effect.$invalid$ = true;
-          const previousSignal = signal;
           try {
-            signal = effect;
-            null == (_a = effect.$effects$) || _a.forEach(scheduleEffect);
+            retryOnPromise((() => effect.$invalidate$()));
           } catch (e) {
             logError(e);
-          } finally {
-            signal = previousSignal;
           }
         } else if (":" === property) {
           const host = effect;
@@ -5101,7 +5106,7 @@ globalThis.qwikOptimizer = function(module) {
         DEBUG3 && log2("Signal.$compute$", untrackedValue);
         this.$invalid$ = false;
         const didChange = untrackedValue !== this.$untrackedValue$;
-        this.$untrackedValue$ = untrackedValue;
+        didChange && (this.$untrackedValue$ = untrackedValue);
         return didChange;
       } finally {
         ctx && (ctx.$effectSubscriber$ = previousEffectSubscription);
@@ -5144,7 +5149,10 @@ globalThis.qwikOptimizer = function(module) {
       if (!this.$invalid$) {
         return false;
       }
-      this.$untrackedValue$ = trackSignal((() => this.$func$(...this.$args$)), this, ".", this.$container$);
+      const untrackedValue = trackSignal((() => this.$func$(...this.$args$)), this, ".", this.$container$);
+      const didChange = untrackedValue !== this.$untrackedValue$;
+      didChange && (this.$untrackedValue$ = untrackedValue);
+      return didChange;
     }
     get value() {
       return super.value;
@@ -5153,7 +5161,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+1deebe2";
+  var version = "2.0.0-0-dev+e0aeb11";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;

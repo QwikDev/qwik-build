@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/server 2.0.0-0-dev+1deebe2
+ * @qwik.dev/core/server 2.0.0-0-dev+e0aeb11
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -556,6 +556,7 @@ var isNode = (value) => {
 };
 
 // packages/qwik/src/core/shared/utils/promises.ts
+var MAX_RETRY_ON_PROMISE_COUNT = 10;
 var isPromise = (value) => {
   return !!value && typeof value == "object" && typeof value.then === "function";
 };
@@ -585,6 +586,16 @@ var delay = (timeout) => {
     setTimeout(resolve, timeout);
   });
 };
+function retryOnPromise(fn, retryCount = 0) {
+  try {
+    return fn();
+  } catch (e) {
+    if (isPromise(e) && retryCount < MAX_RETRY_ON_PROMISE_COUNT) {
+      return e.then(retryOnPromise.bind(null, fn, retryCount++));
+    }
+    throw e;
+  }
+}
 
 // packages/qwik/src/build/index.dev.ts
 var isDev = true;
@@ -722,7 +733,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+1deebe2",
+  qwik: "2.0.0-0-dev+e0aeb11",
   qwikDom: "2.1.19"
 };
 
@@ -2906,7 +2917,6 @@ var subscriberExistInSubscribers = (subscribers, subscriber) => {
 var triggerEffects = (container, signal, effects) => {
   if (effects) {
     const scheduleEffect = (effectSubscriptions) => {
-      var _a;
       const effect = effectSubscriptions[0 /* EFFECT */];
       const property = effectSubscriptions[1 /* PROPERTY */];
       assertDefined(container, "Container must be defined.");
@@ -2926,15 +2936,12 @@ var triggerEffects = (container, signal, effects) => {
             container.$scheduler$(1 /* QRL_RESOLVE */, null, effect.$computeQrl$);
           }
         }
-        effect.$invalid$ = true;
-        const previousSignal = signal;
         try {
-          signal = effect;
-          (_a = effect.$effects$) == null ? void 0 : _a.forEach(scheduleEffect);
+          retryOnPromise(
+            () => effect.$invalidate$()
+          );
         } catch (e) {
           logError(e);
-        } finally {
-          signal = previousSignal;
         }
       } else if (property === ":" /* COMPONENT */) {
         const host = effect;
@@ -3014,7 +3021,9 @@ var ComputedSignal = class extends Signal {
       DEBUG3 && log2("Signal.$compute$", untrackedValue);
       this.$invalid$ = false;
       const didChange = untrackedValue !== this.$untrackedValue$;
-      this.$untrackedValue$ = untrackedValue;
+      if (didChange) {
+        this.$untrackedValue$ = untrackedValue;
+      }
       return didChange;
     } finally {
       if (ctx) {
@@ -3068,12 +3077,17 @@ var WrappedSignal = class extends Signal {
     if (!this.$invalid$) {
       return false;
     }
-    this.$untrackedValue$ = trackSignal(
+    const untrackedValue = trackSignal(
       () => this.$func$(...this.$args$),
       this,
       "." /* VNODE */,
       this.$container$
     );
+    const didChange = untrackedValue !== this.$untrackedValue$;
+    if (didChange) {
+      this.$untrackedValue$ = untrackedValue;
+    }
+    return didChange;
   }
   // Getters don't get inherited
   get value() {
@@ -3085,7 +3099,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+1deebe2";
+var version = "2.0.0-0-dev+e0aeb11";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
