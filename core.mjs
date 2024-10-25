@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+e0aeb11
+ * @qwik.dev/core 2.0.0-0-dev+4dd471d
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4800,7 +4800,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+e0aeb11";
+const version = "2.0.0-0-dev+4dd471d";
 
 /** @internal */
 class _SharedContainer {
