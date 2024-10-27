@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/server 2.0.0-0-dev+4dd471d
+ * @qwik.dev/core/server 2.0.0-0-dev+7d5a282
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -687,7 +687,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+4dd471d",
+  qwik: "2.0.0-0-dev+7d5a282",
   qwikDom: "2.1.19"
 };
 
@@ -3048,7 +3048,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+4dd471d";
+var version = "2.0.0-0-dev+7d5a282";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -7947,13 +7947,14 @@ var SSRContainer = class extends _SharedContainer2 {
   }
   ////////////////////////////////////
   emitContainerData() {
-    this.emitUnclaimedProjection();
-    this.addVNodeDataToSerializationRoots();
-    return maybeThen(this.emitStateData(), () => {
-      this.emitVNodeData();
-      this.emitPrefetchResourcesData();
-      this.emitSyncFnsData();
-      this.emitQwikLoaderAtBottomIfNeeded();
+    return maybeThen(this.emitUnclaimedProjection(), () => {
+      this.addVNodeDataToSerializationRoots();
+      return maybeThen(this.emitStateData(), () => {
+        this.emitVNodeData();
+        this.emitPrefetchResourcesData();
+        this.emitSyncFnsData();
+        this.emitQwikLoaderAtBottomIfNeeded();
+      });
     });
   }
   /**
@@ -8222,7 +8223,7 @@ var SSRContainer = class extends _SharedContainer2 {
       this.closeElement();
     }
   }
-  emitUnclaimedProjection() {
+  async emitUnclaimedProjection() {
     const unclaimedProjections = this.unclaimedProjections;
     if (unclaimedProjections.length) {
       const previousCurrentComponentNode = this.currentComponentNode;
@@ -8254,8 +8255,8 @@ var SSRContainer = class extends _SharedContainer2 {
               isDev9 ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
             );
             ssrComponentNode?.setProp(value, this.getLastNode().id);
-            _walkJSX2(this, children, {
-              allowPromises: false,
+            await _walkJSX2(this, children, {
+              allowPromises: true,
               currentStyleScoped: scopedStyleId,
               parentComponentFrame: null
             });

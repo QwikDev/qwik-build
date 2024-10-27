@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/optimizer 2.0.0-0-dev+4dd471d
+ * @qwik.dev/core/optimizer 2.0.0-0-dev+7d5a282
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+4dd471d"
+    qwik: "2.0.0-0-dev+7d5a282"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5161,7 +5161,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+4dd471d";
+  var version = "2.0.0-0-dev+7d5a282";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;
