@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+8f806b1
+ * @builder.io/qwik/optimizer 1.9.1-dev+b08c8ac
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.9.1-dev+8f806b1"
+  qwik: "1.9.1-dev+b08c8ac"
 };
 
 async function getSystem() {
@@ -5636,12 +5636,12 @@ function createSymbolMapper(base, opts, path, sys) {
     }
     if (!parent) {
       console.error("qwik vite-dev-server symbolMapper: unknown qrl requested without parent:", symbolName);
-      return [ symbolName, `${base}${symbolName.toLowerCase()}.js` ];
+      return [ symbolName, `${base}${symbolName}.js` ];
     }
     const parentPath = normalizePath(path.dirname(parent));
     const parentFile = path.basename(parent);
     const qrlPath = parentPath.startsWith(opts.rootDir) ? normalizePath(path.relative(opts.rootDir, parentPath)) : `@fs/${parentPath}`;
-    const qrlFile = encode(`${qrlPath}/${parentFile.toLowerCase()}_${symbolName.toLowerCase()}.js`);
+    const qrlFile = encode(`${qrlPath}/${parentFile}_${symbolName}.js`);
     return [ symbolName, `${base}${qrlFile}` ];
   };
 }
