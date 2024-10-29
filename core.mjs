@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+5b69dc9
+ * @qwik.dev/core 2.0.0-0-dev+3e21dd9
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -428,7 +428,7 @@ const QContainerAttr = 'q:container';
 const QContainerAttrEnd = '/' + QContainerAttr;
 const QTemplate = 'q:template';
 // the same selector should be inside the qwik loader
-// and the same selector should be inside the qwik city spa-shim and spa-init
+// and the same selector should be inside the qwik router spa-shim and spa-init
 const QContainerSelector = '[q\\:container]:not([q\\:container=' +
     QContainerValue.HTML +
     ']):not([q\\:container=' +
@@ -4800,7 +4800,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+5b69dc9";
+const version = "2.0.0-0-dev+3e21dd9";
 
 /** @internal */
 class _SharedContainer {

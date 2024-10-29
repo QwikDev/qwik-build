@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/cli 2.0.0-0-dev+5b69dc9
+ * @qwik.dev/core/cli 2.0.0-0-dev+3e21dd9
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2139,7 +2139,7 @@ function updatePluginsArray(ts, arr, updates) {
       const elm = elms[i];
       if (ts.isCallExpression(elm) && ts.isIdentifier(elm.expression)) {
         if (elm.expression.escapedText === "qwikVite") {
-          elms[i] = updateQwikCityPlugin(ts, elm, updates.qwikViteConfig);
+          elms[i] = updateQwikRouterPlugin(ts, elm, updates.qwikViteConfig);
         }
       }
     }
@@ -2161,7 +2161,7 @@ function createPluginCall(ts, vitePlugin) {
   }
   return null;
 }
-function updateQwikCityPlugin(ts, callExp, qwikViteConfig) {
+function updateQwikRouterPlugin(ts, callExp, qwikViteConfig) {
   const args = callExp.arguments.slice();
   const config = args[0] && ts.isObjectLiteralExpression(args[0]) ? args[0] : ts.factory.createObjectLiteralExpression();
   args[0] = updateObjectLiteralExpression(ts, config, qwikViteConfig);
@@ -4905,7 +4905,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("2.0.0-0-dev+5b69dc9");
+  console.log("2.0.0-0-dev+3e21dd9");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

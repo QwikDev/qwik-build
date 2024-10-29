@@ -219,7 +219,7 @@ declare interface QwikManifest_2 {
 declare interface QwikPrefetchServiceWorkerOptions {
     /**
      * Should the Qwik Prefetch Service Worker be added to the container. Defaults to `false` until
-     * the QwikCity Service Worker is deprecated.
+     * the QwikRouter Service Worker is deprecated.
      */
     include?: boolean;
     /**

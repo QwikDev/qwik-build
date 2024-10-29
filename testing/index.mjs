@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/testing 2.0.0-0-dev+5b69dc9
+ * @qwik.dev/core/testing 2.0.0-0-dev+3e21dd9
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE

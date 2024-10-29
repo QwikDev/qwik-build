@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/optimizer 2.0.0-0-dev+5b69dc9
+ * @qwik.dev/core/optimizer 2.0.0-0-dev+3e21dd9
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+5b69dc9"
+    qwik: "2.0.0-0-dev+3e21dd9"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5161,7 +5161,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+5b69dc9";
+  var version = "2.0.0-0-dev+3e21dd9";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;
@@ -8160,7 +8160,7 @@ globalThis.qwikOptimizer = function(module) {
     if (!devSsrServer) {
       return;
     }
-    const hasQwikCity = null == (_a = server.config.plugins) ? void 0 : _a.some((plugin => "vite-plugin-qwik-city" === plugin.name));
+    const hasQwikRouter = null == (_a = server.config.plugins) ? void 0 : _a.some((plugin => "vite-plugin-qwik-router" === plugin.name));
     server.middlewares.use((async (req, res, next) => {
       try {
         const {ORIGIN: ORIGIN} = process.env;
@@ -8168,12 +8168,12 @@ globalThis.qwikOptimizer = function(module) {
         const url = new URL(req.originalUrl, domain);
         if (shouldSsrRender(req, url)) {
           const {_qwikEnvData: _qwikEnvData} = res;
-          if (!_qwikEnvData && hasQwikCity) {
-            console.error(`not SSR rendering ${url} because Qwik City Env data did not populate`);
+          if (!_qwikEnvData && hasQwikRouter) {
+            console.error(`not SSR rendering ${url} because Qwik Router Env data did not populate`);
             res.statusCode ||= 404;
             res.setHeader("Content-Type", "text/plain");
             res.writeHead(res.statusCode);
-            res.end("Not a SSR URL according to Qwik City");
+            res.end("Not a SSR URL according to Qwik Router");
             return;
           }
           const serverData = {
@@ -8803,7 +8803,7 @@ globalThis.qwikOptimizer = function(module) {
             const path = qwikPlugin.getPath();
             await configureDevServer(basePathname, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer);
           };
-          const isNEW = true === globalThis.__qwikCityNew;
+          const isNEW = true === globalThis.__qwikRouterNew || true === globalThis.__qwikCityNew;
           return isNEW ? plugin : plugin();
         }
       },

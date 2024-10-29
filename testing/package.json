@@ -1,6 +1,6 @@
 {
   "name": "@qwik.dev/core/testing",
-  "version": "2.0.0-0-dev+5b69dc9",
+  "version": "2.0.0-0-dev+3e21dd9",
   "main": "index.mjs",
   "types": "index.d.ts",
   "private": true,
