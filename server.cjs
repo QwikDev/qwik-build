@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/server 2.0.0-0-dev+7d5a282
+ * @qwik.dev/core/server 2.0.0-0-dev+5b69dc9
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -733,7 +733,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+7d5a282",
+  qwik: "2.0.0-0-dev+5b69dc9",
   qwikDom: "2.1.19"
 };
 
@@ -3099,7 +3099,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+7d5a282";
+var version = "2.0.0-0-dev+5b69dc9";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
