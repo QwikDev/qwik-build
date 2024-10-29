@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/optimizer 2.0.0-0-dev+3e21dd9
+ * @qwik.dev/core/optimizer 2.0.0-0-dev+70528d8
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+3e21dd9"
+    qwik: "2.0.0-0-dev+70528d8"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5161,7 +5161,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+3e21dd9";
+  var version = "2.0.0-0-dev+70528d8";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;
@@ -8138,12 +8138,12 @@ globalThis.qwikOptimizer = function(module) {
       }
       if (!parent) {
         console.error("qwik vite-dev-server symbolMapper: unknown qrl requested without parent:", symbolName);
-        return [ symbolName, `${base}${symbolName.toLowerCase()}.js` ];
+        return [ symbolName, `${base}${symbolName}.js` ];
       }
       const parentPath = normalizePath(path.dirname(parent));
       const parentFile = path.basename(parent);
       const qrlPath = parentPath.startsWith(opts.rootDir) ? normalizePath(path.relative(opts.rootDir, parentPath)) : `@fs/${parentPath}`;
-      const qrlFile = encode(`${qrlPath}/${parentFile.toLowerCase()}_${symbolName.toLowerCase()}.js`);
+      const qrlFile = encode(`${qrlPath}/${parentFile}_${symbolName}.js`);
       return [ symbolName, `${base}${qrlFile}` ];
     };
   }

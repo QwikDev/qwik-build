@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+3e21dd9
+ * @qwik.dev/core 2.0.0-0-dev+70528d8
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4804,7 +4804,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+3e21dd9";
+    const version = "2.0.0-0-dev+70528d8";
 
     /** @internal */
     class _SharedContainer {

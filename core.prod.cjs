@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+3e21dd9
+ * @qwik.dev/core 2.0.0-0-dev+70528d8
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2177,7 +2177,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+3e21dd9", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+70528d8", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -5186,7 +5186,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+3e21dd9", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+70528d8", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
