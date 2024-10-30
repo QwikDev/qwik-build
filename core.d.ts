@@ -2622,7 +2622,7 @@ declare type SpecialAttrs = {
         form?: string | undefined;
         value?: string | ReadonlyArray<string> | number | undefined;
         'bind:value'?: Signal<string | undefined>;
-        children?: undefined;
+        children?: string;
     };
     track: {
         children?: undefined;
@@ -3858,7 +3858,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.9.1-dev+d1f6398
+ * 1.9.1-dev+17332d4
  *
  * @public
  */
