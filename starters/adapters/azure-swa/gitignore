@@ -1,3 +1,0 @@
-# Azure
-/azure-functions/**
-!/azure-functions/host.json
