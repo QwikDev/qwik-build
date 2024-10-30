@@ -1,0 +1,13 @@
+import { component$ } from '@qwik.dev/core';
+
+export interface [name]Props {
+
+}
+
+export const [name] = component$<[name]Props>((props) => {
+  return (
+    <div>
+      [name] component works!
+    </div>
+  );
+});
