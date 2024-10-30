@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+b466710
+ * @builder.io/qwik 1.9.1-dev+d1f6398
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1009,7 +1009,7 @@
      *
      * @public
      */
-    const version = "1.9.1-dev+b466710";
+    const version = "1.9.1-dev+d1f6398";
 
     /**
      * @internal
@@ -3889,7 +3889,21 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return useConstant(() => createComputedQrl(qrl));
     };
     /**
-     * Hook that returns a read-only signal that updates when signals used in the `ComputedFn` change.
+     * Returns a computed signal which is calculated from the given function. A computed signal is a
+     * signal which is calculated from other signals. When the signals change, the computed signal is
+     * recalculated, and if the result changed, all tasks which are tracking the signal will be re-run
+     * and all components that read the signal will be re-rendered.
+     *
+     * The function must be synchronous and must not have any side effects.
+     *
+     * Async functions are deprecated because:
+     *
+     * - When calculating the first time, it will see it's a promise and it will restart the render
+     *   function.
+     * - Qwik can't track used signals after the first await, which leads to subtle bugs.
+     * - Both `useTask$` and `useResource$` are available, without these problems.
+     *
+     * In v2, async functions won't work.
      *
      * @public
      */
@@ -4234,14 +4248,31 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const taskFn = task.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(task);
         });
-        return safeCall(taskFn, (returnValue) => untrack(() => {
-            const signal = task.$state$;
-            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
-            signal.untrackedValue = returnValue;
-            signal[QObjectManagerSymbol].$notifySubs$();
-        }), (reason) => {
+        const ok = (returnValue) => {
+            untrack(() => {
+                const signal = task.$state$;
+                signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
+                signal.untrackedValue = returnValue;
+                signal[QObjectManagerSymbol].$notifySubs$();
+            });
+        };
+        const fail = (reason) => {
             handleError(reason, hostElement, rCtx);
-        });
+        };
+        try {
+            const result = taskFn();
+            if (isPromise(result)) {
+                const stack = new Error('useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.').stack;
+                logOnceWarn(stack);
+                return result.then(ok, fail);
+            }
+            else {
+                ok(result);
+            }
+        }
+        catch (reason) {
+            fail(reason);
+        }
     };
     const cleanupTask = (task) => {
         const destroy = task.$destroy$;

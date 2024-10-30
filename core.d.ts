@@ -3160,7 +3160,21 @@ declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> 
 export declare const unwrapStore: <T>(proxy: T) => T;
 
 /**
- * Hook that returns a read-only signal that updates when signals used in the `ComputedFn` change.
+ * Returns a computed signal which is calculated from the given function. A computed signal is a
+ * signal which is calculated from other signals. When the signals change, the computed signal is
+ * recalculated, and if the result changed, all tasks which are tracking the signal will be re-run
+ * and all components that read the signal will be re-rendered.
+ *
+ * The function must be synchronous and must not have any side effects.
+ *
+ * Async functions are deprecated because:
+ *
+ * - When calculating the first time, it will see it's a promise and it will restart the render
+ *   function.
+ * - Qwik can't track used signals after the first await, which leads to subtle bugs.
+ * - Both `useTask$` and `useResource$` are available, without these problems.
+ *
+ * In v2, async functions won't work.
  *
  * @public
  */
@@ -3844,7 +3858,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.9.1-dev+b466710
+ * 1.9.1-dev+d1f6398
  *
  * @public
  */

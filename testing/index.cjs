@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.9.1-dev+b466710
+ * @builder.io/qwik/testing 1.9.1-dev+d1f6398
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22609,18 +22609,6 @@ var RenderEvent = "qRender";
 var isPromise = (value) => {
   return value && typeof value.then === "function";
 };
-var safeCall = (call, thenFn, rejectFn) => {
-  try {
-    const promise = call();
-    if (isPromise(promise)) {
-      return promise.then(thenFn, rejectFn);
-    } else {
-      return thenFn(promise);
-    }
-  } catch (e) {
-    return rejectFn(e);
-  }
-};
 var maybeThen = (promise, thenFn) => {
   return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 };
@@ -25221,18 +25209,31 @@ var runComputed = (task, containerState, rCtx) => {
   const taskFn = task.$qrl$.getFn(iCtx, () => {
     subsManager.$clearSub$(task);
   });
-  return safeCall(
-    taskFn,
-    (returnValue) => untrack(() => {
+  const ok = (returnValue) => {
+    untrack(() => {
       const signal = task.$state$;
       signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
       signal.untrackedValue = returnValue;
       signal[QObjectManagerSymbol].$notifySubs$();
-    }),
-    (reason) => {
-      handleError(reason, hostElement, rCtx);
+    });
+  };
+  const fail = (reason) => {
+    handleError(reason, hostElement, rCtx);
+  };
+  try {
+    const result = taskFn();
+    if (isPromise(result)) {
+      const stack = new Error(
+        "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead."
+      ).stack;
+      logOnceWarn(stack);
+      return result.then(ok, fail);
+    } else {
+      ok(result);
     }
-  );
+  } catch (reason) {
+    fail(reason);
+  }
 };
 var cleanupTask = (task) => {
   const destroy = task.$destroy$;

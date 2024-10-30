@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+b466710
+ * @builder.io/qwik 1.9.1-dev+d1f6398
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -592,7 +592,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.9.1-dev+b466710";
+const version = "1.9.1-dev+d1f6398";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -2403,13 +2403,26 @@ const runComputed = (task, containerState, rCtx) => {
     const taskFn = task.$qrl$.getFn(iCtx, (() => {
         subsManager.$clearSub$(task);
     }));
-    return safeCall(taskFn, (returnValue => untrack((() => {
-        const signal = task.$state$;
-        signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue = returnValue, 
-        signal[QObjectManagerSymbol].$notifySubs$();
-    }))), (reason => {
+    const ok = returnValue => {
+        untrack((() => {
+            const signal = task.$state$;
+            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue = returnValue, 
+            signal[QObjectManagerSymbol].$notifySubs$();
+        }));
+    };
+    const fail = reason => {
         handleError(reason, hostElement, rCtx);
-    }));
+    };
+    try {
+        const result = taskFn();
+        if (isPromise(result)) {
+            new Error("useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.");
+            return logOnceWarn(), result.then(ok, fail);
+        }
+        ok(result);
+    } catch (reason) {
+        fail(reason);
+    }
 };
 
 const cleanupTask = task => {

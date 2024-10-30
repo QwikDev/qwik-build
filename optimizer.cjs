@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+b466710
+ * @builder.io/qwik/optimizer 1.9.1-dev+d1f6398
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.9.1-dev+b466710"
+    qwik: "1.9.1-dev+d1f6398"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3101,14 +3101,6 @@ globalThis.qwikOptimizer = function(module) {
   var isString = v => "string" === typeof v;
   var isFunction = v => "function" === typeof v;
   var isPromise = value => value && "function" === typeof value.then;
-  var safeCall = (call, thenFn, rejectFn) => {
-    try {
-      const promise = call();
-      return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
-    } catch (e) {
-      return rejectFn(e);
-    }
-  };
   var maybeThen = (promise, thenFn) => isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
   var implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $2(first), ...rest);
@@ -4058,14 +4050,28 @@ globalThis.qwikOptimizer = function(module) {
     const taskFn = task.$qrl$.getFn(iCtx, (() => {
       subsManager.$clearSub$(task);
     }));
-    return safeCall(taskFn, (returnValue => untrack((() => {
-      const signal = task.$state$;
-      signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
-      signal.untrackedValue = returnValue;
-      signal[QObjectManagerSymbol].$notifySubs$();
-    }))), (reason => {
+    const ok = returnValue => {
+      untrack((() => {
+        const signal = task.$state$;
+        signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
+        signal.untrackedValue = returnValue;
+        signal[QObjectManagerSymbol].$notifySubs$();
+      }));
+    };
+    const fail = reason => {
       handleError(reason, hostElement, rCtx);
-    }));
+    };
+    try {
+      const result = taskFn();
+      if (isPromise(result)) {
+        const stack = new Error("useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.").stack;
+        logOnceWarn(stack);
+        return result.then(ok, fail);
+      }
+      ok(result);
+    } catch (reason) {
+      fail(reason);
+    }
   };
   var cleanupTask = task => {
     const destroy = task.$destroy$;
