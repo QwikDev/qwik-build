@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+eb4ca93
+ * @builder.io/qwik 1.9.1-dev+b466710
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,7 @@
             return value;
         }
     };
-    const version = "1.9.1-dev+eb4ca93";
+    const version = "1.9.1-dev+b466710";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4921,8 +4921,8 @@
             }
         };
     }, exports.setPlatform = plt => _platform = plt, exports.sync$ = fn => createQRL("", "<sync>", fn, null, null, null, null), 
-    exports.untrack = untrack, exports.useComputed$ = useComputed$, exports.useComputedQrl = useComputedQrl, 
-    exports.useConstant = useConstant, exports.useContext = (context, defaultValue) => {
+    exports.untrack = untrack, exports.unwrapStore = unwrapProxy, exports.useComputed$ = useComputed$, 
+    exports.useComputedQrl = useComputedQrl, exports.useConstant = useConstant, exports.useContext = (context, defaultValue) => {
         const {val, set, iCtx, elCtx} = useSequentialScope();
         if (void 0 !== val) {
             return val;

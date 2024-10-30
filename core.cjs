@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+eb4ca93
+ * @builder.io/qwik 1.9.1-dev+b466710
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1009,7 +1009,7 @@
      *
      * @public
      */
-    const version = "1.9.1-dev+eb4ca93";
+    const version = "1.9.1-dev+b466710";
 
     /**
      * @internal
@@ -8380,7 +8380,12 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return !!tryGetContext(sub) || sub.isConnected;
         }
     };
-    /** @public */
+    /**
+     * Get the target value of the Proxy. Useful if you want to clone a store (structureClone,
+     * IndexedDB,...)
+     *
+     * @public
+     */
     const unwrapProxy = (proxy) => {
         return isObject(proxy) ? (getProxyTarget(proxy) ?? proxy) : proxy;
     };
@@ -9960,6 +9965,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports.setPlatform = setPlatform;
     exports.sync$ = sync$;
     exports.untrack = untrack;
+    exports.unwrapStore = unwrapProxy;
     exports.useComputed$ = useComputed$;
     exports.useComputedQrl = useComputedQrl;
     exports.useConstant = useConstant;

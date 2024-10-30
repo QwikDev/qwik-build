@@ -3152,6 +3152,14 @@ export declare const untrack: <T>(fn: () => T) => T;
 declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'innerHTML' | 'outerHTML' | 'inputMode' | 'outerText' | 'nodeValue' | 'textContent';
 
 /**
+ * Get the target value of the Proxy. Useful if you want to clone a store (structureClone,
+ * IndexedDB,...)
+ *
+ * @public
+ */
+export declare const unwrapStore: <T>(proxy: T) => T;
+
+/**
  * Hook that returns a read-only signal that updates when signals used in the `ComputedFn` change.
  *
  * @public
@@ -3836,7 +3844,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.9.1-dev+eb4ca93
+ * 1.9.1-dev+b466710
  *
  * @public
  */
