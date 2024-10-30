@@ -4,17 +4,17 @@
 
 ### Minor Changes
 
-- Async functions in `useComputed# @builder.io/qwik are deprecated. (by [@wmertens](https://github.com/wmertens) in [#7013](https://github.com/QwikDev/qwik/pull/7013))
+- Async functions in `useComputed` are deprecated. (by [@wmertens](https://github.com/wmertens) in [#7013](https://github.com/QwikDev/qwik/pull/7013))
 
   **Why?**
 
   - Qwik can't track used signals after the first await, which leads to subtle bugs.
   - When calculating the first time, it will see it's a promise and it will restart the render function.
-  - Both `useTask# @builder.io/qwik and `useResource# @builder.io/qwik are available, without these problems.
+  - Both `useTask` and `useResource` are available, without these problems.
 
   In v2, async functions won't work.
 
-  Again, to get the same functionality use `useTask# @builder.io/qwik or `useResource# @builder.io/qwik instead, or this function:
+  Again, to get the same functionality use `useTask` or `useResource` instead, or this function:
 
   ```tsx
   export const useAsyncComputed$ = (qrlFn: QRL<() => Promise<any>>) => {
