@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+e8958f4
+ * @builder.io/qwik 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -811,6 +811,8 @@ const _restProps = (props, omit) => {
     return rest;
 };
 class ReadWriteProxyHandler {
+    $containerState$;
+    $manager$;
     constructor($containerState$, $manager$) {
         this.$containerState$ = $containerState$;
         this.$manager$ = $manager$;
@@ -1005,7 +1007,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.9.1-dev+e8958f4";
+const version = "1.9.1-dev+b97b6d2";
 
 /**
  * @internal
@@ -1015,7 +1017,7 @@ const useSequentialScope = () => {
     const iCtx = useInvokeContext();
     const hostElement = iCtx.$hostElement$;
     const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-    const seq = (elCtx.$seq$ || (elCtx.$seq$ = []));
+    const seq = (elCtx.$seq$ ||= []);
     const i = iCtx.$i$++;
     const set = (value) => {
         if (qDev && qSerialize) {
@@ -1155,7 +1157,7 @@ const useContextProvider = (context, newValue) => {
     if (qDev) {
         validateContext(context);
     }
-    const contexts = (elCtx.$contexts$ || (elCtx.$contexts$ = new Map()));
+    const contexts = (elCtx.$contexts$ ||= new Map());
     if (qDev && qSerialize) {
         verifySerializable(newValue);
     }
@@ -1581,7 +1583,6 @@ const static_listeners = 1 << 0;
 const static_subtree = 1 << 1;
 const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 
-var _a$1;
 const FLUSH_COMMENT = '<!--qkssr-f-->';
 const IS_HEAD$1 = 1 << 0;
 const IS_HTML = 1 << 2;
@@ -1594,13 +1595,13 @@ const IS_TABLE = 1 << 8;
 const IS_PHRASING_CONTAINER = 1 << 9;
 const IS_IMMUTABLE$1 = 1 << 10;
 class MockElement {
+    nodeType;
+    [Q_CTX] = null;
     constructor(nodeType) {
         this.nodeType = nodeType;
-        this[_a$1] = null;
         seal(this);
     }
 }
-_a$1 = Q_CTX;
 const createDocument = () => {
     return new MockElement(9);
 };
@@ -1893,7 +1894,7 @@ const splitProjectedChildren = (children, ssrCtx) => {
         if (isJSXNode(child)) {
             slotName = child.props[QSlot] || '';
         }
-        (slotMap[slotName] || (slotMap[slotName] = [])).push(child);
+        (slotMap[slotName] ||= []).push(child);
     }
     return slotMap;
 };
@@ -2493,7 +2494,7 @@ const listenersNeedId = (listeners) => {
     return listeners.some((l) => l[1].$captureRef$ && l[1].$captureRef$.length > 0);
 };
 const addDynamicSlot = (hostCtx, elCtx) => {
-    const dynamicSlots = (hostCtx.$dynamicSlots$ || (hostCtx.$dynamicSlots$ = []));
+    const dynamicSlots = (hostCtx.$dynamicSlots$ ||= []);
     if (!dynamicSlots.includes(elCtx)) {
         dynamicSlots.push(elCtx);
     }
@@ -2615,6 +2616,13 @@ const jsx = (type, props, key) => {
 };
 const SKIP_RENDER_TYPE = ':skipRender';
 class JSXNodeImpl {
+    type;
+    props;
+    immutableProps;
+    children;
+    flags;
+    key;
+    dev;
     constructor(type, props, immutableProps, children, flags, key = null) {
         this.type = type;
         this.props = props;
@@ -2885,6 +2893,17 @@ const getVdom = (elCtx) => {
     return elCtx.$vdom$;
 };
 class ProcessedJSXNodeImpl {
+    $type$;
+    $props$;
+    $immutableProps$;
+    $children$;
+    $flags$;
+    $key$;
+    $elm$ = null;
+    $text$ = '';
+    $signal$ = null;
+    $id$;
+    $dev$;
     constructor($type$, $props$, $immutableProps$, $children$, $flags$, $key$) {
         this.$type$ = $type$;
         this.$props$ = $props$;
@@ -2892,9 +2911,6 @@ class ProcessedJSXNodeImpl {
         this.$children$ = $children$;
         this.$flags$ = $flags$;
         this.$key$ = $key$;
-        this.$elm$ = null;
-        this.$text$ = '';
-        this.$signal$ = null;
         this.$id$ = $type$ + ($key$ ? ':' + $key$ : '');
         if (qDev && qInspector) {
             this.$dev$ = undefined;
@@ -3876,7 +3892,7 @@ const createComputedQrl = (qrl) => {
     // Computed signals should update immediately
     0, elCtx.$element$, qrl, signal);
     qrl.$resolveLazy$(containerState.$containerEl$);
-    (elCtx.$tasks$ || (elCtx.$tasks$ = [])).push(task);
+    (elCtx.$tasks$ ||= []).push(task);
     waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$));
     return signal;
 };
@@ -4327,6 +4343,11 @@ const parseTask = (data) => {
     return new Task(strToInt(flags), strToInt(index), el, qrl, resource);
 };
 class Task {
+    $flags$;
+    $index$;
+    $el$;
+    $qrl$;
+    $state$;
     constructor($flags$, $index$, $el$, $qrl$, $state$) {
         this.$flags$ = $flags$;
         this.$index$ = $index$;
@@ -4663,7 +4684,6 @@ const _waitUntilRendered = (elm) => {
     return containerState.$renderPromise$ ?? Promise.resolve();
 };
 
-var _a;
 /** @internal */
 const _createSignal = (value, containerState, flags, subscriptions) => {
     const manager = containerState.$subsManager$.$createManager$(subscriptions);
@@ -4677,9 +4697,11 @@ const SignalUnassignedException = Symbol('unassigned signal');
 class SignalBase {
 }
 class SignalImpl extends SignalBase {
+    untrackedValue;
+    [QObjectManagerSymbol];
+    [QObjectSignalFlags] = 0;
     constructor(v, manager, flags) {
         super();
-        this[_a] = 0;
         this.untrackedValue = v;
         this[QObjectManagerSymbol] = manager;
         this[QObjectSignalFlags] = flags;
@@ -4735,8 +4757,10 @@ class SignalImpl extends SignalBase {
         }
     }
 }
-_a = QObjectSignalFlags;
 class SignalDerived extends SignalBase {
+    $func$;
+    $args$;
+    $funcStr$;
     constructor($func$, $args$, $funcStr$) {
         super();
         this.$func$ = $func$;
@@ -4748,6 +4772,8 @@ class SignalDerived extends SignalBase {
     }
 }
 class SignalWrapper extends SignalBase {
+    ref;
+    prop;
     constructor(ref, prop) {
         super();
         this.ref = ref;
@@ -5833,12 +5859,11 @@ const addQwikEvent = (staticCtx, elm, prop) => {
     registerQwikEvent(prop);
 };
 const registerQwikEvent = (prop) => {
-    var _a;
     if (!qTest) {
         const eventName = getEventName(prop);
         try {
             // This is managed by qwik-loader
-            ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
+            (globalThis.qwikevents ||= []).push(eventName);
         }
         catch (err) {
             logWarn(err);
@@ -6119,14 +6144,20 @@ const unescape = (s) => {
 };
 const VIRTUAL = ':virtual';
 class VirtualElementImpl {
+    open;
+    close;
+    isSvg;
+    ownerDocument;
+    _qc_ = null;
+    nodeType = 111;
+    localName = VIRTUAL;
+    nodeName = VIRTUAL;
+    $attributes$;
+    $template$;
     constructor(open, close, isSvg) {
         this.open = open;
         this.close = close;
         this.isSvg = isSvg;
-        this._qc_ = null;
-        this.nodeType = 111;
-        this.localName = VIRTUAL;
-        this.nodeName = VIRTUAL;
         const doc = (this.ownerDocument = open.ownerDocument);
         this.$template$ = createElement(doc, 'template', false);
         this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
@@ -8521,6 +8552,9 @@ const createSubscriptionManager = (containerState) => {
     return manager;
 };
 class LocalSubscriptionManager {
+    $groupToManagers$;
+    $containerState$;
+    $subs$;
     constructor($groupToManagers$, $containerState$, initialMap) {
         this.$groupToManagers$ = $groupToManagers$;
         this.$containerState$ = $containerState$;

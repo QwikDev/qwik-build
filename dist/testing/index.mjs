@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.9.1-dev+e8958f4
+ * @builder.io/qwik/testing 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -11,6 +11,7 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -30,6 +31,10 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
 
 // packages/qwik-dom/lib/Event.js
 var require_Event = __commonJS({
@@ -22705,11 +22710,13 @@ var SIGNAL_UNASSIGNED = 1 << 1;
 var SignalUnassignedException = Symbol("unassigned signal");
 var SignalBase = class {
 };
-var _a;
+var _a, _b;
 var SignalImpl = class extends SignalBase {
   constructor(v, manager, flags) {
     super();
-    this[_a] = 0;
+    __publicField(this, "untrackedValue");
+    __publicField(this, _a);
+    __publicField(this, _b, 0);
     this.untrackedValue = v;
     this[QObjectManagerSymbol] = manager;
     this[QObjectSignalFlags] = flags;
@@ -22772,7 +22779,7 @@ var SignalImpl = class extends SignalBase {
     }
   }
 };
-QObjectManagerSymbol, _a = QObjectSignalFlags;
+_a = QObjectManagerSymbol, _b = QObjectSignalFlags;
 var SignalDerived = class extends SignalBase {
   constructor($func$, $args$, $funcStr$) {
     super();
@@ -23657,10 +23664,13 @@ var VirtualElementImpl = class {
     this.open = open;
     this.close = close;
     this.isSvg = isSvg;
-    this._qc_ = null;
-    this.nodeType = 111;
-    this.localName = VIRTUAL;
-    this.nodeName = VIRTUAL;
+    __publicField(this, "ownerDocument");
+    __publicField(this, "_qc_", null);
+    __publicField(this, "nodeType", 111);
+    __publicField(this, "localName", VIRTUAL);
+    __publicField(this, "nodeName", VIRTUAL);
+    __publicField(this, "$attributes$");
+    __publicField(this, "$template$");
     const doc = this.ownerDocument = open.ownerDocument;
     this.$template$ = createElement(doc, "template", false);
     this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
@@ -24069,7 +24079,7 @@ var _a2;
 var MockElement = class {
   constructor(nodeType) {
     this.nodeType = nodeType;
-    this[_a2] = null;
+    __publicField(this, _a2, null);
     seal(this);
   }
 };
@@ -24143,6 +24153,7 @@ var JSXNodeImpl = class {
     this.children = children;
     this.flags = flags;
     this.key = key;
+    __publicField(this, "dev");
   }
 };
 var Virtual = (props) => props.children;
@@ -25423,6 +25434,7 @@ function ensureGlobals(doc, opts) {
     },
     CustomEvent: class CustomEvent {
       constructor(type, details) {
+        __publicField(this, "type");
         Object.assign(this, details);
         this.type = type;
       }
@@ -25536,6 +25548,12 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
   constructor(options = {}) {
+    __publicField(this, "window");
+    __publicField(this, "document");
+    __publicField(this, "superParent");
+    __publicField(this, "parent");
+    __publicField(this, "host");
+    __publicField(this, "child");
     this.window = createWindow();
     this.document = this.window.document;
     this.superParent = this.document.createElement("super-parent");

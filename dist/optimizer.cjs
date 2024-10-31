@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+e8958f4
+ * @builder.io/qwik/optimizer 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.9.1-dev+e8958f4"
+    qwik: "1.9.1-dev+b97b6d2"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1462,7 +1462,7 @@ globalThis.qwikOptimizer = function(module) {
     throw new Error("Not implemented");
   };
   var convertOptions = opts => {
-    var _a3, _b;
+    var _a, _b;
     const output = {
       minify: "simplify",
       sourceMaps: false,
@@ -1483,7 +1483,7 @@ globalThis.qwikOptimizer = function(module) {
     Object.entries(opts).forEach((([key, value]) => {
       null != value && (output[key] = value);
     }));
-    output.entryStrategy = (null == (_a3 = opts.entryStrategy) ? void 0 : _a3.type) ?? "smart";
+    output.entryStrategy = (null == (_a = opts.entryStrategy) ? void 0 : _a.type) ?? "smart";
     output.manualChunks = (null == (_b = opts.entryStrategy) ? void 0 : _b.manual) ?? void 0;
     return output;
   };
@@ -2240,8 +2240,8 @@ globalThis.qwikOptimizer = function(module) {
         debug(`transform(${count})`, `Transforming ${id2} (for: ${isServer2 ? "server" : "client"}${strip ? ", strip" : ""})`);
         const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
         "lib" !== mode && (code = code.replaceAll(/__EXPERIMENTAL__\.(\w+)/g, ((_, feature) => {
-          var _a3;
-          if (null == (_a3 = opts.experimental) ? void 0 : _a3[feature]) {
+          var _a;
+          if (null == (_a = opts.experimental) ? void 0 : _a[feature]) {
             return "true";
           }
           return "false";
@@ -2482,7 +2482,7 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async options(inputOpts) {
-        var _a3;
+        var _a;
         await qwikPlugin.init();
         const origOnwarn = inputOpts.onwarn;
         inputOpts.onwarn = (warning, warn) => {
@@ -2505,7 +2505,7 @@ globalThis.qwikOptimizer = function(module) {
           manifestOutput: qwikRollupOpts.manifestOutput,
           manifestInput: qwikRollupOpts.manifestInput,
           transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
-          inlineStylesUpToBytes: null == (_a3 = qwikRollupOpts.optimizerOptions) ? void 0 : _a3.inlineStylesUpToBytes,
+          inlineStylesUpToBytes: null == (_a = qwikRollupOpts.optimizerOptions) ? void 0 : _a.inlineStylesUpToBytes,
           lint: qwikRollupOpts.lint,
           experimental: qwikRollupOpts.experimental
         };
@@ -2542,7 +2542,7 @@ globalThis.qwikOptimizer = function(module) {
         return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
-        var _a3;
+        var _a;
         const opts = qwikPlugin.getOptions();
         if ("client" === opts.target) {
           const optimizer = qwikPlugin.getOptimizer();
@@ -2550,7 +2550,7 @@ globalThis.qwikOptimizer = function(module) {
           const manifest = await outputAnalyzer.generateManifest();
           manifest.platform = {
             ...versions,
-            rollup: (null == (_a3 = this.meta) ? void 0 : _a3.rollupVersion) || "",
+            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
             env: optimizer.sys.env,
             os: optimizer.sys.os
           };
@@ -2951,12 +2951,12 @@ globalThis.qwikOptimizer = function(module) {
     return optionalParams;
   };
   var printElement = el => {
-    var _a3;
+    var _a;
     const ctx = tryGetContext(el);
     const isServer2 = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
     return {
       tagName: el.tagName,
-      renderQRL: null == (_a3 = null == ctx ? void 0 : ctx.$componentQrl$) ? void 0 : _a3.getSymbol(),
+      renderQRL: null == (_a = null == ctx ? void 0 : ctx.$componentQrl$) ? void 0 : _a.getSymbol(),
       element: isServer2 ? void 0 : el,
       ctx: isServer2 ? void 0 : ctx
     };
@@ -3047,10 +3047,10 @@ globalThis.qwikOptimizer = function(module) {
   var createPlatform = () => ({
     isServer: isServer,
     importSymbol(containerEl, url, symbolName) {
-      var _a3;
+      var _a;
       if (isServer) {
         const hash = getSymbolHash(symbolName);
-        const regSym = null == (_a3 = globalThis.__qwik_reg_symbols) ? void 0 : _a3.get(hash);
+        const regSym = null == (_a = globalThis.__qwik_reg_symbols) ? void 0 : _a.get(hash);
         if (regSym) {
           return regSym;
         }
@@ -3155,11 +3155,12 @@ globalThis.qwikOptimizer = function(module) {
   var SIGNAL_UNASSIGNED = 2;
   var SignalUnassignedException = Symbol("unassigned signal");
   var SignalBase = class {};
-  var _a;
   var SignalImpl = class extends SignalBase {
+    untrackedValue;
+    [QObjectManagerSymbol];
+    [QObjectSignalFlags]=0;
     constructor(v, manager, flags) {
       super();
-      this[_a] = 0;
       this.untrackedValue = v;
       this[QObjectManagerSymbol] = manager;
       this[QObjectSignalFlags] = flags;
@@ -3178,11 +3179,11 @@ globalThis.qwikOptimizer = function(module) {
       };
     }
     get value() {
-      var _a3;
+      var _a;
       if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
         throw SignalUnassignedException;
       }
-      const sub = null == (_a3 = tryGetInvokeContext()) ? void 0 : _a3.$subscriber$;
+      const sub = null == (_a = tryGetInvokeContext()) ? void 0 : _a.$subscriber$;
       sub && this[QObjectManagerSymbol].$addSub$(sub);
       return this.untrackedValue;
     }
@@ -3203,7 +3204,6 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
   };
-  _a = QObjectSignalFlags;
   var SignalDerived = class extends SignalBase {
     constructor($func$, $args$, $funcStr$) {
       super();
@@ -3268,10 +3268,10 @@ globalThis.qwikOptimizer = function(module) {
     });
   };
   var findParentCtx = (el, containerState) => {
-    var _a3;
+    var _a;
     let node = el;
     let stack = 1;
-    while (node && !(null == (_a3 = node.hasAttribute) ? void 0 : _a3.call(node, "q:container"))) {
+    while (node && !(null == (_a = node.hasAttribute) ? void 0 : _a.call(node, "q:container"))) {
       while (node = node.previousSibling) {
         if (isComment(node)) {
           const virtual = node[VIRTUAL_SYMBOL];
@@ -3306,14 +3306,14 @@ globalThis.qwikOptimizer = function(module) {
     return ctx.$parentCtx$;
   };
   var resolveContext = (context, hostCtx, containerState) => {
-    var _a3;
+    var _a;
     const contextID = context.id;
     if (!hostCtx) {
       return;
     }
     let ctx = hostCtx;
     while (ctx) {
-      const found = null == (_a3 = ctx.$contexts$) ? void 0 : _a3.get(contextID);
+      const found = null == (_a = ctx.$contexts$) ? void 0 : _a.get(contextID);
       if (found) {
         return found;
       }
@@ -3401,7 +3401,7 @@ globalThis.qwikOptimizer = function(module) {
       return true;
     }
     get(target, prop) {
-      var _a3;
+      var _a;
       if ("symbol" === typeof prop) {
         if (prop === QOjectTargetSymbol) {
           return target;
@@ -3420,7 +3420,7 @@ globalThis.qwikOptimizer = function(module) {
       let subscriber;
       let value;
       invokeCtx && (subscriber = invokeCtx.$subscriber$);
-      !immutable || prop in target && !immutableValue(null == (_a3 = target[_IMMUTABLE]) ? void 0 : _a3[prop]) || (subscriber = null);
+      !immutable || prop in target && !immutableValue(null == (_a = target[_IMMUTABLE]) ? void 0 : _a[prop]) || (subscriber = null);
       if (hiddenSignal) {
         assertTrue(isSignal(hiddenSignal), "$$ prop must be a signal");
         value = hiddenSignal.value;
@@ -3564,10 +3564,6 @@ globalThis.qwikOptimizer = function(module) {
       this.open = open;
       this.close = close;
       this.isSvg = isSvg;
-      this._qc_ = null;
-      this.nodeType = 111;
-      this.localName = VIRTUAL;
-      this.nodeName = VIRTUAL;
       const doc = this.ownerDocument = open.ownerDocument;
       this.$template$ = createElement(doc, "template", false);
       this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
@@ -3576,6 +3572,13 @@ globalThis.qwikOptimizer = function(module) {
       close[VIRTUAL_SYMBOL] = this;
       seal(this);
     }
+    ownerDocument;
+    _qc_=null;
+    nodeType=111;
+    localName=VIRTUAL;
+    nodeName=VIRTUAL;
+    $attributes$;
+    $template$;
     insertBefore(node, ref) {
       const parent = this.parentElement;
       if (parent) {
@@ -3614,8 +3617,8 @@ globalThis.qwikOptimizer = function(module) {
       this.insertBeforeTo(newParent, null);
     }
     get namespaceURI() {
-      var _a3;
-      return (null == (_a3 = this.parentElement) ? void 0 : _a3.namespaceURI) ?? "";
+      var _a;
+      return (null == (_a = this.parentElement) ? void 0 : _a.namespaceURI) ?? "";
     }
     removeChild(child) {
       this.parentElement ? this.parentElement.removeChild(child) : this.$template$.removeChild(child);
@@ -3756,14 +3759,14 @@ globalThis.qwikOptimizer = function(module) {
     assertFail("close not found");
   };
   var getVirtualElement = open => {
-    var _a3;
+    var _a;
     const virtual = open[VIRTUAL_SYMBOL];
     if (virtual) {
       return virtual;
     }
     if (open.data.startsWith("qv ")) {
       const close = findClose(open);
-      return new VirtualElementImpl(open, close, (null == (_a3 = open.parentElement) ? void 0 : _a3.namespaceURI) === SVG_NS);
+      return new VirtualElementImpl(open, close, (null == (_a = open.parentElement) ? void 0 : _a.namespaceURI) === SVG_NS);
     }
     return null;
   };
@@ -3920,7 +3923,7 @@ globalThis.qwikOptimizer = function(module) {
   };
   var isEmptyObj = obj => 0 === Object.keys(obj).length;
   var serializeQRL = (qrl, opts = {}) => {
-    var _a3, _b;
+    var _a, _b;
     assertTrue(qSerialize, "In order to serialize a QRL, qSerialize must be true");
     assertQrl(qrl);
     let symbol = qrl.$symbol$;
@@ -3928,7 +3931,7 @@ globalThis.qwikOptimizer = function(module) {
     const refSymbol = qrl.$refSymbol$ ?? symbol;
     const platform = getPlatform();
     if (platform) {
-      const result = platform.chunkForSymbol(refSymbol, chunk, null == (_a3 = qrl.dev) ? void 0 : _a3.file);
+      const result = platform.chunkForSymbol(refSymbol, chunk, null == (_a = qrl.dev) ? void 0 : _a.file);
       if (result) {
         chunk = result[1];
         qrl.$refSymbol$ || (symbol = result[0]);
@@ -4275,7 +4278,6 @@ globalThis.qwikOptimizer = function(module) {
     return ctx;
   };
   var untrack = fn => invoke(void 0, fn);
-  Q_CTX;
   var _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
     assertString(type, "jsx type must be a string");
     const processed = null == key ? null : String(key);
@@ -4323,6 +4325,7 @@ globalThis.qwikOptimizer = function(module) {
       this.flags = flags;
       this.key = key;
     }
+    dev;
   };
   var Virtual = props => props.children;
   var validateJSXNode = node => {
@@ -4615,9 +4618,9 @@ globalThis.qwikOptimizer = function(module) {
       return componentQrl(qrl);
     },
     $fill$: (component, getObject) => {
-      var _a3;
+      var _a;
       const [qrl] = component[SERIALIZABLE_STATE];
-      if (null == (_a3 = qrl.$capture$) ? void 0 : _a3.length) {
+      if (null == (_a = qrl.$capture$) ? void 0 : _a.length) {
         qrl.$captureRef$ = qrl.$capture$.map(getObject);
         qrl.$capture$ = null;
       }
@@ -4665,8 +4668,8 @@ globalThis.qwikOptimizer = function(module) {
     },
     $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
     $prepare$: (data, containerState) => {
-      var _a3;
-      return new SignalImpl(data, null == (_a3 = null == containerState ? void 0 : containerState.$subsManager$) ? void 0 : _a3.$createManager$(), 0);
+      var _a;
+      return new SignalImpl(data, null == (_a = null == containerState ? void 0 : containerState.$subsManager$) ? void 0 : _a.$createManager$(), 0);
     },
     $subs$: (signal, subs) => {
       signal[QObjectManagerSymbol].$addSubs$(subs);
@@ -5166,12 +5169,12 @@ globalThis.qwikOptimizer = function(module) {
     throw new Error("symbolMapper not initialized");
   };
   async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
-    var _a3;
+    var _a;
     symbolMapper = lazySymbolMapper = createSymbolMapper(base, opts, path, sys);
     if (!devSsrServer) {
       return;
     }
-    const hasQwikCity = null == (_a3 = server.config.plugins) ? void 0 : _a3.some((plugin => "vite-plugin-qwik-city" === plugin.name));
+    const hasQwikCity = null == (_a = server.config.plugins) ? void 0 : _a.some((plugin => "vite-plugin-qwik-city" === plugin.name));
     server.middlewares.use((async (req, res, next) => {
       try {
         const {ORIGIN: ORIGIN} = process.env;
@@ -5220,8 +5223,8 @@ globalThis.qwikOptimizer = function(module) {
             const added = new Set;
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
-                var _a4, _b;
-                const segment = null == (_b = null == (_a4 = v.info) ? void 0 : _a4.meta) ? void 0 : _b.segment;
+                var _a2, _b;
+                const segment = null == (_b = null == (_a2 = v.info) ? void 0 : _a2.meta) ? void 0 : _b.segment;
                 let url2 = v.url;
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));
@@ -5434,12 +5437,12 @@ globalThis.qwikOptimizer = function(module) {
       enforce: "pre",
       api: api,
       async config(viteConfig, viteEnv) {
-        var _a3, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
         let target;
-        target = (null == (_a3 = viteConfig.build) ? void 0 : _a3.ssr) || "ssr" === viteEnv.mode ? "ssr" : "lib" === viteEnv.mode ? "lib" : "test" === viteEnv.mode ? "test" : "client";
+        target = (null == (_a = viteConfig.build) ? void 0 : _a.ssr) || "ssr" === viteEnv.mode ? "ssr" : "lib" === viteEnv.mode ? "lib" : "test" === viteEnv.mode ? "test" : "client";
         let buildMode;
         buildMode = "production" === viteEnv.mode ? "production" : "development" === viteEnv.mode ? "development" : "build" === viteCommand && "client" === target ? "production" : "development";
         viteCommand = viteEnv.command;
@@ -5605,7 +5608,7 @@ globalThis.qwikOptimizer = function(module) {
         return updatedViteConfig;
       },
       async configResolved(config) {
-        var _a3, _b;
+        var _a, _b;
         basePathname = config.base;
         if (!(basePathname.startsWith("/") && basePathname.endsWith("/"))) {
           console.error("warning: vite's config.base must begin and end with /. This will be an error in v2. If you have a valid use case, please open an issue.");
@@ -5614,7 +5617,7 @@ globalThis.qwikOptimizer = function(module) {
         const sys = qwikPlugin.getSys();
         if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
           try {
-            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a3 = qwikViteOpts.client) ? void 0 : _a3.outDir);
+            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a = qwikViteOpts.client) ? void 0 : _a.outDir);
             entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
           } catch {}
         }
@@ -5674,7 +5677,7 @@ globalThis.qwikOptimizer = function(module) {
       generateBundle: {
         order: "post",
         async handler(_, rollupBundle) {
-          var _a3;
+          var _a;
           const opts = qwikPlugin.getOptions();
           if ("client" === opts.target) {
             const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
@@ -5721,7 +5724,7 @@ globalThis.qwikOptimizer = function(module) {
             manifest.platform = {
               ...versions,
               vite: "",
-              rollup: (null == (_a3 = this.meta) ? void 0 : _a3.rollupVersion) || "",
+              rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
               env: optimizer.sys.env,
               os: optimizer.sys.os
             };
@@ -5820,11 +5823,11 @@ globalThis.qwikOptimizer = function(module) {
         });
       },
       onLog(level, log) {
-        var _a3, _b, _c;
+        var _a, _b, _c;
         if ("vite-plugin-qwik" == log.plugin) {
           const color = LOG_COLOR[level] || ANSI_COLOR.White;
           const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
-          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${null == (_a3 = null == log ? void 0 : log.loc) ? void 0 : _a3.file}:${null == (_b = null == log ? void 0 : log.loc) ? void 0 : _b.line}:${null == (_c = null == log ? void 0 : log.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
+          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${null == (_a = null == log ? void 0 : log.loc) ? void 0 : _a.file}:${null == (_b = null == log ? void 0 : log.loc) ? void 0 : _b.line}:${null == (_c = null == log ? void 0 : log.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
           return false;
         }
       }

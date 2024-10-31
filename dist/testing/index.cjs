@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.9.1-dev+e8958f4
+ * @builder.io/qwik/testing 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22392,12 +22392,12 @@ var printParams = (optionalParams) => {
   return optionalParams;
 };
 var printElement = (el) => {
-  var _a3;
+  var _a;
   const ctx = tryGetContext(el);
   const isServer2 = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
   return {
     tagName: el.tagName,
-    renderQRL: (_a3 = ctx == null ? void 0 : ctx.$componentQrl$) == null ? void 0 : _a3.getSymbol(),
+    renderQRL: (_a = ctx == null ? void 0 : ctx.$componentQrl$) == null ? void 0 : _a.getSymbol(),
     element: isServer2 ? void 0 : el,
     ctx: isServer2 ? void 0 : ctx
   };
@@ -22626,10 +22626,10 @@ var createPlatform = () => {
   return {
     isServer: import_build.isServer,
     importSymbol(containerEl, url, symbolName) {
-      var _a3;
+      var _a;
       if (import_build.isServer) {
         const hash = getSymbolHash(symbolName);
-        const regSym = (_a3 = globalThis.__qwik_reg_symbols) == null ? void 0 : _a3.get(hash);
+        const regSym = (_a = globalThis.__qwik_reg_symbols) == null ? void 0 : _a.get(hash);
         if (regSym) {
           return regSym;
         }
@@ -22720,11 +22720,12 @@ var SIGNAL_UNASSIGNED = 1 << 1;
 var SignalUnassignedException = Symbol("unassigned signal");
 var SignalBase = class {
 };
-var _a;
 var SignalImpl = class extends SignalBase {
+  untrackedValue;
+  [QObjectManagerSymbol];
+  [QObjectSignalFlags] = 0;
   constructor(v, manager, flags) {
     super();
-    this[_a] = 0;
     this.untrackedValue = v;
     this[QObjectManagerSymbol] = manager;
     this[QObjectSignalFlags] = flags;
@@ -22742,11 +22743,11 @@ var SignalImpl = class extends SignalBase {
     return { value: this.value };
   }
   get value() {
-    var _a3;
+    var _a;
     if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
       throw SignalUnassignedException;
     }
-    const sub = (_a3 = tryGetInvokeContext()) == null ? void 0 : _a3.$subscriber$;
+    const sub = (_a = tryGetInvokeContext()) == null ? void 0 : _a.$subscriber$;
     if (sub) {
       this[QObjectManagerSymbol].$addSub$(sub);
     }
@@ -22788,7 +22789,6 @@ var SignalImpl = class extends SignalBase {
     }
   }
 };
-QObjectManagerSymbol, _a = QObjectSignalFlags;
 var SignalDerived = class extends SignalBase {
   constructor($func$, $args$, $funcStr$) {
     super();
@@ -23039,7 +23039,7 @@ if (qDev) {
 
 // packages/qwik/src/core/qrl/qrl.ts
 var serializeQRL = (qrl, opts = {}) => {
-  var _a3, _b;
+  var _a, _b;
   assertTrue(qSerialize, "In order to serialize a QRL, qSerialize must be true");
   assertQrl(qrl);
   let symbol = qrl.$symbol$;
@@ -23047,7 +23047,7 @@ var serializeQRL = (qrl, opts = {}) => {
   const refSymbol = qrl.$refSymbol$ ?? symbol;
   const platform = getPlatform();
   if (platform) {
-    const result = platform.chunkForSymbol(refSymbol, chunk, (_a3 = qrl.dev) == null ? void 0 : _a3.file);
+    const result = platform.chunkForSymbol(refSymbol, chunk, (_a = qrl.dev) == null ? void 0 : _a.file);
     if (result) {
       chunk = result[1];
       if (!qrl.$refSymbol$) {
@@ -23206,10 +23206,10 @@ var createContextId = (name) => {
   });
 };
 var findParentCtx = (el, containerState) => {
-  var _a3;
+  var _a;
   let node = el;
   let stack = 1;
-  while (node && !((_a3 = node.hasAttribute) == null ? void 0 : _a3.call(node, "q:container"))) {
+  while (node && !((_a = node.hasAttribute) == null ? void 0 : _a.call(node, "q:container"))) {
     while (node = node.previousSibling) {
       if (isComment(node)) {
         const virtual = node[VIRTUAL_SYMBOL];
@@ -23246,14 +23246,14 @@ var getParentProvider = (ctx, containerState) => {
   return ctx.$parentCtx$;
 };
 var resolveContext = (context, hostCtx, containerState) => {
-  var _a3;
+  var _a;
   const contextID = context.id;
   if (!hostCtx) {
     return;
   }
   let ctx = hostCtx;
   while (ctx) {
-    const found = (_a3 = ctx.$contexts$) == null ? void 0 : _a3.get(contextID);
+    const found = (_a = ctx.$contexts$) == null ? void 0 : _a.get(contextID);
     if (found) {
       return found;
     }
@@ -23355,7 +23355,7 @@ var ReadWriteProxyHandler = class {
     return true;
   }
   get(target, prop) {
-    var _a3;
+    var _a;
     if (typeof prop === "symbol") {
       if (prop === QOjectTargetSymbol) {
         return target;
@@ -23376,7 +23376,7 @@ var ReadWriteProxyHandler = class {
     if (invokeCtx) {
       subscriber = invokeCtx.$subscriber$;
     }
-    if (immutable && (!(prop in target) || immutableValue((_a3 = target[_IMMUTABLE]) == null ? void 0 : _a3[prop]))) {
+    if (immutable && (!(prop in target) || immutableValue((_a = target[_IMMUTABLE]) == null ? void 0 : _a[prop]))) {
       subscriber = null;
     }
     if (hiddenSignal) {
@@ -23677,10 +23677,6 @@ var VirtualElementImpl = class {
     this.open = open;
     this.close = close;
     this.isSvg = isSvg;
-    this._qc_ = null;
-    this.nodeType = 111;
-    this.localName = VIRTUAL;
-    this.nodeName = VIRTUAL;
     const doc = this.ownerDocument = open.ownerDocument;
     this.$template$ = createElement(doc, "template", false);
     this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
@@ -23689,6 +23685,13 @@ var VirtualElementImpl = class {
     close[VIRTUAL_SYMBOL] = this;
     seal(this);
   }
+  ownerDocument;
+  _qc_ = null;
+  nodeType = 111;
+  localName = VIRTUAL;
+  nodeName = VIRTUAL;
+  $attributes$;
+  $template$;
   insertBefore(node, ref) {
     const parent = this.parentElement;
     if (parent) {
@@ -23727,8 +23730,8 @@ var VirtualElementImpl = class {
     this.insertBeforeTo(newParent, null);
   }
   get namespaceURI() {
-    var _a3;
-    return ((_a3 = this.parentElement) == null ? void 0 : _a3.namespaceURI) ?? "";
+    var _a;
+    return ((_a = this.parentElement) == null ? void 0 : _a.namespaceURI) ?? "";
   }
   removeChild(child) {
     if (this.parentElement) {
@@ -23883,14 +23886,14 @@ var findClose = (open) => {
   assertFail("close not found");
 };
 var getVirtualElement = (open) => {
-  var _a3;
+  var _a;
   const virtual = open[VIRTUAL_SYMBOL];
   if (virtual) {
     return virtual;
   }
   if (open.data.startsWith("qv ")) {
     const close = findClose(open);
-    return new VirtualElementImpl(open, close, ((_a3 = open.parentElement) == null ? void 0 : _a3.namespaceURI) === SVG_NS);
+    return new VirtualElementImpl(open, close, ((_a = open.parentElement) == null ? void 0 : _a.namespaceURI) === SVG_NS);
   }
   return null;
 };
@@ -24087,15 +24090,13 @@ var IS_BUTTON = 1 << 7;
 var IS_TABLE = 1 << 8;
 var IS_PHRASING_CONTAINER = 1 << 9;
 var IS_IMMUTABLE2 = 1 << 10;
-var _a2;
 var MockElement = class {
   constructor(nodeType) {
     this.nodeType = nodeType;
-    this[_a2] = null;
     seal(this);
   }
+  [Q_CTX] = null;
 };
-_a2 = Q_CTX;
 
 // packages/qwik/src/core/render/jsx/jsx-runtime.ts
 var import_build4 = require("@builder.io/qwik/build");
@@ -24166,6 +24167,7 @@ var JSXNodeImpl = class {
     this.flags = flags;
     this.key = key;
   }
+  dev;
 };
 var Virtual = (props) => props.children;
 var validateJSXNode = (node) => {
@@ -24570,9 +24572,9 @@ var ComponentSerializer = /* @__PURE__ */ serializer({
     return componentQrl(qrl);
   },
   $fill$: (component, getObject) => {
-    var _a3;
+    var _a;
     const [qrl] = component[SERIALIZABLE_STATE];
-    if ((_a3 = qrl.$capture$) == null ? void 0 : _a3.length) {
+    if ((_a = qrl.$capture$) == null ? void 0 : _a.length) {
       qrl.$captureRef$ = qrl.$capture$.map(getObject);
       qrl.$capture$ = null;
     }
@@ -24624,8 +24626,8 @@ var SignalSerializer = /* @__PURE__ */ serializer({
     return getObjId(obj.untrackedValue);
   },
   $prepare$: (data, containerState) => {
-    var _a3;
-    return new SignalImpl(data, (_a3 = containerState == null ? void 0 : containerState.$subsManager$) == null ? void 0 : _a3.$createManager$(), 0);
+    var _a;
+    return new SignalImpl(data, (_a = containerState == null ? void 0 : containerState.$subsManager$) == null ? void 0 : _a.$createManager$(), 0);
   },
   $subs$: (signal, subs) => {
     signal[QObjectManagerSymbol].$addSubs$(subs);
@@ -25446,6 +25448,7 @@ function ensureGlobals(doc, opts) {
       forward: noop2
     },
     CustomEvent: class CustomEvent {
+      type;
       constructor(type, details) {
         Object.assign(this, details);
         this.type = type;
@@ -25559,6 +25562,12 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
+  window;
+  document;
+  superParent;
+  parent;
+  host;
+  child;
   constructor(options = {}) {
     this.window = createWindow();
     this.document = this.window.document;

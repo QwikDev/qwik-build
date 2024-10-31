@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+e8958f4
+ * @builder.io/qwik/optimizer 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -16,6 +16,13 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, {
+  enumerable: true,
+  configurable: true,
+  writable: true,
+  value: value
+}) : obj[key] = value;
 
 var __commonJS = (cb, mod) => function() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = {
@@ -40,6 +47,11 @@ __copyProps(!isNodeMode && mod && mod.__esModule ? target : __defProp(target, "d
   value: mod,
   enumerable: true
 }), mod));
+
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, "symbol" !== typeof key ? key + "" : key, value);
+  return value;
+};
 
 var require_utils = __commonJS({
   "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/utils.js"(exports) {
@@ -1251,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.9.1-dev+e8958f4"
+  qwik: "1.9.1-dev+b97b6d2"
 };
 
 async function getSystem() {
@@ -3348,12 +3360,14 @@ var SignalUnassignedException = Symbol("unassigned signal");
 
 var SignalBase = class {};
 
-var _a;
+var _a, _b;
 
 var SignalImpl = class extends SignalBase {
   constructor(v, manager, flags) {
     super();
-    this[_a] = 0;
+    __publicField(this, "untrackedValue");
+    __publicField(this, _a);
+    __publicField(this, _b, 0);
     this.untrackedValue = v;
     this[QObjectManagerSymbol] = manager;
     this[QObjectSignalFlags] = flags;
@@ -3397,7 +3411,7 @@ var SignalImpl = class extends SignalBase {
   }
 };
 
-_a = QObjectSignalFlags;
+_a = QObjectManagerSymbol, _b = QObjectSignalFlags;
 
 var SignalDerived = class extends SignalBase {
   constructor($func$, $args$, $funcStr$) {
@@ -3892,10 +3906,13 @@ var VirtualElementImpl = class {
     this.open = open;
     this.close = close;
     this.isSvg = isSvg;
-    this._qc_ = null;
-    this.nodeType = 111;
-    this.localName = VIRTUAL;
-    this.nodeName = VIRTUAL;
+    __publicField(this, "ownerDocument");
+    __publicField(this, "_qc_", null);
+    __publicField(this, "nodeType", 111);
+    __publicField(this, "localName", VIRTUAL);
+    __publicField(this, "nodeName", VIRTUAL);
+    __publicField(this, "$attributes$");
+    __publicField(this, "$template$");
     const doc = this.ownerDocument = open.ownerDocument;
     this.$template$ = createElement(doc, "template", false);
     this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
@@ -4690,7 +4707,7 @@ var _a2;
 var MockElement = class {
   constructor(nodeType) {
     this.nodeType = nodeType;
-    this[_a2] = null;
+    __publicField(this, _a2, null);
     seal(this);
   }
 };
@@ -4745,6 +4762,7 @@ var JSXNodeImpl = class {
     this.children = children;
     this.flags = flags;
     this.key = key;
+    __publicField(this, "dev");
   }
 };
 

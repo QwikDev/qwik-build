@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+e8958f4
+ * @builder.io/qwik 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -481,6 +481,8 @@ const _restProps = (props, omit) => {
 };
 
 class ReadWriteProxyHandler {
+    $containerState$;
+    $manager$;
     constructor($containerState$, $manager$) {
         this.$containerState$ = $containerState$, this.$manager$ = $manager$;
     }
@@ -592,12 +594,12 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.9.1-dev+e8958f4";
+const version = "1.9.1-dev+b97b6d2";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
     const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
-    const seq = elCtx.$seq$ || (elCtx.$seq$ = []);
+    const seq = elCtx.$seq$ ||= [];
     const i = iCtx.$i$++;
     return {
         val: seq[i],
@@ -618,7 +620,7 @@ const useContextProvider = (context, newValue) => {
     if (void 0 !== val) {
         return;
     }
-    const contexts = elCtx.$contexts$ || (elCtx.$contexts$ = new Map);
+    const contexts = elCtx.$contexts$ ||= new Map;
     contexts.set(context.id, newValue), set(!0);
 };
 
@@ -849,8 +851,6 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-var _a$1;
-
 const FLUSH_COMMENT = "\x3c!--qkssr-f--\x3e";
 
 const IS_HEAD$1 = 1;
@@ -874,12 +874,12 @@ const IS_PHRASING_CONTAINER = 512;
 const IS_IMMUTABLE$1 = 1024;
 
 class MockElement {
+    nodeType;
+    [Q_CTX]=null;
     constructor(nodeType) {
-        this.nodeType = nodeType, this[_a$1] = null, seal();
+        this.nodeType = nodeType, seal();
     }
 }
-
-_a$1 = Q_CTX;
 
 const createDocument = () => new MockElement(9);
 
@@ -1113,7 +1113,7 @@ const splitProjectedChildren = (children, ssrCtx) => {
     const slotMap = {};
     for (const child of flatChildren) {
         let slotName = "";
-        isJSXNode(child) && (slotName = child.props[QSlot] || ""), (slotMap[slotName] || (slotMap[slotName] = [])).push(child);
+        isJSXNode(child) && (slotName = child.props[QSlot] || ""), (slotMap[slotName] ||= []).push(child);
     }
     return slotMap;
 };
@@ -1505,7 +1505,7 @@ const isSSRUnsafeAttr = name => unsafeAttrCharRE.test(name);
 const listenersNeedId = listeners => listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
 
 const addDynamicSlot = (hostCtx, elCtx) => {
-    const dynamicSlots = hostCtx.$dynamicSlots$ || (hostCtx.$dynamicSlots$ = []);
+    const dynamicSlots = hostCtx.$dynamicSlots$ ||= [];
     dynamicSlots.includes(elCtx) || dynamicSlots.push(elCtx);
 };
 
@@ -1568,6 +1568,13 @@ const jsx = (type, props, key) => {
 const SKIP_RENDER_TYPE = ":skipRender";
 
 class JSXNodeImpl {
+    type;
+    props;
+    immutableProps;
+    children;
+    flags;
+    key;
+    dev;
     constructor(type, props, immutableProps, children, flags, key = null) {
         this.type = type, this.props = props, this.immutableProps = immutableProps, this.children = children, 
         this.flags = flags, this.key = key;
@@ -1666,10 +1673,20 @@ const getVdom = elCtx => (elCtx.$vdom$ || (elCtx.$vdom$ = domToVnode(elCtx.$elem
 elCtx.$vdom$);
 
 class ProcessedJSXNodeImpl {
+    $type$;
+    $props$;
+    $immutableProps$;
+    $children$;
+    $flags$;
+    $key$;
+    $elm$=null;
+    $text$="";
+    $signal$=null;
+    $id$;
+    $dev$;
     constructor($type$, $props$, $immutableProps$, $children$, $flags$, $key$) {
         this.$type$ = $type$, this.$props$ = $props$, this.$immutableProps$ = $immutableProps$, 
-        this.$children$ = $children$, this.$flags$ = $flags$, this.$key$ = $key$, this.$elm$ = null, 
-        this.$text$ = "", this.$signal$ = null, this.$id$ = $type$ + ($key$ ? ":" + $key$ : ""), 
+        this.$children$ = $children$, this.$flags$ = $flags$, this.$key$ = $key$, this.$id$ = $type$ + ($key$ ? ":" + $key$ : ""), 
         seal();
     }
 }
@@ -2270,7 +2287,7 @@ const createComputedQrl = qrl => {
     const elCtx = getContext(iCtx.$hostElement$, containerState);
     const signal = _createSignal(void 0, containerState, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, void 0);
     const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | 8, 0, elCtx.$element$, qrl, signal);
-    return qrl.$resolveLazy$(containerState.$containerEl$), (elCtx.$tasks$ || (elCtx.$tasks$ = [])).push(task), 
+    return qrl.$resolveLazy$(containerState.$containerEl$), (elCtx.$tasks$ ||= []).push(task), 
     waitAndRun(iCtx, (() => runComputed(task, containerState, iCtx.$renderCtx$))), signal;
 };
 
@@ -2469,6 +2486,11 @@ const parseTask = data => {
 };
 
 class Task {
+    $flags$;
+    $index$;
+    $el$;
+    $qrl$;
+    $state$;
     constructor($flags$, $index$, $el$, $qrl$, $state$) {
         this.$flags$ = $flags$, this.$index$ = $index$, this.$el$ = $el$, this.$qrl$ = $qrl$, 
         this.$state$ = $state$;
@@ -2737,8 +2759,6 @@ const _waitUntilRendered = elm => {
     return _getContainerState(containerEl).$renderPromise$ ?? Promise.resolve();
 };
 
-var _a;
-
 const _createSignal = (value, containerState, flags, subscriptions) => {
     const manager = containerState.$subsManager$.$createManager$(subscriptions);
     return new SignalImpl(value, manager, flags);
@@ -2755,9 +2775,11 @@ const SignalUnassignedException = Symbol("unassigned signal");
 class SignalBase {}
 
 class SignalImpl extends SignalBase {
+    untrackedValue;
+    [QObjectManagerSymbol];
+    [QObjectSignalFlags]=0;
     constructor(v, manager, flags) {
-        super(), this[_a] = 0, this.untrackedValue = v, this[QObjectManagerSymbol] = manager, 
-        this[QObjectSignalFlags] = flags;
+        super(), this.untrackedValue = v, this[QObjectManagerSymbol] = manager, this[QObjectSignalFlags] = flags;
     }
     valueOf() {
         qDev;
@@ -2783,9 +2805,10 @@ class SignalImpl extends SignalBase {
     }
 }
 
-_a = QObjectSignalFlags;
-
 class SignalDerived extends SignalBase {
+    $func$;
+    $args$;
+    $funcStr$;
     constructor($func$, $args$, $funcStr$) {
         super(), this.$func$ = $func$, this.$args$ = $args$, this.$funcStr$ = $funcStr$;
     }
@@ -2795,6 +2818,8 @@ class SignalDerived extends SignalBase {
 }
 
 class SignalWrapper extends SignalBase {
+    ref;
+    prop;
     constructor(ref, prop) {
         super(), this.ref = ref, this.prop = prop;
     }
@@ -3518,11 +3543,10 @@ const addQwikEvent = (staticCtx, elm, prop) => {
 };
 
 const registerQwikEvent = prop => {
-    var _a;
     {
         const eventName = getEventName(prop);
         try {
-            ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
+            (globalThis.qwikevents ||= []).push(eventName);
         } catch (err) {
             logWarn(err);
         }
@@ -3747,9 +3771,18 @@ const unescape = s => s.replace(/\+/g, " ");
 const VIRTUAL = ":virtual";
 
 class VirtualElementImpl {
+    open;
+    close;
+    isSvg;
+    ownerDocument;
+    _qc_=null;
+    nodeType=111;
+    localName=VIRTUAL;
+    nodeName=VIRTUAL;
+    $attributes$;
+    $template$;
     constructor(open, close, isSvg) {
-        this.open = open, this.close = close, this.isSvg = isSvg, this._qc_ = null, this.nodeType = 111, 
-        this.localName = VIRTUAL, this.nodeName = VIRTUAL;
+        this.open = open, this.close = close, this.isSvg = isSvg;
         const doc = this.ownerDocument = open.ownerDocument;
         this.$template$ = createElement(doc, "template", !1), this.$attributes$ = parseVirtualAttributes(open.data.slice(3)), 
         assertTrue(open.data.startsWith("qv "), "comment is not a qv"), open.__virtual = this, 
@@ -5328,6 +5361,9 @@ const createSubscriptionManager = containerState => {
 };
 
 class LocalSubscriptionManager {
+    $groupToManagers$;
+    $containerState$;
+    $subs$;
     constructor($groupToManagers$, $containerState$, initialMap) {
         this.$groupToManagers$ = $groupToManagers$, this.$containerState$ = $containerState$, 
         this.$subs$ = [], initialMap && this.$addSubs$(initialMap), seal();

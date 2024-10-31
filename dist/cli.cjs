@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.9.1-dev+e8958f4
+ * @builder.io/qwik/cli 1.9.1-dev+b97b6d2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -775,6 +775,11 @@ var bgWhite = init(47, 49);
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var AppCommand = class {
+  args;
+  task;
+  cwd;
+  _rootDir;
+  _rootPkgJson;
   constructor(opts) {
     this._rootDir = opts.rootDir;
     this.cwd = opts.cwd;
@@ -4905,7 +4910,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.9.1-dev+e8958f4");
+  console.log("1.9.1-dev+b97b6d2");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
