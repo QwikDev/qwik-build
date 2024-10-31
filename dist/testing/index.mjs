@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.9.1-dev+b97b6d2
+ * @builder.io/qwik/testing 1.9.1-dev+876f802
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22676,6 +22676,93 @@ var isServerPlatform = () => {
   return false;
 };
 
+// packages/qwik/src/core/use/use-locale.ts
+var _locale = void 0;
+function setLocale(locale) {
+  _locale = locale;
+}
+
+// packages/qwik/src/core/use/use-core.ts
+var _context;
+var tryGetInvokeContext = () => {
+  if (!_context) {
+    const context = typeof document !== "undefined" && document && document.__q_context__;
+    if (!context) {
+      return void 0;
+    }
+    if (isArray(context)) {
+      return document.__q_context__ = newInvokeContextFromTuple(context);
+    }
+    return context;
+  }
+  return _context;
+};
+var useInvokeContext = () => {
+  const ctx = tryGetInvokeContext();
+  if (!ctx || ctx.$event$ !== RenderEvent) {
+    throw qError(QError_useInvokeContext);
+  }
+  assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
+  assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`, ctx);
+  assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
+  assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
+  return ctx;
+};
+function invoke(context, fn, ...args) {
+  return invokeApply.call(this, context, fn, args);
+}
+function invokeApply(context, fn, args) {
+  const previousContext = _context;
+  let returnValue;
+  try {
+    _context = context;
+    returnValue = fn.apply(this, args);
+  } finally {
+    _context = previousContext;
+  }
+  return returnValue;
+}
+var waitAndRun = (ctx, callback) => {
+  const waitOn = ctx.$waitOn$;
+  if (waitOn.length === 0) {
+    const result = callback();
+    if (isPromise(result)) {
+      waitOn.push(result);
+    }
+  } else {
+    waitOn.push(Promise.all(waitOn).then(callback));
+  }
+};
+var newInvokeContextFromTuple = ([element, event, url]) => {
+  const container2 = element.closest(QContainerSelector);
+  const locale = container2?.getAttribute(QLocaleAttr) || void 0;
+  locale && setLocale(locale);
+  return newInvokeContext(locale, void 0, element, event, url);
+};
+var newInvokeContext = (locale, hostElement, element, event, url) => {
+  const $locale$ = locale || (typeof event === "object" && event && "locale" in event ? event.locale : void 0);
+  const ctx = {
+    $url$: url,
+    $i$: 0,
+    $hostElement$: hostElement,
+    $element$: element,
+    $event$: event,
+    $qrl$: void 0,
+    $waitOn$: void 0,
+    $subscriber$: void 0,
+    $renderCtx$: void 0,
+    $locale$
+  };
+  seal(ctx);
+  return ctx;
+};
+var getWrappingContainer = (el) => {
+  return el.closest(QContainerSelector);
+};
+var untrack = (fn) => {
+  return invoke(void 0, fn);
+};
+
 // packages/qwik/src/core/state/constants.ts
 var QObjectRecursive = 1 << 0;
 var QObjectImmutable = 1 << 1;
@@ -25050,93 +25137,6 @@ var strToInt = (nu) => {
   return parseInt(nu, 36);
 };
 
-// packages/qwik/src/core/use/use-locale.ts
-var _locale = void 0;
-function setLocale(locale) {
-  _locale = locale;
-}
-
-// packages/qwik/src/core/use/use-core.ts
-var _context;
-var tryGetInvokeContext = () => {
-  if (!_context) {
-    const context = typeof document !== "undefined" && document && document.__q_context__;
-    if (!context) {
-      return void 0;
-    }
-    if (isArray(context)) {
-      return document.__q_context__ = newInvokeContextFromTuple(context);
-    }
-    return context;
-  }
-  return _context;
-};
-var useInvokeContext = () => {
-  const ctx = tryGetInvokeContext();
-  if (!ctx || ctx.$event$ !== RenderEvent) {
-    throw qError(QError_useInvokeContext);
-  }
-  assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
-  assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`, ctx);
-  assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
-  assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
-  return ctx;
-};
-function invoke(context, fn, ...args) {
-  return invokeApply.call(this, context, fn, args);
-}
-function invokeApply(context, fn, args) {
-  const previousContext = _context;
-  let returnValue;
-  try {
-    _context = context;
-    returnValue = fn.apply(this, args);
-  } finally {
-    _context = previousContext;
-  }
-  return returnValue;
-}
-var waitAndRun = (ctx, callback) => {
-  const waitOn = ctx.$waitOn$;
-  if (waitOn.length === 0) {
-    const result = callback();
-    if (isPromise(result)) {
-      waitOn.push(result);
-    }
-  } else {
-    waitOn.push(Promise.all(waitOn).then(callback));
-  }
-};
-var newInvokeContextFromTuple = ([element, event, url]) => {
-  const container2 = element.closest(QContainerSelector);
-  const locale = container2?.getAttribute(QLocaleAttr) || void 0;
-  locale && setLocale(locale);
-  return newInvokeContext(locale, void 0, element, event, url);
-};
-var newInvokeContext = (locale, hostElement, element, event, url) => {
-  const $locale$ = locale || (typeof event === "object" && event && "locale" in event ? event.locale : void 0);
-  const ctx = {
-    $url$: url,
-    $i$: 0,
-    $hostElement$: hostElement,
-    $element$: element,
-    $event$: event,
-    $qrl$: void 0,
-    $waitOn$: void 0,
-    $subscriber$: void 0,
-    $renderCtx$: void 0,
-    $locale$
-  };
-  seal(ctx);
-  return ctx;
-};
-var getWrappingContainer = (el) => {
-  return el.closest(QContainerSelector);
-};
-var untrack = (fn) => {
-  return invoke(void 0, fn);
-};
-
 // packages/qwik/src/core/use/use-signal.ts
 var useConstant = (value) => {
   const { val, set } = useSequentialScope();
@@ -25210,10 +25210,14 @@ var runComputed = (task, containerState, rCtx) => {
   try {
     const result = taskFn();
     if (isPromise(result)) {
-      const stack = new Error(
-        "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead."
-      ).stack;
-      logOnceWarn(stack);
+      const warningMessage = "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.";
+      const stack = new Error(warningMessage).stack;
+      if (!stack) {
+        logOnceWarn(warningMessage);
+      } else {
+        const lessScaryStack = stack.replace(/^Error:\s*/, "");
+        logOnceWarn(lessScaryStack);
+      }
       return result.then(ok, fail);
     } else {
       ok(result);

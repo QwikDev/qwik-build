@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+b97b6d2
+ * @builder.io/qwik 1.9.1-dev+876f802
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -174,67 +174,6 @@
     const directGetAttribute = (el, prop) => el.getAttribute(prop);
     const directRemoveAttribute = (el, prop) => el.removeAttribute(prop);
     const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
-    const ON_PROP_REGEX = /^(on|window:|document:)/;
-    const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
-    const groupListeners = listeners => {
-        if (0 === listeners.length) {
-            return EMPTY_ARRAY;
-        }
-        if (1 === listeners.length) {
-            const listener = listeners[0];
-            return [ [ listener[0], [ listener[1] ] ] ];
-        }
-        const keys = [];
-        for (let i = 0; i < listeners.length; i++) {
-            const eventName = listeners[i][0];
-            keys.includes(eventName) || keys.push(eventName);
-        }
-        return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
-    };
-    const setEvent = (existingListeners, prop, input, containerEl) => {
-        if (assertTrue(prop.endsWith("$")), prop = normalizeOnProp(prop.slice(0, -1)), input) {
-            if (isArray(input)) {
-                const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
-                existingListeners.push(...processed);
-            } else {
-                existingListeners.push([ prop, ensureQrl(input, containerEl) ]);
-            }
-        }
-        return prop;
-    };
-    const PREFIXES = [ "on", "window:on", "document:on" ];
-    const SCOPED = [ "on", "on-window", "on-document" ];
-    const normalizeOnProp = prop => {
-        let scope = "on";
-        for (let i = 0; i < PREFIXES.length; i++) {
-            const prefix = PREFIXES[i];
-            if (prop.startsWith(prefix)) {
-                scope = SCOPED[i], prop = prop.slice(prefix.length);
-                break;
-            }
-        }
-        return scope + ":" + (prop = prop.startsWith("-") ? fromCamelToKebabCase(prop.slice(1)) : prop.toLowerCase());
-    };
-    const ensureQrl = (value, containerEl) => (assertQrl(value), value.$setContainer$(containerEl), 
-    value);
-    const useOn = (event, eventQrl) => {
-        _useOn(createEventName(event, void 0), eventQrl);
-    };
-    const useOnDocument = (event, eventQrl) => {
-        _useOn(createEventName(event, "document"), eventQrl);
-    };
-    const createEventName = (event, eventType) => {
-        const formattedEventType = void 0 !== eventType ? eventType + ":" : "";
-        return Array.isArray(event) ? event.map((e => `${formattedEventType}on-${e}`)) : `${formattedEventType}on-${event}`;
-    };
-    const _useOn = (eventName, eventQrl) => {
-        if (eventQrl) {
-            const invokeCtx = useInvokeContext();
-            const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
-            assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
-            elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
-        }
-    };
     const getOrCreateProxy = (target, containerState, flags = 0) => {
         const proxy = containerState.$proxyMap$.get(target);
         return proxy || (0 !== flags && setObjectFlags(target, flags), createProxy(target, containerState, void 0));
@@ -349,6 +288,49 @@
         }
         return value;
     };
+    const ON_PROP_REGEX = /^(on|window:|document:)/;
+    const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
+    const groupListeners = listeners => {
+        if (0 === listeners.length) {
+            return EMPTY_ARRAY;
+        }
+        if (1 === listeners.length) {
+            const listener = listeners[0];
+            return [ [ listener[0], [ listener[1] ] ] ];
+        }
+        const keys = [];
+        for (let i = 0; i < listeners.length; i++) {
+            const eventName = listeners[i][0];
+            keys.includes(eventName) || keys.push(eventName);
+        }
+        return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
+    };
+    const setEvent = (existingListeners, prop, input, containerEl) => {
+        if (assertTrue(prop.endsWith("$")), prop = normalizeOnProp(prop.slice(0, -1)), input) {
+            if (isArray(input)) {
+                const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
+                existingListeners.push(...processed);
+            } else {
+                existingListeners.push([ prop, ensureQrl(input, containerEl) ]);
+            }
+        }
+        return prop;
+    };
+    const PREFIXES = [ "on", "window:on", "document:on" ];
+    const SCOPED = [ "on", "on-window", "on-document" ];
+    const normalizeOnProp = prop => {
+        let scope = "on";
+        for (let i = 0; i < PREFIXES.length; i++) {
+            const prefix = PREFIXES[i];
+            if (prop.startsWith(prefix)) {
+                scope = SCOPED[i], prop = prop.slice(prefix.length);
+                break;
+            }
+        }
+        return scope + ":" + (prop = prop.startsWith("-") ? fromCamelToKebabCase(prop.slice(1)) : prop.toLowerCase());
+    };
+    const ensureQrl = (value, containerEl) => (assertQrl(value), value.$setContainer$(containerEl), 
+    value);
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
             hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
@@ -361,7 +343,7 @@
             return value;
         }
     };
-    const version = "1.9.1-dev+b97b6d2";
+    const version = "1.9.1-dev+876f802";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -1625,6 +1607,24 @@
         const isServer = isServerPlatform();
         tasks.sort(((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$)) ? 1 : -1));
     };
+    const useOn = (event, eventQrl) => {
+        _useOn(createEventName(event, void 0), eventQrl);
+    };
+    const useOnDocument = (event, eventQrl) => {
+        _useOn(createEventName(event, "document"), eventQrl);
+    };
+    const createEventName = (event, eventType) => {
+        const formattedEventType = void 0 !== eventType ? eventType + ":" : "";
+        return Array.isArray(event) ? event.map((e => `${formattedEventType}on-${e}`)) : `${formattedEventType}on-${event}`;
+    };
+    const _useOn = (eventName, eventQrl) => {
+        if (eventQrl) {
+            const invokeCtx = useInvokeContext();
+            const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
+            assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
+            elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
+        }
+    };
     const createSignal = initialState => {
         const containerState = useContainerState();
         const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
@@ -1789,8 +1789,15 @@
         try {
             const result = taskFn();
             if (isPromise(result)) {
-                new Error("useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.");
-                return logOnceWarn(), result.then(ok, fail);
+                const warningMessage = "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.";
+                const stack = new Error(warningMessage).stack;
+                if (stack) {
+                    stack.replace(/^Error:\s*/, "");
+                    logOnceWarn();
+                } else {
+                    logOnceWarn();
+                }
+                return result.then(ok, fail);
             }
             ok(result);
         } catch (reason) {
