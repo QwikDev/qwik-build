@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+8ea55eb
+ * @builder.io/qwik/optimizer 1.9.1-dev+e3379dd
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.9.1-dev+8ea55eb"
+    qwik: "1.9.1-dev+e3379dd"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -4065,19 +4065,21 @@ globalThis.qwikOptimizer = function(module) {
       handleError(reason, hostElement, rCtx);
     };
     try {
-      const result = taskFn();
-      if (isPromise(result)) {
-        const warningMessage = "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.";
-        const stack = new Error(warningMessage).stack;
-        if (stack) {
-          const lessScaryStack = stack.replace(/^Error:\s*/, "");
-          logOnceWarn(lessScaryStack);
-        } else {
-          logOnceWarn(warningMessage);
+      return maybeThen(task.$qrl$.$resolveLazy$(containerState.$containerEl$), (() => {
+        const result = taskFn();
+        if (isPromise(result)) {
+          const warningMessage = "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.";
+          const stack = new Error(warningMessage).stack;
+          if (stack) {
+            const lessScaryStack = stack.replace(/^Error:\s*/, "");
+            logOnceWarn(lessScaryStack);
+          } else {
+            logOnceWarn(warningMessage);
+          }
+          return result.then(ok, fail);
         }
-        return result.then(ok, fail);
-      }
-      ok(result);
+        ok(result);
+      }));
     } catch (reason) {
       fail(reason);
     }
