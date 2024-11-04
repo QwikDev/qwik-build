@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/optimizer 2.0.0-0-dev+a8b8dee
+ * @qwik.dev/core/optimizer 2.0.0-0-dev+bd98e33
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+a8b8dee"
+  qwik: "2.0.0-0-dev+bd98e33"
 };
 
 async function getSystem() {
@@ -1278,53 +1278,6 @@ async function getSystem() {
   }
   return sys;
 }
-
-var getPlatformInputFiles = async sys => {
-  if ("function" === typeof sys.getInputFiles) {
-    return sys.getInputFiles;
-  }
-  if ("node" === sys.env) {
-    const fs = await sys.dynamicImport("node:fs");
-    return async rootDir => {
-      const getChildFilePaths = async dir => {
-        const stats = await fs.promises.stat(dir);
-        const flatted = [];
-        if (stats.isDirectory()) {
-          const dirItems = await fs.promises.readdir(dir);
-          const files = await Promise.all(dirItems.map((async subdir => {
-            const resolvedPath = sys.path.resolve(dir, subdir);
-            const stats2 = await fs.promises.stat(resolvedPath);
-            return stats2.isDirectory() ? getChildFilePaths(resolvedPath) : [ resolvedPath ];
-          })));
-          for (const file of files) {
-            flatted.push(...file);
-          }
-        } else {
-          flatted.push(dir);
-        }
-        return flatted.filter((a => sys.path.extname(a).toLowerCase() in extensions));
-      };
-      const filePaths = await getChildFilePaths(rootDir);
-      const inputs = (await Promise.all(filePaths.map((async filePath => {
-        const input = {
-          code: await fs.promises.readFile(filePath, "utf8"),
-          path: filePath
-        };
-        return input;
-      })))).sort(((a, b) => {
-        if (a.path < b.path) {
-          return -1;
-        }
-        if (a.path > b.path) {
-          return 1;
-        }
-        return 0;
-      }));
-      return inputs;
-    };
-  }
-  return null;
-};
 
 async function loadPlatformBinding(sys) {
   const sysEnv = getEnv();
@@ -1386,73 +1339,17 @@ var getEnv = () => {
   return "unknown";
 };
 
-var extensions = {
-  ".js": true,
-  ".ts": true,
-  ".tsx": true,
-  ".jsx": true,
-  ".mjs": true
-};
-
 var createOptimizer = async (optimizerOptions = {}) => {
   const sys = optimizerOptions?.sys || await getSystem();
   const binding = optimizerOptions?.binding || await loadPlatformBinding(sys);
   const optimizer = {
-    transformModules: async opts => transformModulesSync(binding, opts),
-    transformModulesSync: opts => transformModulesSync(binding, opts),
-    transformFs: async opts => transformFsAsync(sys, binding, opts),
-    transformFsSync: opts => transformFsSync(binding, opts),
+    transformModules: async opts => transformModules(binding, opts),
     sys: sys
   };
   return optimizer;
 };
 
-var transformModulesSync = (binding, opts) => binding.transform_modules(convertOptions(opts));
-
-var transformFsSync = (binding, opts) => {
-  if (binding.transform_fs) {
-    return binding.transform_fs(convertOptions(opts));
-  }
-  throw new Error("Not implemented");
-};
-
-var transformFsAsync = async (sys, binding, fsOpts) => {
-  if (binding.transform_fs && !sys.getInputFiles) {
-    return binding.transform_fs(convertOptions(fsOpts));
-  }
-  const getInputFiles = await getPlatformInputFiles(sys);
-  if (getInputFiles) {
-    const input = await getInputFiles(fsOpts.srcDir);
-    for (const root of fsOpts.vendorRoots) {
-      const rootFiles = await getInputFiles(root);
-      input.push(...rootFiles);
-    }
-    input.forEach((file => {
-      file.path = sys.path.relative(fsOpts.srcDir, file.path);
-    }));
-    const modulesOpts = {
-      srcDir: fsOpts.srcDir,
-      rootDir: fsOpts.rootDir,
-      entryStrategy: fsOpts.entryStrategy,
-      minify: fsOpts.minify,
-      sourceMaps: !!fsOpts.sourceMaps,
-      transpileTs: fsOpts.transpileTs,
-      transpileJsx: fsOpts.transpileJsx,
-      explicitExtensions: fsOpts.explicitExtensions,
-      preserveFilenames: fsOpts.preserveFilenames,
-      mode: fsOpts.mode,
-      scope: fsOpts.scope,
-      input: input,
-      regCtxName: fsOpts.regCtxName,
-      stripEventHandlers: fsOpts.stripEventHandlers,
-      stripCtxName: fsOpts.stripCtxName,
-      stripExports: fsOpts.stripExports,
-      isServer: fsOpts.isServer
-    };
-    return binding.transform_modules(convertOptions(modulesOpts));
-  }
-  throw new Error("Not implemented");
-};
+var transformModules = (binding, opts) => binding.transform_modules(convertOptions(opts));
 
 var convertOptions = opts => {
   const output = {
@@ -2301,7 +2198,9 @@ function createPlugin(optimizerOptions = {}) {
           transformOpts2.stripExports = SERVER_STRIP_EXPORTS;
         }
       }
-      const newOutput = optimizer2.transformModulesSync(transformOpts2);
+      const now2 = Date.now();
+      const newOutput = await optimizer2.transformModules(transformOpts2);
+      debug(`transform(${count2})`, `done in ${Date.now() - now2}ms`);
       const module = newOutput.modules.find((mod => !isAdditionalFile(mod)));
       diagnosticsCallback(newOutput.diagnostics, optimizer2, srcDir);
       if (isServer2) {
@@ -3323,7 +3222,7 @@ function setLocale(locale) {
 }
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+a8b8dee",
+  qwik: "2.0.0-0-dev+bd98e33",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -5476,7 +5375,7 @@ var WrappedSignal = class extends Signal {
   }
 };
 
-var version = "2.0.0-0-dev+a8b8dee";
+var version = "2.0.0-0-dev+bd98e33";
 
 var _SharedContainer = class {
   constructor(scheduleDrain, journalFlush, serverData, locale) {

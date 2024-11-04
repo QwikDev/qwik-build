@@ -3650,7 +3650,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 /* Excluded from this release type: _verifySerializable */
 
 /**
- * 2.0.0-0-dev+a8b8dee
+ * 2.0.0-0-dev+bd98e33
  *
  * @public
  */

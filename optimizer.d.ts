@@ -101,12 +101,6 @@ declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOp
 export declare interface Optimizer {
     /** Transforms the input code string, does not access the file system. */
     transformModules(opts: TransformModulesOptions): Promise<TransformOutput>;
-    /** Transforms the input code string, does not access the file system. */
-    transformModulesSync(opts: TransformModulesOptions): TransformOutput;
-    /** Transforms the directory from the file system. */
-    transformFs(opts: TransformFsOptions): Promise<TransformOutput>;
-    /** Transforms the directory from the file system. */
-    transformFsSync(opts: TransformFsOptions): TransformOutput;
     /** Optimizer system use. This can be updated with a custom file system. */
     sys: OptimizerSystem;
 }
@@ -651,11 +645,6 @@ export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper |
 
 /** @public */
 export declare type SystemEnvironment = 'node' | 'deno' | 'bun' | 'webworker' | 'browsermain' | 'unknown';
-
-/** @public */
-export declare interface TransformFsOptions extends TransformOptions {
-    vendorRoots: string[];
-}
 
 /** @public */
 export declare interface TransformModule {
