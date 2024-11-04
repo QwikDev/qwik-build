@@ -2829,7 +2829,7 @@ declare interface SSRContainer extends Container {
     unclaimedProjectionComponentFrameQueue: ISsrComponentFrame[];
     openContainer(): void;
     closeContainer(): ValueOrPromise<void>;
-    openElement(elementName: string, varAttrs: SsrAttrs | null, constAttrs?: SsrAttrs | null): string | undefined;
+    openElement(elementName: string, varAttrs: SsrAttrs | null, constAttrs?: SsrAttrs | null, currentFile?: string | null): string | undefined;
     closeElement(): ValueOrPromise<void>;
     openFragment(attrs: SsrAttrs): void;
     closeFragment(): void;
@@ -3901,7 +3901,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+bd98e33
+ * 2.0.0-0-dev+39df9c4
  *
  * @public
  */

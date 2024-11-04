@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+bd98e33
+ * @qwik.dev/core 2.0.0-0-dev+39df9c4
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -469,6 +469,7 @@
     const STREAM_BLOCK_END_COMMENT = 'qkssr-po';
     const Q_PROPS_SEPARATOR = ':';
     const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
+    const qwikInspectorAttr = 'data-qwik-inspector';
 
     let _locale = undefined;
     /**
@@ -4395,8 +4396,14 @@
                 // Below, JSXChildren allows functions and regexes, but we assume the dev only uses those as appropriate.
                 if (typeof type === 'string') {
                     appendClassIfScopedStyleExists(jsx, options.styleScoped);
-                    appendQwikInspectorAttribute(jsx);
-                    const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, options.styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped));
+                    let qwikInspectorAttrValue = null;
+                    if (build.isDev && jsx.dev && jsx.type !== 'head') {
+                        qwikInspectorAttrValue = getQwikInspectorAttributeValue(jsx.dev);
+                        if (qInspector) {
+                            appendQwikInspectorAttribute(jsx, qwikInspectorAttrValue);
+                        }
+                    }
+                    const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, options.styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped), qwikInspectorAttrValue);
                     if (innerHTML) {
                         ssr.htmlNode(innerHTML);
                     }
@@ -4664,14 +4671,16 @@
         }
         return directGetPropsProxyProp(jsx, 'name') || QDefaultSlot;
     }
-    function appendQwikInspectorAttribute(jsx) {
-        if (build.isDev && qInspector && jsx.dev && jsx.type !== 'head') {
-            const sanitizedFileName = jsx.dev.fileName?.replace(/\\/g, '/');
-            const qwikInspectorAttr = 'data-qwik-inspector';
-            if (sanitizedFileName && (!jsx.constProps || !(qwikInspectorAttr in jsx.constProps))) {
-                (jsx.constProps || (jsx.constProps = {}))[qwikInspectorAttr] =
-                    `${sanitizedFileName}:${jsx.dev.lineNumber}:${jsx.dev.columnNumber}`;
-            }
+    function getQwikInspectorAttributeValue(jsxDev) {
+        const sanitizedFileName = jsxDev.fileName?.replace(/\\/g, '/');
+        if (sanitizedFileName) {
+            return `${sanitizedFileName}:${jsxDev.lineNumber}:${jsxDev.columnNumber}`;
+        }
+        return null;
+    }
+    function appendQwikInspectorAttribute(jsx, qwikInspectorAttrValue) {
+        if (qwikInspectorAttrValue && (!jsx.constProps || !(qwikInspectorAttr in jsx.constProps))) {
+            (jsx.constProps || (jsx.constProps = {}))[qwikInspectorAttr] = qwikInspectorAttrValue;
         }
     }
     // append class attribute if styleScopedId exists and there is no class attribute
@@ -4690,7 +4699,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+bd98e33";
+    const version = "2.0.0-0-dev+39df9c4";
 
     /** @internal */
     class _SharedContainer {

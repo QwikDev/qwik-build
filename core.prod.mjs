@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+bd98e33
+ * @qwik.dev/core 2.0.0-0-dev+39df9c4
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -327,6 +327,8 @@ const STREAM_BLOCK_END_COMMENT = "qkssr-po";
 const Q_PROPS_SEPARATOR = ":";
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
+
+const qwikInspectorAttr = "data-qwik-inspector";
 
 let _locale;
 
@@ -2439,8 +2441,10 @@ function processJSXNode(ssr, enqueue, value, options) {
             const jsx = value;
             const type = jsx.type;
             if ("string" == typeof type) {
-                appendClassIfScopedStyleExists(jsx, options.styleScoped), appendQwikInspectorAttribute(jsx);
-                const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, options.styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped));
+                appendClassIfScopedStyleExists(jsx, options.styleScoped);
+                let qwikInspectorAttrValue = null;
+                isDev && jsx.dev && "head" !== jsx.type && (qwikInspectorAttrValue = getQwikInspectorAttributeValue(jsx.dev));
+                const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, options.styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped), qwikInspectorAttrValue);
                 innerHTML && ssr.htmlNode(innerHTML), enqueue(ssr.closeElement), "head" === type ? (enqueue(ssr.additionalHeadNodes), 
                 enqueue(ssr.emitQwikLoaderAtTopIfNeeded)) : "body" === type && enqueue(ssr.additionalBodyNodes);
                 const children = jsx.children;
@@ -2603,8 +2607,13 @@ function getSlotName(host, jsx, ssr) {
     return directGetPropsProxyProp(jsx, "name") || "";
 }
 
-function appendQwikInspectorAttribute() {
-    0;
+function getQwikInspectorAttributeValue(jsxDev) {
+    const sanitizedFileName = jsxDev.fileName?.replace(/\\/g, "/");
+    return sanitizedFileName ? `${sanitizedFileName}:${jsxDev.lineNumber}:${jsxDev.columnNumber}` : null;
+}
+
+function appendQwikInspectorAttribute(jsx, qwikInspectorAttrValue) {
+    !qwikInspectorAttrValue || jsx.constProps && qwikInspectorAttr in jsx.constProps || ((jsx.constProps || (jsx.constProps = {}))[qwikInspectorAttr] = qwikInspectorAttrValue);
 }
 
 function appendClassIfScopedStyleExists(jsx, styleScoped) {
@@ -2612,7 +2621,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+bd98e33";
+const version = "2.0.0-0-dev+39df9c4";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {

@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+bd98e33
+ * @qwik.dev/core 2.0.0-0-dev+39df9c4
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1953,9 +1953,17 @@
                         !classAttributeExists && styleScoped && (jsx.constProps || (jsx.constProps = {}), 
                         jsx.constProps.class = "");
                     }(jsx, options.styleScoped);
+                    let qwikInspectorAttrValue = null;
+                    build.isDev && jsx.dev && "head" !== jsx.type && (qwikInspectorAttrValue = function(jsxDev) {
+                        const sanitizedFileName = jsxDev.fileName?.replace(/\\/g, "/");
+                        if (sanitizedFileName) {
+                            return `${sanitizedFileName}:${jsxDev.lineNumber}:${jsxDev.columnNumber}`;
+                        }
+                        return null;
+                    }(jsx.dev));
                     const innerHTML = ssr.openElement(type, toSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, !0, options.styleScoped, jsx.key), function(constProps, varProps, serializationCtx, styleScopedId) {
                         return toSsrAttrs(constProps, varProps, serializationCtx, !1, styleScopedId);
-                    }(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped));
+                    }(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped), qwikInspectorAttrValue);
                     innerHTML && ssr.htmlNode(innerHTML), enqueue(ssr.closeElement), "head" === type ? (enqueue(ssr.additionalHeadNodes), 
                     enqueue(ssr.emitQwikLoaderAtTopIfNeeded)) : "body" === type && enqueue(ssr.additionalBodyNodes);
                     const children = jsx.children;
@@ -2116,7 +2124,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+bd98e33", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+39df9c4", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -5053,7 +5061,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+bd98e33", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+39df9c4", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

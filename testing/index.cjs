@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core/testing 2.0.0-0-dev+bd98e33
+ * @qwik.dev/core/testing 2.0.0-0-dev+39df9c4
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -30846,14 +30846,14 @@ var SSRContainer = class extends import_core5._SharedContainer {
     return this.closeElement();
   }
   /** Renders opening tag for DOM element */
-  openElement(elementName, varAttrs, constAttrs) {
+  openElement(elementName, varAttrs, constAttrs, currentFile) {
     let innerHTML = void 0;
     this.lastNode = null;
     const isQwikStyle = isQwikStyleElement(elementName, varAttrs) || isQwikStyleElement(elementName, constAttrs);
     if (!isQwikStyle && this.currentElementFrame) {
       vNodeData_incrementElementCount(this.currentElementFrame.vNodeData);
     }
-    this.createAndPushFrame(elementName, this.depthFirstElementCount++);
+    this.createAndPushFrame(elementName, this.depthFirstElementCount++, currentFile);
     this.write("<");
     this.write(elementName);
     if (varAttrs) {
@@ -31407,7 +31407,7 @@ var SSRContainer = class extends import_core5._SharedContainer {
     }
     return elementIdx;
   }
-  createAndPushFrame(elementName, depthFirstElementIdx) {
+  createAndPushFrame(elementName, depthFirstElementIdx, currentFile) {
     let tagNesting = 10 /* ANYTHING */;
     if (import_build10.isDev) {
       if (!this.currentElementFrame) {
@@ -31422,12 +31422,16 @@ var SSRContainer = class extends import_core5._SharedContainer {
             frames.unshift(frame2);
             frame2 = frame2.parent;
           }
-          const text = [
+          const text = [];
+          if (currentFile) {
+            text.push(`Error found in file: ${currentFile}`);
+          }
+          text.push(
             `HTML rules do not allow '<${elementName}>' at this location.`,
             `  (The HTML parser will try to recover by auto-closing or inserting additional tags which will confuse Qwik when it resumes.)`,
             `  Offending tag: <${elementName}>`,
             `  Existing tag context:`
-          ];
+          );
           let indent = "    ";
           let lastName = "";
           for (const frame3 of frames) {
