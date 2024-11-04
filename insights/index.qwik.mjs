@@ -1,7 +1,7 @@
 import { sync$, component$ } from "@qwik.dev/core";
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+8a5a778
+ * @qwik.dev/core 2.0.0-0-dev+a8b8dee
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE

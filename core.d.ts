@@ -52,7 +52,8 @@ import type { StreamWriter as StreamWriter_2 } from './internal';
  * ```tsx
  *
  * import { createContextId, useContext, useContextProvider } from './use/use-context';
- * import { Resource, useResource$ } from './use/use-resource';
+ * import { Resource } from './use/use-resource';
+ * import { useResource$ } from './use/use-resource-dollar';
  * import { useSignal } from './use/use-signal';
  *
  * export const greet = () => console.log('greet');
@@ -2098,9 +2099,12 @@ export declare interface RenderSSROptions {
  *
  * The status can be one of the following:
  *
- * - 'pending' - the data is not yet available.
- * - 'resolved' - the data is available.
- * - 'rejected' - the data is not available due to an error or timeout.
+ * - `pending` - the data is not yet available.
+ * - `resolved` - the data is available.
+ * - `rejected` - the data is not available due to an error or timeout.
+ *
+ * Be careful when using a `try/catch` statement in `useResource$`. If you catch the error and don't
+ * re-throw it (or a new Error), the resource status will never be `rejected`.
  *
  * ### Example
  *
@@ -3348,9 +3352,12 @@ export declare const useOnWindow: <T extends KnownEventNames>(event: T | T[], ev
  *
  * The status can be one of the following:
  *
- * - 'pending' - the data is not yet available.
- * - 'resolved' - the data is available.
- * - 'rejected' - the data is not available due to an error or timeout.
+ * - `pending` - the data is not yet available.
+ * - `resolved` - the data is available.
+ * - `rejected` - the data is not available due to an error or timeout.
+ *
+ * Be careful when using a `try/catch` statement in `useResource$`. If you catch the error and don't
+ * re-throw it (or a new Error), the resource status will never be `rejected`.
  *
  * ### Example
  *
@@ -3643,7 +3650,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 /* Excluded from this release type: _verifySerializable */
 
 /**
- * 2.0.0-0-dev+8a5a778
+ * 2.0.0-0-dev+a8b8dee
  *
  * @public
  */

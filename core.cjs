@@ -1,6 +1,6 @@
 /**
  * @license
- * @qwik.dev/core 2.0.0-0-dev+8a5a778
+ * @qwik.dev/core 2.0.0-0-dev+a8b8dee
  * Copyright QwikDev. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -244,7 +244,7 @@
     let _platform = /*#__PURE__ */ createPlatform();
     // <docs markdown="./readme.md#setPlatform">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./readme.md#setPlatform instead)
+    // (edit ./readme.md#setPlatform instead and run `pnpm docs.sync`)
     /**
      * Sets the `CorePlatform`.
      *
@@ -259,7 +259,7 @@
     const setPlatform = (plt) => (_platform = plt);
     // <docs markdown="./readme.md#getPlatform">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./readme.md#getPlatform instead)
+    // (edit ./readme.md#getPlatform instead and run `pnpm docs.sync`)
     /**
      * Retrieve the `CorePlatform`.
      *
@@ -536,9 +536,9 @@
     // https://regexr.com/6a83h
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
     const announcedQRL = /*#__PURE__*/ new Set();
-    // <docs markdown="../readme.md#qrl">
+    // <docs markdown="../../readme.md#qrl">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#qrl instead)
+    // (edit ../../readme.md#qrl instead and run `pnpm docs.sync`)
     /**
      * Used by Qwik Optimizer to point to lazy-loaded resources.
      *
@@ -1217,7 +1217,7 @@
     };
     // <docs markdown="../readme.md#useResource">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useResource instead)
+    // (edit ../readme.md#useResource instead and run `pnpm docs.sync`)
     /**
      * This method works like an async memoized function that runs whenever some tracked value changes
      * and returns some data.
@@ -1227,9 +1227,12 @@
      *
      * The status can be one of the following:
      *
-     * - 'pending' - the data is not yet available.
-     * - 'resolved' - the data is available.
-     * - 'rejected' - the data is not available due to an error or timeout.
+     * - `pending` - the data is not yet available.
+     * - `resolved` - the data is available.
+     * - `rejected` - the data is not available due to an error or timeout.
+     *
+     * Be careful when using a `try/catch` statement in `useResource$`. If you catch the error and don't
+     * re-throw it (or a new Error), the resource status will never be `rejected`.
      *
      * ### Example
      *
@@ -1738,7 +1741,7 @@
 
     // <docs markdown="../readme.md#useOn">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useOn instead)
+    // (edit ../readme.md#useOn instead and run `pnpm docs.sync`)
     /**
      * Register a listener on the current component's host element.
      *
@@ -1754,7 +1757,7 @@
     };
     // <docs markdown="../readme.md#useOnDocument">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useOnDocument instead)
+    // (edit ../readme.md#useOnDocument instead and run `pnpm docs.sync`)
     /**
      * Register a listener on `document`.
      *
@@ -1786,7 +1789,7 @@
     };
     // <docs markdown="../readme.md#useOnWindow">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useOnWindow instead)
+    // (edit ../readme.md#useOnWindow instead and run `pnpm docs.sync`)
     /**
      * Register a listener on `window`.
      *
@@ -3269,9 +3272,9 @@
         SiblingsArray[SiblingsArray["NextVNode"] = 5] = "NextVNode";
     })(SiblingsArray || (SiblingsArray = {}));
 
-    // <docs markdown="../readme.md#implicit$FirstArg">
+    // <docs markdown="../../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#implicit$FirstArg instead)
+    // (edit ../../readme.md#implicit$FirstArg instead and run `pnpm docs.sync`)
     /**
      * Create a `____$(...)` convenience method from `___(...)`.
      *
@@ -3716,7 +3719,7 @@
 
     // <docs markdown="../readme.md#useLexicalScope">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useLexicalScope instead)
+    // (edit ../readme.md#useLexicalScope instead and run `pnpm docs.sync`)
     /**
      * Used by the Qwik Optimizer to restore the lexically scoped variables.
      *
@@ -4687,7 +4690,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+8a5a778";
+    const version = "2.0.0-0-dev+a8b8dee";
 
     /** @internal */
     class _SharedContainer {
@@ -6977,7 +6980,7 @@
 
     // <docs markdown="../readme.md#createContextId">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#createContextId instead)
+    // (edit ../readme.md#createContextId instead and run `pnpm docs.sync`)
     /**
      * Create a context ID to be used in your application. The name should be written with no spaces.
      *
@@ -7037,7 +7040,7 @@
     };
     // <docs markdown="../readme.md#useContextProvider">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useContextProvider instead)
+    // (edit ../readme.md#useContextProvider instead and run `pnpm docs.sync`)
     /**
      * Assign a value to a Context.
      *
@@ -7106,7 +7109,7 @@
     };
     // <docs markdown="../readme.md#useContext">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useContext instead)
+    // (edit ../readme.md#useContext instead and run `pnpm docs.sync`)
     /**
      * Retrieve Context value.
      *
@@ -9276,9 +9279,9 @@
     const fastSkipSerialize = (obj) => {
         return noSerializeSet.has(obj);
     };
-    // <docs markdown="../readme.md#noSerialize">
+    // <docs markdown="../../readme.md#noSerialize">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#noSerialize instead)
+    // (edit ../../readme.md#noSerialize instead and run `pnpm docs.sync`)
     /**
      * Marks a property on a store as non-serializable.
      *
@@ -9507,9 +9510,9 @@
     };
 
     let runtimeSymbolId = 0;
-    // <docs markdown="../readme.md#$">
+    // <docs markdown="../../readme.md#$">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#$ instead)
+    // (edit ../../readme.md#$ instead and run `pnpm docs.sync`)
     /**
      * Qwik Optimizer marker function.
      *
@@ -9558,7 +9561,8 @@
      * ```tsx
      *
      * import { createContextId, useContext, useContextProvider } from './use/use-context';
-     * import { Resource, useResource$ } from './use/use-resource';
+     * import { Resource } from './use/use-resource';
+     * import { useResource$ } from './use/use-resource-dollar';
      * import { useSignal } from './use/use-signal';
      *
      * export const greet = () => console.log('greet');
@@ -9647,7 +9651,7 @@
     };
     // <docs markdown="../readme.md#component">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#component instead)
+    // (edit ../readme.md#component instead and run `pnpm docs.sync`)
     /**
      * Declare a Qwik component that can be used to create UI.
      *
@@ -9742,7 +9746,7 @@
 
     // <docs markdown="../readme.md#useStore">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useStore instead)
+    // (edit ../readme.md#useStore instead and run `pnpm docs.sync`)
     /**
      * Creates an object that Qwik can track across serializations.
      *
@@ -10205,7 +10209,7 @@
     };
     // <docs markdown="../readme.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useStyles instead)
+    // (edit ../readme.md#useStyles instead and run `pnpm docs.sync`)
     /**
      * A lazy-loadable reference to a component's styles.
      *
@@ -10235,7 +10239,7 @@
     };
     // <docs markdown="../readme.md#useStylesScoped">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useStylesScoped instead)
+    // (edit ../readme.md#useStylesScoped instead and run `pnpm docs.sync`)
     /**
      * A lazy-loadable reference to a component's styles, that is scoped to the component.
      *
@@ -10342,7 +10346,7 @@
 
     // <docs markdown="../readme.md#useResource">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useResource instead)
+    // (edit ../readme.md#useResource instead and run `pnpm docs.sync`)
     /**
      * This method works like an async memoized function that runs whenever some tracked value changes
      * and returns some data.
@@ -10352,9 +10356,12 @@
      *
      * The status can be one of the following:
      *
-     * - 'pending' - the data is not yet available.
-     * - 'resolved' - the data is available.
-     * - 'rejected' - the data is not available due to an error or timeout.
+     * - `pending` - the data is not yet available.
+     * - `resolved` - the data is available.
+     * - `rejected` - the data is not available due to an error or timeout.
+     *
+     * Be careful when using a `try/catch` statement in `useResource$`. If you catch the error and don't
+     * re-throw it (or a new Error), the resource status will never be `rejected`.
      *
      * ### Example
      *
@@ -10401,7 +10408,7 @@
 
     // <docs markdown="../readme.md#useTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useTask instead)
+    // (edit ../readme.md#useTask instead and run `pnpm docs.sync`)
     /**
      * Reruns the `taskFn` when the observed inputs change.
      *
@@ -10464,7 +10471,7 @@
 
     // <docs markdown="../readme.md#useVisibleTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useVisibleTask instead)
+    // (edit ../readme.md#useVisibleTask instead and run `pnpm docs.sync`)
     /**
      * ```tsx
      * const Timer = component$(() => {
