@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../src/build/index.prod.ts", "../../src/build/index.ts"],
-  "sourcesContent": ["export { isBrowser, isServer } from './index';\n\n/**\n * True when build is in dev mode.\n *\n * @public\n */\nexport const isDev: boolean = false;\n", "/**\n * True when build is made for browser, client-side execution.\n *\n * @public\n */\nexport const isBrowser: boolean = /*#__PURE__*/ (() =>\n  typeof window !== 'undefined' &&\n  typeof HTMLElement !== 'undefined' &&\n  !!window.document &&\n  String(HTMLElement).includes('[native code]'))();\n\n/**\n * True when build is made for SSR purposes.\n *\n * @public\n */\nexport const isServer: boolean = !isBrowser;\n\n/**\n * True when build is in dev mode.\n *\n * @public\n */\nexport const isDev: boolean = /*#__PURE__*/ (() => {\n  return (globalThis as any).qDev === true;\n})();\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;;;ACKO,IAAM,YAAoC,uBAC/C,OAAO,WAAW,eAClB,OAAO,gBAAgB,eACvB,CAAC,CAAC,OAAO,YACT,OAAO,WAAW,EAAE,SAAS,eAAe,GAAG;AAO1C,IAAM,WAAoB,CAAC;;;ADT3B,IAAM,QAAiB;",
-  "names": []
-}

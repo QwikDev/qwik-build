@@ -1,3 +1,4 @@
 #!/usr/bin/env node
-const qwik = require('./cli.cjs');
+// This requires the build to be run first.
+const qwik = require('./dist/cli.cjs');
 qwik.runCli();
