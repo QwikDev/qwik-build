@@ -21,6 +21,10 @@
 
   And will prevent typescript errors when using libraries which haven't upgraded to V2 yet.
 
+- ✨ add monorepo support to the `qwik add` command by adding a `projectDir` param (by [@shairez](https://github.com/shairez) in [#7059](https://github.com/QwikDev/qwik/pull/7059))
+
+  That way you can run `qwik add --projectDir=packages/my-package` and it will add the feature to the specified project/package (sub) folder, instead of the root folder.
+
 ## 1.10.0
 
 ### Minor Changes
