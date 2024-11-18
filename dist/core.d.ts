@@ -1236,7 +1236,7 @@ export declare const _jsxBranch: <T>(input?: T) => T | undefined;
  *
  * Create a JSXNode for any tag, with possibly immutable props embedded in props
  */
-export declare const _jsxC: <T extends string | FunctionComponent<Record<any, unknown>>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<any, unknown>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
+export declare const _jsxC: <T extends string | FunctionComponent<Record<any, unknown>>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<any, unknown>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNodeInternal<T>;
 
 /** @public */
 export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
@@ -1258,11 +1258,19 @@ declare interface JsxDevOpts {
 export declare interface JSXNode<T extends string | FunctionComponent | unknown = unknown> {
     type: T;
     props: T extends FunctionComponent<infer P> ? P : Record<any, unknown>;
-    immutableProps: Record<any, unknown> | null;
     children: JSXChildren | null;
-    flags: number;
     key: string | null;
     dev?: DevJSX;
+}
+
+/**
+ * The internal representation of a JSX node.
+ *
+ * @internal
+ */
+declare interface JSXNodeInternal<T extends string | FunctionComponent | unknown = unknown> extends JSXNode<T> {
+    immutableProps: Record<any, unknown> | null;
+    flags: number;
 }
 
 /**
@@ -1277,14 +1285,14 @@ export declare type JSXOutput = JSXNode | string | number | boolean | null | und
  *
  * Create a JSXNode for a string tag
  */
-export declare const _jsxQ: <T extends string>(type: T, mutableProps: Record<any, unknown> | null, immutableProps: Record<any, unknown> | null, children: JSXChildren | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
+export declare const _jsxQ: <T extends string>(type: T, mutableProps: Record<any, unknown> | null, immutableProps: Record<any, unknown> | null, children: JSXChildren | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNodeInternal<T>;
 
 /**
  * @internal
  *
  * A string tag with dynamic props, possibly containing children
  */
-export declare const _jsxS: <T extends string>(type: T, mutableProps: Record<any, unknown> | null, immutableProps: Record<any, unknown> | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
+export declare const _jsxS: <T extends string>(type: T, mutableProps: Record<any, unknown> | null, immutableProps: Record<any, unknown> | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNodeInternal<T>;
 
 /** @public */
 export declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
@@ -1582,7 +1590,7 @@ export declare const PrefetchGraph: (opts?: {
     manifestHash?: string;
     manifestURL?: string;
     nonce?: string;
-}) => JSXNode_2<"script">;
+}) => JSXOutput;
 
 /**
  * Install a service worker which will prefetch the bundles.
@@ -3858,7 +3866,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.10.0
+ * 1.10.0-dev+6029bbf
  *
  * @public
  */

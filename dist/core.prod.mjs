@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.10.0
+ * @builder.io/qwik 1.10.0-dev+6029bbf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -568,7 +568,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.10.0";
+const version = "1.10.0-dev+6029bbf";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -880,7 +880,7 @@ const _renderSSR = async (node, opts) => {
     const locale = opts.serverData?.locale;
     const containerAttributes = opts.containerAttributes;
     const qRender = containerAttributes["q:render"];
-    containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.10.0", 
+    containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = version ?? "dev", 
     containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
     containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
     containerAttributes["q:instance"] = hash();
@@ -5647,7 +5647,7 @@ const renderRoot = async (rCtx, parent, jsxOutput) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "1.10.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", version ?? "dev"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
