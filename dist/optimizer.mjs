@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.10.0-dev+7558018
+ * @builder.io/qwik/optimizer 1.10.0-dev+9259205
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.10.0-dev+7558018"
+  qwik: "1.10.0-dev+9259205"
 };
 
 async function getSystem() {
@@ -4233,15 +4233,23 @@ var ReadWriteProxyHandler = class {
     oldValue !== unwrappedNewValue && this.$manager$.$notifySubs$(prop);
     return true;
   }
-  has(target, property) {
-    if (property === QOjectTargetSymbol) {
+  has(target, prop) {
+    if (prop === QOjectTargetSymbol) {
       return true;
+    }
+    const invokeCtx = tryGetInvokeContext();
+    if ("string" === typeof prop && invokeCtx) {
+      const subscriber = invokeCtx.$subscriber$;
+      if (subscriber) {
+        const isA = isArray(target);
+        this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+      }
     }
     const hasOwnProperty = Object.prototype.hasOwnProperty;
-    if (hasOwnProperty.call(target, property)) {
+    if (hasOwnProperty.call(target, prop)) {
       return true;
     }
-    if ("string" === typeof property && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+    if ("string" === typeof prop && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + prop)) {
       return true;
     }
     return false;
