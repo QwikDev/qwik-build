@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.10.0-dev+9259205
+ * @builder.io/qwik 1.10.0-dev+34d4324
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -912,7 +912,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.10.0-dev+9259205";
+const version = "1.10.0-dev+34d4324";
 
 /**
  * @internal
