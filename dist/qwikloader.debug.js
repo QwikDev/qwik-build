@@ -60,6 +60,7 @@
         const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {
             const attrName = "on" + onPrefix + ":" + eventName;
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
+            element.hasAttribute("stoppropagation:" + eventName) && ev.stopPropagation();
             const ctx = element._qc_;
             const relevantListeners = ctx && ctx.li.filter((li => li[0] === attrName));
             if (relevantListeners && relevantListeners.length > 0) {
