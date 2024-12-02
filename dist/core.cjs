@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.10.0-dev+7558018
+ * @builder.io/qwik 1.11.0-dev+f7dc3ef
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -717,15 +717,23 @@
             }
             return true;
         }
-        has(target, property) {
-            if (property === QOjectTargetSymbol) {
+        has(target, prop) {
+            if (prop === QOjectTargetSymbol) {
                 return true;
+            }
+            const invokeCtx = tryGetInvokeContext();
+            if (typeof prop === 'string' && invokeCtx) {
+                const subscriber = invokeCtx.$subscriber$;
+                if (subscriber) {
+                    const isA = isArray(target);
+                    this.$manager$.$addSub$(subscriber, isA ? undefined : prop);
+                }
             }
             const hasOwnProperty = Object.prototype.hasOwnProperty;
-            if (hasOwnProperty.call(target, property)) {
+            if (hasOwnProperty.call(target, prop)) {
                 return true;
             }
-            if (typeof property === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+            if (typeof prop === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + prop)) {
                 return true;
             }
             return false;
@@ -908,7 +916,7 @@
      *
      * @public
      */
-    const version = "1.10.0-dev+7558018";
+    const version = "1.11.0-dev+f7dc3ef";
 
     /**
      * @internal

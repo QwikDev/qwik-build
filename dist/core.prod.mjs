@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.10.0-dev+7558018
+ * @builder.io/qwik 1.11.0-dev+f7dc3ef
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -433,12 +433,20 @@ class ReadWriteProxyHandler {
         return target[prop] = unwrappedNewValue, oldValue !== unwrappedNewValue && this.$manager$.$notifySubs$(prop), 
         !0;
     }
-    has(target, property) {
-        if (property === QOjectTargetSymbol) {
+    has(target, prop) {
+        if (prop === QOjectTargetSymbol) {
             return !0;
         }
+        const invokeCtx = tryGetInvokeContext();
+        if ("string" == typeof prop && invokeCtx) {
+            const subscriber = invokeCtx.$subscriber$;
+            if (subscriber) {
+                const isA = isArray(target);
+                this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+            }
+        }
         const hasOwnProperty = Object.prototype.hasOwnProperty;
-        return !!hasOwnProperty.call(target, property) || !("string" != typeof property || !hasOwnProperty.call(target, "$$" + property));
+        return !!hasOwnProperty.call(target, prop) || !("string" != typeof prop || !hasOwnProperty.call(target, "$$" + prop));
     }
     ownKeys(target) {
         const flags = target[QObjectFlagsSymbol] ?? 0;
@@ -568,7 +576,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.10.0-dev+7558018";
+const version = "1.11.0-dev+f7dc3ef";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
