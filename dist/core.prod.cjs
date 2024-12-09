@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0-dev+c322230
+ * @builder.io/qwik 1.11.0-dev+d31ee31
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -351,7 +351,7 @@
             return value;
         }
     };
-    const version = "1.11.0-dev+c322230";
+    const version = "1.11.0-dev+d31ee31";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4690,7 +4690,22 @@
             onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
         })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
     }).toString();
-    exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
+    Object.defineProperty(exports, "isBrowser", {
+        enumerable: !0,
+        get: function() {
+            return build.isBrowser;
+        }
+    }), Object.defineProperty(exports, "isDev", {
+        enumerable: !0,
+        get: function() {
+            return build.isDev;
+        }
+    }), Object.defineProperty(exports, "isServer", {
+        enumerable: !0,
+        get: function() {
+            return build.isServer;
+        }
+    }), exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
     exports.PrefetchGraph = (opts = {}) => {
         const isTest = (void 0).TEST;
         if (build.isDev && !isTest) {

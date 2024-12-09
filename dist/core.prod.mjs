@@ -1,11 +1,13 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0-dev+c322230
+ * @builder.io/qwik 1.11.0-dev+d31ee31
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 import { isServer, isBrowser, isDev } from "@builder.io/qwik/build";
+
+export { isBrowser, isDev, isServer } from "@builder.io/qwik/build";
 
 const implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $(first), ...rest);
@@ -576,7 +578,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.11.0-dev+c322230";
+const version = "1.11.0-dev+d31ee31";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();

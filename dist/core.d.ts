@@ -1,4 +1,7 @@
 import * as CSS_2 from 'csstype';
+import { isBrowser } from './build';
+import { isDev } from './build';
+import { isServer } from './build';
 import type { JSXNode as JSXNode_2 } from './jsx-runtime';
 
 /**
@@ -1204,11 +1207,17 @@ declare type IsAcceptableDOMValue<T> = T extends boolean | number | string | nul
 
 declare type IsAny<T> = 0 extends T & 1 ? true : false;
 
+export { isBrowser }
+
+export { isDev }
+
 declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
     [Q in K]: T[K];
 }, {
     -readonly [Q in K]: T[K];
 }, false, true>;
+
+export { isServer }
 
 /**
  * Checks if a given object is a `Signal`.
@@ -3866,7 +3875,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.11.0-dev+c322230
+ * 1.11.0-dev+d31ee31
  *
  * @public
  */

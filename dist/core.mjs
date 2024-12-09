@@ -1,11 +1,12 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0-dev+c322230
+ * @builder.io/qwik 1.11.0-dev+d31ee31
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 import { isServer, isBrowser, isDev } from '@builder.io/qwik/build';
+export { isBrowser, isDev, isServer } from '@builder.io/qwik/build';
 
 // <docs markdown="../readme.md#implicit$FirstArg">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -315,6 +316,7 @@ const qError = (code, ...parts) => {
     return logErrorAndStop(text, ...parts);
 };
 
+// keep this import from qwik/build so the cjs build works
 const createPlatform = () => {
     return {
         isServer,
@@ -564,6 +566,7 @@ const fromKebabToCamelCase = (text) => {
     return text.replace(/-./g, (x) => x[1].toUpperCase());
 };
 
+// keep this import from qwik/build so the cjs build works
 const emitEvent$1 = (el, eventName, detail, bubbles) => {
     if (!qTest && (isBrowser || typeof CustomEvent === 'function')) {
         if (el) {
@@ -912,7 +915,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.11.0-dev+c322230";
+const version = "1.11.0-dev+d31ee31";
 
 /**
  * @internal
@@ -9848,6 +9851,7 @@ const useErrorBoundary = () => {
     return store;
 };
 
+// keep this import from qwik/build so the cjs build works
 /**
  * Install a service worker which will prefetch the bundles.
  *
