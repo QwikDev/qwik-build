@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.11.0-dev+f7dc3ef
+ * @builder.io/qwik/server 1.11.0-dev+3f9bc67
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -90,7 +90,7 @@ var getSymbolHash = (symbolName) => {
 
 // packages/qwik/src/server/render.ts
 import { _pauseFromContexts, _renderSSR, Fragment as Fragment2, jsx as jsx2 } from "@builder.io/qwik";
-import { isDev } from "@builder.io/qwik/build";
+import { isDev } from "@builder.io/qwik";
 
 // packages/qwik/src/core/util/markers.ts
 var QInstance = "q:instance";
@@ -314,7 +314,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "1.11.0-dev+f7dc3ef",
+  qwik: "1.11.0-dev+3f9bc67",
   qwikDom: "2.1.19"
 };
 

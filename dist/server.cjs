@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.11.0-dev+f7dc3ef
+ * @builder.io/qwik/server 1.11.0-dev+3f9bc67
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -56,7 +56,7 @@ __export(server_exports, {
   versions: () => versions2
 });
 module.exports = __toCommonJS(server_exports);
-var import_qwik4 = require("@builder.io/qwik");
+var import_qwik5 = require("@builder.io/qwik");
 
 // packages/qwik/src/server/platform.ts
 var import_qwik = require("@builder.io/qwik");
@@ -134,7 +134,7 @@ var getSymbolHash = (symbolName) => {
 
 // packages/qwik/src/server/render.ts
 var import_qwik3 = require("@builder.io/qwik");
-var import_build = require("@builder.io/qwik/build");
+var import_qwik4 = require("@builder.io/qwik");
 
 // packages/qwik/src/core/util/markers.ts
 var QInstance = "q:instance";
@@ -359,7 +359,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "1.11.0-dev+f7dc3ef",
+  qwik: "1.11.0-dev+3f9bc67",
   qwikDom: "2.1.19"
 };
 
@@ -599,7 +599,7 @@ async function renderToStream(rootNode, opts) {
           }
         }
       }
-      const jsonData = JSON.stringify(snapshotResult.state, void 0, import_build.isDev ? "  " : void 0);
+      const jsonData = JSON.stringify(snapshotResult.state, void 0, import_qwik4.isDev ? "  " : void 0);
       children.push(
         (0, import_qwik3.jsx)("script", {
           type: "qwik/json",
@@ -739,7 +739,7 @@ function serializeFunctions(hash2, funcs) {
 // packages/qwik/src/server/index.ts
 async function setServerPlatform2(manifest) {
   const platform = createPlatform({ manifest }, resolveManifest(manifest));
-  (0, import_qwik4.setPlatform)(platform);
+  (0, import_qwik5.setPlatform)(platform);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

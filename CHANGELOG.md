@@ -1,6 +1,10 @@
 # @builder.io/qwik
 
-## 1.11.1
+## 1.12.0
+
+### Minor Changes
+
+- ✨ The build constants `isDev`, `isBrowser` and `isServer` are now exported from `@builder.io/qwik` directly, so they are more discoverable and easier to add. `@builder.io/qwik/build` still remains. (by [@wmertens](https://github.com/wmertens) in [#7138](https://github.com/QwikDev/qwik/pull/7138))
 
 ### Patch Changes
 

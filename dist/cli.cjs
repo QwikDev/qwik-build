@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.11.0-dev+f7dc3ef
+ * @builder.io/qwik/cli 1.11.0-dev+3f9bc67
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -5206,8 +5206,10 @@ function updateFileContent(path3, content) {
   (0, import_fs3.writeFileSync)(path3, content);
   f2.info(`"${path3}" has been updated`);
 }
-function replacePackage(oldPackageName, newPackageName) {
-  replacePackageInDependencies(oldPackageName, newPackageName);
+function replacePackage(oldPackageName, newPackageName, skipDependencies = false) {
+  if (!skipDependencies) {
+    replacePackageInDependencies(oldPackageName, newPackageName);
+  }
   replaceMentions(oldPackageName, newPackageName);
 }
 function replacePackageInDependencies(oldPackageName, newPackageName) {
@@ -5345,6 +5347,7 @@ async function removeTsMorphFromPackageJson() {
   const packageJson = await readPackageJson(process.cwd());
   (_a = packageJson.dependencies) == null ? true : delete _a["ts-morph"];
   (_b = packageJson.devDependencies) == null ? true : delete _b["ts-morph"];
+  await writePackageJson(process.cwd(), packageJson);
 }
 
 // packages/qwik/src/cli/migrate-v2/run-migration.ts
@@ -5378,6 +5381,12 @@ ${bold(bgRed('Warning: migration tool is experimental and will migrate your appl
       ],
       "@builder.io/qwik-city"
     );
+    replaceImportInFiles2(
+      [["qwikCityPlan", "qwikRouterConfig"]],
+      "@qwik-city-plan"
+      // using old name, package name will be updated in the next step
+    );
+    replacePackage("@qwik-city-plan", "@qwik-router-config", true);
     replacePackage("@builder.io/qwik-city", "@qwik.dev/router");
     replacePackage("@builder.io/qwik-react", "@qwik.dev/react");
     replacePackage("@builder.io/qwik", "@qwik.dev/core");
@@ -5533,7 +5542,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.11.0-dev+f7dc3ef");
+  console.log("1.11.0-dev+3f9bc67");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
