@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0
+ * @builder.io/qwik 1.12.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -319,6 +319,7 @@
         return logErrorAndStop(text, ...parts);
     };
 
+    // keep this import from qwik/build so the cjs build works
     const createPlatform = () => {
         return {
             isServer: build.isServer,
@@ -568,6 +569,7 @@
         return text.replace(/-./g, (x) => x[1].toUpperCase());
     };
 
+    // keep this import from qwik/build so the cjs build works
     const emitEvent$1 = (el, eventName, detail, bubbles) => {
         if (!qTest && (build.isBrowser || typeof CustomEvent === 'function')) {
             if (el) {
@@ -717,15 +719,23 @@
             }
             return true;
         }
-        has(target, property) {
-            if (property === QOjectTargetSymbol) {
+        has(target, prop) {
+            if (prop === QOjectTargetSymbol) {
                 return true;
+            }
+            const invokeCtx = tryGetInvokeContext();
+            if (typeof prop === 'string' && invokeCtx) {
+                const subscriber = invokeCtx.$subscriber$;
+                if (subscriber) {
+                    const isA = isArray(target);
+                    this.$manager$.$addSub$(subscriber, isA ? undefined : prop);
+                }
             }
             const hasOwnProperty = Object.prototype.hasOwnProperty;
-            if (hasOwnProperty.call(target, property)) {
+            if (hasOwnProperty.call(target, prop)) {
                 return true;
             }
-            if (typeof property === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+            if (typeof prop === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + prop)) {
                 return true;
             }
             return false;
@@ -908,7 +918,7 @@
      *
      * @public
      */
-    const version = "1.11.0";
+    const version = "1.12.0";
 
     /**
      * @internal
@@ -9844,6 +9854,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return store;
     };
 
+    // keep this import from qwik/build so the cjs build works
     /**
      * Install a service worker which will prefetch the bundles.
      *
@@ -9976,6 +9987,18 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return _jsxC('script', props, 0, 'prefetch-graph');
     };
 
+    Object.defineProperty(exports, "isBrowser", {
+        enumerable: true,
+        get: function () { return build.isBrowser; }
+    });
+    Object.defineProperty(exports, "isDev", {
+        enumerable: true,
+        get: function () { return build.isDev; }
+    });
+    Object.defineProperty(exports, "isServer", {
+        enumerable: true,
+        get: function () { return build.isServer; }
+    });
     exports.$ = $;
     exports.Fragment = Fragment;
     exports.HTMLFragment = HTMLFragment;

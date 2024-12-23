@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0
+ * @builder.io/qwik 1.12.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -244,12 +244,20 @@
             return target[prop] = unwrappedNewValue, oldValue !== unwrappedNewValue && this.$manager$.$notifySubs$(prop), 
             !0;
         }
-        has(target, property) {
-            if (property === QOjectTargetSymbol) {
+        has(target, prop) {
+            if (prop === QOjectTargetSymbol) {
                 return !0;
             }
+            const invokeCtx = tryGetInvokeContext();
+            if ("string" == typeof prop && invokeCtx) {
+                const subscriber = invokeCtx.$subscriber$;
+                if (subscriber) {
+                    const isA = isArray(target);
+                    this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+                }
+            }
             const hasOwnProperty = Object.prototype.hasOwnProperty;
-            return !!hasOwnProperty.call(target, property) || !("string" != typeof property || !hasOwnProperty.call(target, "$$" + property));
+            return !!hasOwnProperty.call(target, prop) || !("string" != typeof prop || !hasOwnProperty.call(target, "$$" + prop));
         }
         ownKeys(target) {
             const flags = target[QObjectFlagsSymbol] ?? 0;
@@ -4505,7 +4513,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.11.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.12.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4681,7 +4689,22 @@
             onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
         })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
     }).toString();
-    exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
+    Object.defineProperty(exports, "isBrowser", {
+        enumerable: !0,
+        get: function() {
+            return build.isBrowser;
+        }
+    }), Object.defineProperty(exports, "isDev", {
+        enumerable: !0,
+        get: function() {
+            return build.isDev;
+        }
+    }), Object.defineProperty(exports, "isServer", {
+        enumerable: !0,
+        get: function() {
+            return build.isServer;
+        }
+    }), exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
     exports.PrefetchGraph = (opts = {}) => {
         const isTest = (void 0).TEST;
         if (build.isDev && !isTest) {
@@ -4849,7 +4872,7 @@
         const locale = opts.serverData?.locale;
         const containerAttributes = opts.containerAttributes;
         const qRender = containerAttributes["q:render"];
-        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.11.0", 
+        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.12.0", 
         containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
         containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
         containerAttributes["q:instance"] = hash();
@@ -5025,7 +5048,7 @@
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.11.0", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.12.0", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

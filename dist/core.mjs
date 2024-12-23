@@ -1,11 +1,12 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0
+ * @builder.io/qwik 1.12.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 import { isServer, isBrowser, isDev } from '@builder.io/qwik/build';
+export { isBrowser, isDev, isServer } from '@builder.io/qwik/build';
 
 // <docs markdown="../readme.md#implicit$FirstArg">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -315,6 +316,7 @@ const qError = (code, ...parts) => {
     return logErrorAndStop(text, ...parts);
 };
 
+// keep this import from qwik/build so the cjs build works
 const createPlatform = () => {
     return {
         isServer,
@@ -564,6 +566,7 @@ const fromKebabToCamelCase = (text) => {
     return text.replace(/-./g, (x) => x[1].toUpperCase());
 };
 
+// keep this import from qwik/build so the cjs build works
 const emitEvent$1 = (el, eventName, detail, bubbles) => {
     if (!qTest && (isBrowser || typeof CustomEvent === 'function')) {
         if (el) {
@@ -713,15 +716,23 @@ class ReadWriteProxyHandler {
         }
         return true;
     }
-    has(target, property) {
-        if (property === QOjectTargetSymbol) {
+    has(target, prop) {
+        if (prop === QOjectTargetSymbol) {
             return true;
+        }
+        const invokeCtx = tryGetInvokeContext();
+        if (typeof prop === 'string' && invokeCtx) {
+            const subscriber = invokeCtx.$subscriber$;
+            if (subscriber) {
+                const isA = isArray(target);
+                this.$manager$.$addSub$(subscriber, isA ? undefined : prop);
+            }
         }
         const hasOwnProperty = Object.prototype.hasOwnProperty;
-        if (hasOwnProperty.call(target, property)) {
+        if (hasOwnProperty.call(target, prop)) {
             return true;
         }
-        if (typeof property === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+        if (typeof prop === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + prop)) {
             return true;
         }
         return false;
@@ -904,7 +915,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.11.0";
+const version = "1.12.0";
 
 /**
  * @internal
@@ -9840,6 +9851,7 @@ const useErrorBoundary = () => {
     return store;
 };
 
+// keep this import from qwik/build so the cjs build works
 /**
  * Install a service worker which will prefetch the bundles.
  *

@@ -1,11 +1,13 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0
+ * @builder.io/qwik 1.12.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 import { isServer, isBrowser, isDev } from "@builder.io/qwik/build";
+
+export { isBrowser, isDev, isServer } from "@builder.io/qwik/build";
 
 const implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $(first), ...rest);
@@ -433,12 +435,20 @@ class ReadWriteProxyHandler {
         return target[prop] = unwrappedNewValue, oldValue !== unwrappedNewValue && this.$manager$.$notifySubs$(prop), 
         !0;
     }
-    has(target, property) {
-        if (property === QOjectTargetSymbol) {
+    has(target, prop) {
+        if (prop === QOjectTargetSymbol) {
             return !0;
         }
+        const invokeCtx = tryGetInvokeContext();
+        if ("string" == typeof prop && invokeCtx) {
+            const subscriber = invokeCtx.$subscriber$;
+            if (subscriber) {
+                const isA = isArray(target);
+                this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+            }
+        }
         const hasOwnProperty = Object.prototype.hasOwnProperty;
-        return !!hasOwnProperty.call(target, property) || !("string" != typeof property || !hasOwnProperty.call(target, "$$" + property));
+        return !!hasOwnProperty.call(target, prop) || !("string" != typeof prop || !hasOwnProperty.call(target, "$$" + prop));
     }
     ownKeys(target) {
         const flags = target[QObjectFlagsSymbol] ?? 0;
@@ -568,7 +578,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.11.0";
+const version = "1.12.0";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -880,7 +890,7 @@ const _renderSSR = async (node, opts) => {
     const locale = opts.serverData?.locale;
     const containerAttributes = opts.containerAttributes;
     const qRender = containerAttributes["q:render"];
-    containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.11.0", 
+    containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.12.0", 
     containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
     containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
     containerAttributes["q:instance"] = hash();
@@ -5647,7 +5657,7 @@ const renderRoot = async (rCtx, parent, jsxOutput) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "1.11.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "1.12.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 

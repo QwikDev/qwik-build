@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.11.0
+ * @builder.io/qwik/testing 1.12.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23529,15 +23529,23 @@ var ReadWriteProxyHandler = class {
     }
     return true;
   }
-  has(target, property) {
-    if (property === QOjectTargetSymbol) {
+  has(target, prop) {
+    if (prop === QOjectTargetSymbol) {
       return true;
+    }
+    const invokeCtx = tryGetInvokeContext();
+    if (typeof prop === "string" && invokeCtx) {
+      const subscriber = invokeCtx.$subscriber$;
+      if (subscriber) {
+        const isA = isArray(target);
+        this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+      }
     }
     const hasOwnProperty = Object.prototype.hasOwnProperty;
-    if (hasOwnProperty.call(target, property)) {
+    if (hasOwnProperty.call(target, prop)) {
       return true;
     }
-    if (typeof property === "string" && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+    if (typeof prop === "string" && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + prop)) {
       return true;
     }
     return false;
