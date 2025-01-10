@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.0-dev+d5ccb9f
+ * @builder.io/qwik/optimizer 1.12.0-dev+8406d8d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.12.0-dev+d5ccb9f"
+    qwik: "1.12.0-dev+8406d8d"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5304,8 +5304,7 @@ globalThis.qwikOptimizer = function(module) {
       return next(err);
     }));
     setTimeout((() => {
-      console.log(`\n  ❗️ ${magenta("Expect significant performance loss in development.")}`);
-      console.log(`  ❗️ ${magenta("Disabling the browser's cache results in waterfall requests.")}`);
+      console.log(`\n  🚧 ${magenta("Please note that development mode is slower than production.")}`);
     }), 1e3);
   }
   async function configurePreviewServer(middlewares, ssrOutDir, sys, path) {
