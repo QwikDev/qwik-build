@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0-dev+af8fd6d
+ * @builder.io/qwik 1.12.0-dev+b8bfe22
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -461,7 +461,8 @@ class ReadWriteProxyHandler {
         return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
     }
     getOwnPropertyDescriptor(target, prop) {
-        return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+        return isArray(target) || "symbol" == typeof prop || descriptor && !descriptor.configurable ? descriptor : {
             enumerable: !0,
             configurable: !0
         };
@@ -578,7 +579,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.12.0-dev+af8fd6d";
+const version = "1.12.0-dev+b8bfe22";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.12.0-dev+af8fd6d
+ * @builder.io/qwik/testing 1.12.0-dev+b8bfe22
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23572,8 +23572,12 @@ var ReadWriteProxyHandler = class {
     });
   }
   getOwnPropertyDescriptor(target, prop) {
+    const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
     if (isArray(target) || typeof prop === "symbol") {
-      return Object.getOwnPropertyDescriptor(target, prop);
+      return descriptor;
+    }
+    if (descriptor && !descriptor.configurable) {
+      return descriptor;
     }
     return {
       enumerable: true,

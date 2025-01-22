@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0-dev+af8fd6d
+ * @builder.io/qwik 1.12.0-dev+b8bfe22
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -764,8 +764,12 @@
             });
         }
         getOwnPropertyDescriptor(target, prop) {
+            const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
             if (isArray(target) || typeof prop === 'symbol') {
-                return Object.getOwnPropertyDescriptor(target, prop);
+                return descriptor;
+            }
+            if (descriptor && !descriptor.configurable) {
+                return descriptor;
             }
             return {
                 enumerable: true,
@@ -918,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.12.0-dev+af8fd6d";
+    const version = "1.12.0-dev+b8bfe22";
 
     /**
      * @internal

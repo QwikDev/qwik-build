@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.0-dev+af8fd6d
+ * @builder.io/qwik/optimizer 1.12.0-dev+b8bfe22
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.0-dev+af8fd6d"
+  qwik: "1.12.0-dev+b8bfe22"
 };
 
 async function getSystem() {
@@ -4270,8 +4270,12 @@ var ReadWriteProxyHandler = class {
     return Reflect.ownKeys(target).map((a => "string" === typeof a && a.startsWith(_IMMUTABLE_PREFIX) ? a.slice(_IMMUTABLE_PREFIX.length) : a));
   }
   getOwnPropertyDescriptor(target, prop) {
+    const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
     if (isArray(target) || "symbol" === typeof prop) {
-      return Object.getOwnPropertyDescriptor(target, prop);
+      return descriptor;
+    }
+    if (descriptor && !descriptor.configurable) {
+      return descriptor;
     }
     return {
       enumerable: true,
