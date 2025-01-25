@@ -2526,7 +2526,7 @@ declare type SpecialAttrs = {
          * For type: HTMLInputTypeAttribute, excluding 'button' | 'reset' | 'submit' | 'checkbox' |
          * 'radio'
          */
-        'bind:value'?: Signal<string | undefined>;
+        'bind:value'?: Signal<string | undefined | number>;
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         height?: Size | undefined;
         max?: number | string | undefined;
@@ -3875,7 +3875,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.11.0-dev+3f9bc67
+ * 1.12.0-dev+307bbd5
  *
  * @public
  */

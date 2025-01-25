@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.11.0-dev+3f9bc67
+ * @builder.io/qwik 1.12.0-dev+307bbd5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -270,7 +270,8 @@
             return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
         }
         getOwnPropertyDescriptor(target, prop) {
-            return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
+            const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+            return isArray(target) || "symbol" == typeof prop || descriptor && !descriptor.configurable ? descriptor : {
                 enumerable: !0,
                 configurable: !0
             };
@@ -351,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.11.0-dev+3f9bc67";
+    const version = "1.12.0-dev+307bbd5";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
