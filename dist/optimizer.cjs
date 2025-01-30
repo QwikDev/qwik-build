@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.0-dev+da69196
+ * @builder.io/qwik/optimizer 1.12.0-dev+684fe2b
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.12.0-dev+da69196"
+    qwik: "1.12.0-dev+684fe2b"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5238,6 +5238,8 @@ globalThis.qwikOptimizer = function(module) {
               version: "1"
             };
             const added = new Set;
+            const CSS_EXTENSIONS = [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ];
+            const JS_EXTENSIONS = /\.[mc]?[tj]sx?$/;
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 var _a2, _b;
@@ -5246,16 +5248,23 @@ globalThis.qwikOptimizer = function(module) {
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));
                 const {pathId: pathId, query: query} = parseId(v.url);
-                if ("" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext)))) {
-                  added.add(v.url);
-                  manifest.injections.push({
-                    tag: "link",
-                    location: "head",
-                    attributes: {
-                      rel: "stylesheet",
-                      href: `${base}${url2.slice(1)}`
-                    }
-                  });
+                if ("" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
+                  const isEntryCSS = 0 === v.importers.size;
+                  const hasJSImporter = Array.from(v.importers).some((importer => {
+                    const importerPath = importer.url || importer.file;
+                    return importerPath && JS_EXTENSIONS.test(importerPath);
+                  }));
+                  if ((isEntryCSS || hasJSImporter) && !added.has(v.url)) {
+                    added.add(v.url);
+                    manifest.injections.push({
+                      tag: "link",
+                      location: "head",
+                      attributes: {
+                        rel: "stylesheet",
+                        href: `${base}${url2.slice(1)}`
+                      }
+                    });
+                  }
                 }
               }));
             }));
@@ -5278,13 +5287,23 @@ globalThis.qwikOptimizer = function(module) {
             res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
             res.writeHead(status);
             const result = await render(renderOpts);
+            "html" in result && res.write(result.html);
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 const {pathId: pathId, query: query} = parseId(v.url);
-                !added.has(v.url) && "" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext))) && res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                if (!added.has(v.url) && "" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
+                  const isEntryCSS = 0 === v.importers.size;
+                  const hasJSImporter = Array.from(v.importers).some((importer => {
+                    const importerPath = importer.url || importer.file;
+                    return importerPath && JS_EXTENSIONS.test(importerPath);
+                  }));
+                  if (isEntryCSS || hasJSImporter) {
+                    res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                    added.add(v.url);
+                  }
+                }
               }));
             }));
-            "html" in result && res.write(result.html);
             res.write(END_SSR_SCRIPT(opts, opts.srcDir ? opts.srcDir : path.join(opts.rootDir, "src")));
             res.end();
           } else {
