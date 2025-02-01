@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.0-dev+684fe2b
+ * @builder.io/qwik/optimizer 1.12.0-dev+be2ebe3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.0-dev+684fe2b"
+  qwik: "1.12.0-dev+be2ebe3"
 };
 
 async function getSystem() {
@@ -2636,7 +2636,7 @@ function normalizeRollupOutputOptionsObject(opts, rollupOutputOptsObj, useAssets
       const assetFileNames = "assets/[hash]-[name].[ext]";
       outputOpts.assetFileNames = useAssetsDir ? `${opts.assetsDir}/${assetFileNames}` : assetFileNames;
     }
-    const fileName = "production" == opts.buildMode ? "build/q-[hash].js" : "build/[name].js";
+    const fileName = "production" != opts.buildMode || opts.debug ? "build/[name].js" : "build/q-[hash].js";
     outputOpts.entryFileNames || (outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
     outputOpts.chunkFileNames || (outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
   } else {
