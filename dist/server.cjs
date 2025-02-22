@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.12.1-dev+3dc06de
+ * @builder.io/qwik/server 1.12.1-dev+5e2a83a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -360,7 +360,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "1.12.1-dev+3dc06de",
+  qwik: "1.12.1-dev+5e2a83a",
   qwikDom: "2.1.19"
 };
 
