@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+5e2a83a
+ * @builder.io/qwik/optimizer 1.12.1-dev+96b533a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.1-dev+5e2a83a"
+  qwik: "1.12.1-dev+96b533a"
 };
 
 async function getSystem() {
@@ -2435,19 +2435,10 @@ function createPlugin(optimizerOptions = {}) {
     if (segment) {
       return segment.entry;
     }
-    if (/\/(qwik|core)\/dist\/core.*js$/.test(id2) || id2.includes("@builder.io/qwik/build")) {
-      return "core";
-    }
-    if (/\/(qwik-city|router)\/lib\/index.qwik.*js$/.test(id2)) {
-      return "qwik-city";
-    }
-    if (id2.endsWith("vite/preload-helper.js")) {
-      return "preload-helper";
-    }
     if (id2.includes("node_modules")) {
       return null;
     }
-    if (/\.(qwik\.mjs|qwik\.cjs|tsx|jsx|mdx|ts|js)$/.test(id2)) {
+    if (/\.(tsx|jsx)$/.test(id2)) {
       const optimizer2 = getOptimizer();
       const path = optimizer2.sys.path;
       const relativePath = path.relative(optimizer2.sys.cwd(), id2);
