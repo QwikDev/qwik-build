@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.1-dev+96b533a
+ * @builder.io/qwik 1.12.1-dev+73e8fcc
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -919,7 +919,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.12.1-dev+96b533a";
+const version = "1.12.1-dev+73e8fcc";
 
 /**
  * @internal
@@ -5819,10 +5819,15 @@ const executeContextWithScrollAndTransition = async (ctx) => {
         if (document.__q_view_transition__) {
             document.__q_view_transition__ = undefined;
             if (document.startViewTransition) {
-                await document.startViewTransition(() => {
+                const transition = document.startViewTransition(() => {
                     executeDOMRender(ctx);
                     restoreScroll();
-                }).finished;
+                });
+                const event = new CustomEvent('qviewTransition', {
+                    detail: transition,
+                });
+                document.dispatchEvent(event);
+                await transition.finished;
                 return;
             }
         }

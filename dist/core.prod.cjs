@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.1-dev+96b533a
+ * @builder.io/qwik 1.12.1-dev+73e8fcc
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.12.1-dev+96b533a";
+    const version = "1.12.1-dev+73e8fcc";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -2701,10 +2701,17 @@
         document.__q_scroll_restore__ && (document.__q_scroll_restore__(), document.__q_scroll_restore__ = void 0);
     };
     const executeContextWithScrollAndTransition = async ctx => {
-        build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-        document.startViewTransition) ? await document.startViewTransition((() => {
-            executeDOMRender(ctx), restoreScroll();
-        })).finished : (executeDOMRender(ctx), build.isBrowser && restoreScroll());
+        if (build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
+        document.startViewTransition)) {
+            const transition = document.startViewTransition((() => {
+                executeDOMRender(ctx), restoreScroll();
+            }));
+            const event = new CustomEvent("qviewTransition", {
+                detail: transition
+            });
+            return document.dispatchEvent(event), void await transition.finished;
+        }
+        executeDOMRender(ctx), build.isBrowser && restoreScroll();
     };
     const directAppendChild = (parent, child) => {
         isVirtualElement(child) ? child.appendTo(parent) : parent.appendChild(child);

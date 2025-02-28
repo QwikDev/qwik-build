@@ -88,6 +88,7 @@ declare type AllEventMapRaw = HTMLElementEventMap & DocumentEventMap & WindowEve
     qinit: QwikInitEvent;
     qsymbol: QwikSymbolEvent;
     qvisible: QwikVisibleEvent;
+    qviewTransition: QwikViewTransitionEvent;
 };
 
 declare type AllEventsMap = Omit<AllEventMapRaw, keyof EventCorrectionMap> & EventCorrectionMap;
@@ -2104,6 +2105,9 @@ export declare type QwikTransitionEvent<T = Element> = NativeTransitionEvent;
 /** @public @deprecated Use `UIEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikUIEvent<T = Element> = NativeUIEvent;
 
+/** Emitted by qwik-core on document when the a view transition start @public */
+declare type QwikViewTransitionEvent = CustomEvent<ViewTransition>;
+
 /** Emitted by qwik-loader when an element becomes visible. Used by `useVisibleTask$` @public */
 export declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 
@@ -3875,7 +3879,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.12.1-dev+96b533a
+ * 1.12.1-dev+73e8fcc
  *
  * @public
  */
