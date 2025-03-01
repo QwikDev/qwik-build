@@ -871,7 +871,7 @@ declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAtt
     dangerouslySetInnerHTML?: string | undefined;
 }
 
-/** @public */
+/** @public @deprecated use useVisibleTask$ or useResource$, useTask$ is for running tasks as part of the initial SSR render */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
 /** @public */
@@ -3750,7 +3750,7 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  */
 export declare const useTask$: (qrl: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
-/** @public */
+/** @public @deprecated use useVisibleTask$ or useResource$, useTask$ is for running tasks as part of the initial SSR render */
 export declare interface UseTaskOptions {
     /**
      * - `visible`: run the effect when the element is visible.
@@ -3879,7 +3879,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.12.1-dev+73e8fcc
+ * 1.12.1-dev+07a45f4
  *
  * @public
  */
