@@ -3322,7 +3322,7 @@ export declare const useContext: UseContext;
 export declare const useContextProvider: <STATE>(context: ContextId<STATE>, newValue: STATE) => void;
 
 /** @public */
-export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
+export declare const useErrorBoundary: () => ErrorBoundaryStore;
 
 /** @public */
 export declare const useId: () => string;
@@ -3879,7 +3879,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.12.1-dev+07a45f4
+ * 1.12.1-dev+a8a1d13
  *
  * @public
  */
