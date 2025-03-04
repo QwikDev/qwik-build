@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+c51aaab
+ * @builder.io/qwik/optimizer 1.12.1-dev+68b2bd9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.1-dev+c51aaab"
+  qwik: "1.12.1-dev+68b2bd9"
 };
 
 async function getSystem() {
@@ -5711,6 +5711,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
     return;
   }
   const hasQwikCity = server.config.plugins?.some((plugin => "vite-plugin-qwik-city" === plugin.name));
+  const cssImportedByCSS = new Set;
   server.middlewares.use((async (req, res, next) => {
     try {
       const {ORIGIN: ORIGIN} = process.env;
@@ -5768,11 +5769,17 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
               const {pathId: pathId, query: query} = parseId(v.url);
               if ("" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
                 const isEntryCSS = 0 === v.importers.size;
+                const hasCSSImporter = Array.from(v.importers).some((importer => {
+                  const importerPath = importer.url || importer.file;
+                  const isCSS = importerPath && CSS_EXTENSIONS.some((ext => importerPath.endsWith(ext)));
+                  isCSS && v.url && cssImportedByCSS.add(v.url);
+                  return isCSS;
+                }));
                 const hasJSImporter = Array.from(v.importers).some((importer => {
                   const importerPath = importer.url || importer.file;
                   return importerPath && JS_EXTENSIONS.test(importerPath);
                 }));
-                if ((isEntryCSS || hasJSImporter) && !added.has(v.url)) {
+                if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url) && !added.has(v.url)) {
                   added.add(v.url);
                   manifest.injections.push({
                     tag: "link",
@@ -5811,11 +5818,17 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
               const {pathId: pathId, query: query} = parseId(v.url);
               if (!added.has(v.url) && "" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
                 const isEntryCSS = 0 === v.importers.size;
+                const hasCSSImporter = Array.from(v.importers).some((importer => {
+                  const importerPath = importer.url || importer.file;
+                  const isCSS = importerPath && CSS_EXTENSIONS.some((ext => importerPath.endsWith(ext)));
+                  isCSS && v.url && cssImportedByCSS.add(v.url);
+                  return isCSS;
+                }));
                 const hasJSImporter = Array.from(v.importers).some((importer => {
                   const importerPath = importer.url || importer.file;
                   return importerPath && JS_EXTENSIONS.test(importerPath);
                 }));
-                if (isEntryCSS || hasJSImporter) {
+                if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
                   res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
                   added.add(v.url);
                 }
