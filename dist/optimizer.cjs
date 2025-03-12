@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+68b2bd9
+ * @builder.io/qwik/optimizer 1.12.1-dev+1d28b7c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.12.1-dev+68b2bd9"
+    qwik: "1.12.1-dev+1d28b7c"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2411,11 +2411,7 @@ globalThis.qwikOptimizer = function(module) {
         return null;
       }
       if (/\.(tsx|jsx)$/.test(id2)) {
-        const optimizer2 = getOptimizer();
-        const path = optimizer2.sys.path;
-        const relativePath = path.relative(optimizer2.sys.cwd(), id2);
-        const sanitizedPath = relativePath.replace(/^(\.\.\/)+/, "").replace(/^\/+/, "").replace(/\//g, "-");
-        return sanitizedPath;
+        return id2;
       }
       return null;
     }
@@ -2528,7 +2524,7 @@ globalThis.qwikOptimizer = function(module) {
         inputOpts.input || (inputOpts.input = opts.input);
         return inputOpts;
       },
-      outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getOptions(), rollupOutputOpts, false, qwikPlugin.manualChunks),
+      outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getOptimizer(), qwikPlugin.getOptions(), rollupOutputOpts, false, qwikPlugin.manualChunks),
       async buildStart() {
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
@@ -2582,20 +2578,20 @@ globalThis.qwikOptimizer = function(module) {
     };
     return rollupPlugin;
   }
-  function normalizeRollupOutputOptions(opts, rollupOutputOpts, useAssetsDir, manualChunks, outDir) {
+  function normalizeRollupOutputOptions(optimizer, opts, rollupOutputOpts, useAssetsDir, manualChunks, outDir) {
     if (Array.isArray(rollupOutputOpts)) {
       rollupOutputOpts.length || rollupOutputOpts.push({});
       return rollupOutputOpts.map((outputOptsObj => ({
-        ...normalizeRollupOutputOptionsObject(opts, outputOptsObj, useAssetsDir, manualChunks),
+        ...normalizeRollupOutputOptionsObject(optimizer, opts, outputOptsObj, useAssetsDir, manualChunks),
         dir: outDir || outputOptsObj.dir
       })));
     }
     return {
-      ...normalizeRollupOutputOptionsObject(opts, rollupOutputOpts, useAssetsDir, manualChunks),
+      ...normalizeRollupOutputOptionsObject(optimizer, opts, rollupOutputOpts, useAssetsDir, manualChunks),
       dir: outDir || (null == rollupOutputOpts ? void 0 : rollupOutputOpts.dir)
     };
   }
-  function normalizeRollupOutputOptionsObject(opts, rollupOutputOptsObj, useAssetsDir, manualChunks) {
+  function normalizeRollupOutputOptionsObject(optimizer, opts, rollupOutputOptsObj, useAssetsDir, manualChunks) {
     const outputOpts = {
       ...rollupOutputOptsObj
     };
@@ -2604,7 +2600,19 @@ globalThis.qwikOptimizer = function(module) {
         const assetFileNames = "assets/[hash]-[name].[ext]";
         outputOpts.assetFileNames = useAssetsDir ? `${opts.assetsDir}/${assetFileNames}` : assetFileNames;
       }
-      const fileName = "production" != opts.buildMode || opts.debug ? "build/[name].js" : "build/q-[hash].js";
+      let fileName;
+      fileName = "production" !== opts.buildMode || opts.debug ? chunkInfo => {
+        if (chunkInfo.moduleIds.some((id => id.endsWith("core.prod.mjs")))) {
+          return "build/core.js";
+        }
+        if (chunkInfo.moduleIds.some((id => id.endsWith("qwik-city/lib/index.qwik.mjs")))) {
+          return "build/qwik-city.js";
+        }
+        const path = optimizer.sys.path;
+        const relativePath = path.relative(optimizer.sys.cwd(), chunkInfo.name);
+        const sanitized = relativePath.replace(/^(\.\.\/)+/, "").replace(/^\/+/, "").replace(/\//g, "-");
+        return `build/${sanitized}.js`;
+      } : "build/q-[hash].js";
       outputOpts.entryFileNames || (outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
       outputOpts.chunkFileNames || (outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
     } else {
@@ -5635,7 +5643,7 @@ globalThis.qwikOptimizer = function(module) {
           const origOnwarn = null == (_t = updatedViteConfig.build.rollupOptions) ? void 0 : _t.onwarn;
           updatedViteConfig.build.rollupOptions = {
             input: opts.input,
-            output: normalizeRollupOutputOptions(opts, null == (_v = null == (_u = viteConfig.build) ? void 0 : _u.rollupOptions) ? void 0 : _v.output, useAssetsDir, qwikPlugin.manualChunks, buildOutputDir),
+            output: normalizeRollupOutputOptions(qwikPlugin.getOptimizer(), opts, null == (_v = null == (_u = viteConfig.build) ? void 0 : _u.rollupOptions) ? void 0 : _v.output, useAssetsDir, qwikPlugin.manualChunks, buildOutputDir),
             preserveEntrySignatures: "exports-only",
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
