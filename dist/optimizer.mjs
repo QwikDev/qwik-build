@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+1d28b7c
+ * @builder.io/qwik/optimizer 1.12.1-dev+133a7cb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.1-dev+1d28b7c"
+  qwik: "1.12.1-dev+133a7cb"
 };
 
 async function getSystem() {
@@ -2647,10 +2647,10 @@ function normalizeRollupOutputOptionsObject(optimizer, opts, rollupOutputOptsObj
     }
     let fileName;
     fileName = "production" !== opts.buildMode || opts.debug ? chunkInfo => {
-      if (chunkInfo.moduleIds.some((id => id.endsWith("core.prod.mjs")))) {
+      if (chunkInfo.moduleIds?.some((id => id.endsWith("core.prod.mjs")))) {
         return "build/core.js";
       }
-      if (chunkInfo.moduleIds.some((id => id.endsWith("qwik-city/lib/index.qwik.mjs")))) {
+      if (chunkInfo.moduleIds?.some((id => id.endsWith("qwik-city/lib/index.qwik.mjs")))) {
         return "build/qwik-city.js";
       }
       const path = optimizer.sys.path;
