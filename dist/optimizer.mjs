@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+1ca63f8
+ * @builder.io/qwik/optimizer 1.12.1-dev+0cf1eaf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.1-dev+1ca63f8"
+  qwik: "1.12.1-dev+0cf1eaf"
 };
 
 async function getSystem() {
@@ -1919,7 +1919,7 @@ var ExperimentalFeatures = (ExperimentalFeatures2 => {
   return ExperimentalFeatures2;
 })(ExperimentalFeatures || {});
 
-function createPlugin(optimizerOptions = {}) {
+function createQwikPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
   const clientResults = new Map;
   const clientTransformedOutputs = new Map;
@@ -2530,7 +2530,7 @@ var LIB_OUT_DIR = "lib";
 var Q_MANIFEST_FILENAME = "q-manifest.json";
 
 function qwikRollup(qwikRollupOpts = {}) {
-  const qwikPlugin = createPlugin(qwikRollupOpts.optimizerOptions);
+  const qwikPlugin = createQwikPlugin(qwikRollupOpts.optimizerOptions);
   const rollupPlugin = {
     name: "rollup-plugin-qwik",
     api: {
@@ -2568,7 +2568,7 @@ function qwikRollup(qwikRollupOpts = {}) {
       inputOpts.input || (inputOpts.input = opts.input);
       return inputOpts;
     },
-    outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getOptimizer(), qwikPlugin.getOptions(), rollupOutputOpts, false, qwikPlugin.manualChunks),
+    outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, false),
     async buildStart() {
       qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
         diagnostics.forEach((d => {
@@ -2622,24 +2622,27 @@ function qwikRollup(qwikRollupOpts = {}) {
   return rollupPlugin;
 }
 
-function normalizeRollupOutputOptions(optimizer, opts, rollupOutputOpts, useAssetsDir, manualChunks, outDir) {
+function normalizeRollupOutputOptions(qwikPlugin, rollupOutputOpts, useAssetsDir, outDir) {
   if (Array.isArray(rollupOutputOpts)) {
     rollupOutputOpts.length || rollupOutputOpts.push({});
     return rollupOutputOpts.map((outputOptsObj => ({
-      ...normalizeRollupOutputOptionsObject(optimizer, opts, outputOptsObj, useAssetsDir, manualChunks),
+      ...normalizeRollupOutputOptionsObject(qwikPlugin, outputOptsObj, useAssetsDir),
       dir: outDir || outputOptsObj.dir
     })));
   }
   return {
-    ...normalizeRollupOutputOptionsObject(optimizer, opts, rollupOutputOpts, useAssetsDir, manualChunks),
+    ...normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, useAssetsDir),
     dir: outDir || rollupOutputOpts?.dir
   };
 }
 
-function normalizeRollupOutputOptionsObject(optimizer, opts, rollupOutputOptsObj, useAssetsDir, manualChunks) {
+function normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOptsObj, useAssetsDir) {
   const outputOpts = {
     ...rollupOutputOptsObj
   };
+  const opts = qwikPlugin.getOptions();
+  const optimizer = qwikPlugin.getOptimizer();
+  const manualChunks = qwikPlugin.manualChunks;
   if ("client" === opts.target) {
     if (!outputOpts.assetFileNames) {
       const assetFileNames = "assets/[hash]-[name].[ext]";
@@ -6002,7 +6005,7 @@ function qwikVite(qwikViteOpts = {}) {
   let ssrOutDir = null;
   const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
   const injections = [];
-  const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
+  const qwikPlugin = createQwikPlugin(qwikViteOpts.optimizerOptions);
   async function loadQwikInsights(clientOutDir2 = "") {
     const sys = qwikPlugin.getSys();
     const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2, "q-insights.json");
@@ -6165,7 +6168,7 @@ function qwikVite(qwikViteOpts = {}) {
         const origOnwarn = updatedViteConfig.build.rollupOptions?.onwarn;
         updatedViteConfig.build.rollupOptions = {
           input: opts.input,
-          output: normalizeRollupOutputOptions(qwikPlugin.getOptimizer(), opts, viteConfig.build?.rollupOptions?.output, useAssetsDir, qwikPlugin.manualChunks, buildOutputDir),
+          output: normalizeRollupOutputOptions(qwikPlugin, viteConfig.build?.rollupOptions?.output, useAssetsDir, buildOutputDir),
           preserveEntrySignatures: "exports-only",
           onwarn: (warning, warn) => {
             if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
