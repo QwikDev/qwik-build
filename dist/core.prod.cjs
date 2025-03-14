@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.1-dev+0cf1eaf
+ * @builder.io/qwik 1.12.1-dev+62e5f9a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.12.1-dev+0cf1eaf";
+    const version = "1.12.1-dev+62e5f9a";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
