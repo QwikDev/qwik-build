@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0-dev+a8074ab
+ * @builder.io/qwik 1.12.1-dev+a67c3be
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.12.0-dev+a8074ab";
+    const version = "1.12.1-dev+a67c3be";
 
     /**
      * @internal
@@ -5822,10 +5822,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (document.__q_view_transition__) {
                 document.__q_view_transition__ = undefined;
                 if (document.startViewTransition) {
-                    await document.startViewTransition(() => {
+                    const transition = document.startViewTransition(() => {
                         executeDOMRender(ctx);
                         restoreScroll();
-                    }).finished;
+                    });
+                    const event = new CustomEvent('qviewTransition', {
+                        detail: transition,
+                    });
+                    document.dispatchEvent(event);
+                    await transition.finished;
                     return;
                 }
             }
@@ -9850,12 +9855,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
 
     /** @public */
     const useErrorBoundary = () => {
-        const store = useStore({
-            error: undefined,
-        });
-        useOn('error-boundary', qrl('/runtime', 'error', [store]));
-        useContextProvider(ERROR_CONTEXT, store);
-        return store;
+        const error = useStore({ error: undefined });
+        useContextProvider(ERROR_CONTEXT, error);
+        return error;
     };
 
     // keep this import from qwik/build so the cjs build works

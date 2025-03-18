@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0-dev+a8074ab
+ * @builder.io/qwik 1.12.1-dev+a67c3be
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -579,7 +579,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.12.0-dev+a8074ab";
+const version = "1.12.1-dev+a67c3be";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -3527,10 +3527,17 @@ const restoreScroll = () => {
 };
 
 const executeContextWithScrollAndTransition = async ctx => {
-    isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-    document.startViewTransition) ? await document.startViewTransition((() => {
-        executeDOMRender(ctx), restoreScroll();
-    })).finished : (executeDOMRender(ctx), isBrowser && restoreScroll());
+    if (isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
+    document.startViewTransition)) {
+        const transition = document.startViewTransition((() => {
+            executeDOMRender(ctx), restoreScroll();
+        }));
+        const event = new CustomEvent("qviewTransition", {
+            detail: transition
+        });
+        return document.dispatchEvent(event), void await transition.finished;
+    }
+    executeDOMRender(ctx), isBrowser && restoreScroll();
 };
 
 const directAppendChild = (parent, child) => {
@@ -5932,11 +5939,10 @@ const _useStyles = (styleQrl, transform, scoped) => {
 };
 
 const useErrorBoundary = () => {
-    const store = useStore({
+    const error = useStore({
         error: void 0
     });
-    return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
-    store;
+    return useContextProvider(ERROR_CONTEXT, error), error;
 };
 
 const PrefetchServiceWorker = opts => {

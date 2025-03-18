@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0-dev+a8074ab
+ * @builder.io/qwik 1.12.1-dev+a67c3be
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.12.0-dev+a8074ab";
+    const version = "1.12.1-dev+a67c3be";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -2701,10 +2701,17 @@
         document.__q_scroll_restore__ && (document.__q_scroll_restore__(), document.__q_scroll_restore__ = void 0);
     };
     const executeContextWithScrollAndTransition = async ctx => {
-        build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-        document.startViewTransition) ? await document.startViewTransition((() => {
-            executeDOMRender(ctx), restoreScroll();
-        })).finished : (executeDOMRender(ctx), build.isBrowser && restoreScroll());
+        if (build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
+        document.startViewTransition)) {
+            const transition = document.startViewTransition((() => {
+                executeDOMRender(ctx), restoreScroll();
+            }));
+            const event = new CustomEvent("qviewTransition", {
+                detail: transition
+            });
+            return document.dispatchEvent(event), void await transition.finished;
+        }
+        executeDOMRender(ctx), build.isBrowser && restoreScroll();
     };
     const directAppendChild = (parent, child) => {
         isVirtualElement(child) ? child.appendTo(parent) : parent.appendChild(child);
@@ -5029,11 +5036,10 @@
         }
         throw qError(13, context.id);
     }, exports.useContextProvider = useContextProvider, exports.useErrorBoundary = () => {
-        const store = useStore({
+        const error = useStore({
             error: void 0
         });
-        return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
-        store;
+        return useContextProvider(ERROR_CONTEXT, error), error;
     }, exports.useId = () => {
         const {val, set, elCtx, iCtx} = useSequentialScope();
         if (null != val) {

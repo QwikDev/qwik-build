@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.12.0-dev+a8074ab
+ * @builder.io/qwik/cli 1.12.1-dev+a67c3be
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -5282,13 +5282,19 @@ var import_semver = require("semver");
 init_dist2();
 async function updateDependencies() {
   const packageJson = await readPackageJson(process.cwd());
-  const devDependencies = packageJson.devDependencies ??= {};
-  const dependencies = packageJson.dependencies ??= {};
   const version = getPackageTag();
+  const dependencyNames = [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies"
+  ];
   for (const name of packageNames) {
-    if (dependencies[name] || devDependencies[name]) {
-      delete dependencies[name];
-      devDependencies[name] = version;
+    for (const propName of dependencyNames) {
+      const prop = packageJson[propName];
+      if (prop && prop[name]) {
+        prop[name] = version;
+      }
     }
   }
   await writePackageJson(process.cwd(), packageJson);
@@ -5386,9 +5392,11 @@ ${bold(bgRed('Warning: migration tool is experimental and will migrate your appl
       "@qwik-city-plan"
       // using old name, package name will be updated in the next step
     );
+    replaceImportInFiles2([["jsxs", "jsx"]], "@builder.io/qwik/jsx-runtime");
     replacePackage("@qwik-city-plan", "@qwik-router-config", true);
     replacePackage("@builder.io/qwik-city", "@qwik.dev/router");
     replacePackage("@builder.io/qwik-react", "@qwik.dev/react");
+    replacePackage("@builder.io/qwik/jsx-runtime", "@qwik.dev/core");
     replacePackage("@builder.io/qwik", "@qwik.dev/core");
     if (installedTsMorph) {
       await removeTsMorphFromPackageJson();
@@ -5542,7 +5550,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.12.0-dev+a8074ab");
+  console.log("1.12.1-dev+a67c3be");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

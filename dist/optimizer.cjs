@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.0-dev+a8074ab
+ * @builder.io/qwik/optimizer 1.12.1-dev+a67c3be
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.12.0-dev+a8074ab"
+    qwik: "1.12.1-dev+a67c3be"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1888,7 +1888,7 @@ globalThis.qwikOptimizer = function(module) {
     ExperimentalFeatures2.noSPA = "noSPA";
     return ExperimentalFeatures2;
   })(ExperimentalFeatures || {});
-  function createPlugin(optimizerOptions = {}) {
+  function createQwikPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const clientResults = new Map;
     const clientTransformedOutputs = new Map;
@@ -1905,7 +1905,7 @@ globalThis.qwikOptimizer = function(module) {
       rootDir: null,
       tsconfigFileNames: [ "./tsconfig.json" ],
       input: null,
-      outDir: null,
+      outDir: "",
       assetsDir: null,
       resolveQwikBuild: true,
       entryStrategy: null,
@@ -2404,7 +2404,16 @@ globalThis.qwikOptimizer = function(module) {
     function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
       const module2 = getModuleInfo(id2);
       const segment = module2.meta.segment;
-      return null == segment ? void 0 : segment.entry;
+      if (segment) {
+        return segment.entry;
+      }
+      if (id2.includes("node_modules")) {
+        return null;
+      }
+      if (/\.(tsx|jsx)$/.test(id2)) {
+        return id2;
+      }
+      return null;
     }
     return {
       buildStart: buildStart,
@@ -2476,7 +2485,7 @@ globalThis.qwikOptimizer = function(module) {
   var LIB_OUT_DIR = "lib";
   var Q_MANIFEST_FILENAME = "q-manifest.json";
   function qwikRollup(qwikRollupOpts = {}) {
-    const qwikPlugin = createPlugin(qwikRollupOpts.optimizerOptions);
+    const qwikPlugin = createQwikPlugin(qwikRollupOpts.optimizerOptions);
     const rollupPlugin = {
       name: "rollup-plugin-qwik",
       api: {
@@ -2515,7 +2524,7 @@ globalThis.qwikOptimizer = function(module) {
         inputOpts.input || (inputOpts.input = opts.input);
         return inputOpts;
       },
-      outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getOptions(), rollupOutputOpts, false, qwikPlugin.manualChunks),
+      outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, false),
       async buildStart() {
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
@@ -2569,29 +2578,45 @@ globalThis.qwikOptimizer = function(module) {
     };
     return rollupPlugin;
   }
-  function normalizeRollupOutputOptions(opts, rollupOutputOpts, useAssetsDir, manualChunks, outDir) {
+  function normalizeRollupOutputOptions(qwikPlugin, rollupOutputOpts, useAssetsDir, outDir) {
     if (Array.isArray(rollupOutputOpts)) {
       rollupOutputOpts.length || rollupOutputOpts.push({});
       return rollupOutputOpts.map((outputOptsObj => ({
-        ...normalizeRollupOutputOptionsObject(opts, outputOptsObj, useAssetsDir, manualChunks),
+        ...normalizeRollupOutputOptionsObject(qwikPlugin, outputOptsObj, useAssetsDir),
         dir: outDir || outputOptsObj.dir
       })));
     }
     return {
-      ...normalizeRollupOutputOptionsObject(opts, rollupOutputOpts, useAssetsDir, manualChunks),
+      ...normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, useAssetsDir),
       dir: outDir || (null == rollupOutputOpts ? void 0 : rollupOutputOpts.dir)
     };
   }
-  function normalizeRollupOutputOptionsObject(opts, rollupOutputOptsObj, useAssetsDir, manualChunks) {
+  function normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOptsObj, useAssetsDir) {
     const outputOpts = {
       ...rollupOutputOptsObj
     };
+    const opts = qwikPlugin.getOptions();
+    const optimizer = qwikPlugin.getOptimizer();
+    const manualChunks = qwikPlugin.manualChunks;
     if ("client" === opts.target) {
       if (!outputOpts.assetFileNames) {
         const assetFileNames = "assets/[hash]-[name].[ext]";
         outputOpts.assetFileNames = useAssetsDir ? `${opts.assetsDir}/${assetFileNames}` : assetFileNames;
       }
-      const fileName = "production" == opts.buildMode ? "build/q-[hash].js" : "build/[name].js";
+      let fileName;
+      fileName = "production" !== opts.buildMode || opts.debug ? chunkInfo => {
+        var _a, _b;
+        if (null == (_a = chunkInfo.moduleIds) ? void 0 : _a.some((id => id.endsWith("core.prod.mjs")))) {
+          return "build/core.js";
+        }
+        if (null == (_b = chunkInfo.moduleIds) ? void 0 : _b.some((id => id.endsWith("qwik-city/lib/index.qwik.mjs")))) {
+          return "build/qwik-city.js";
+        }
+        const path = optimizer.sys.path;
+        const relativePath = path.relative(optimizer.sys.cwd(), chunkInfo.name);
+        const sanitized = relativePath.replace(/^(\.\.\/)+/, "").replace(/^\/+/, "").replace(/\//g, "-");
+        return `build/${sanitized}.js`;
+      } : "build/q-[hash].js";
       outputOpts.entryFileNames || (outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
       outputOpts.chunkFileNames || (outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
     } else {
@@ -5192,6 +5217,7 @@ globalThis.qwikOptimizer = function(module) {
       return;
     }
     const hasQwikCity = null == (_a = server.config.plugins) ? void 0 : _a.some((plugin => "vite-plugin-qwik-city" === plugin.name));
+    const cssImportedByCSS = new Set;
     server.middlewares.use((async (req, res, next) => {
       try {
         const {ORIGIN: ORIGIN} = process.env;
@@ -5238,6 +5264,8 @@ globalThis.qwikOptimizer = function(module) {
               version: "1"
             };
             const added = new Set;
+            const CSS_EXTENSIONS = [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ];
+            const JS_EXTENSIONS = /\.[mc]?[tj]sx?$/;
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 var _a2, _b;
@@ -5246,16 +5274,29 @@ globalThis.qwikOptimizer = function(module) {
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));
                 const {pathId: pathId, query: query} = parseId(v.url);
-                if ("" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext)))) {
-                  added.add(v.url);
-                  manifest.injections.push({
-                    tag: "link",
-                    location: "head",
-                    attributes: {
-                      rel: "stylesheet",
-                      href: `${base}${url2.slice(1)}`
-                    }
-                  });
+                if ("" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
+                  const isEntryCSS = 0 === v.importers.size;
+                  const hasCSSImporter = Array.from(v.importers).some((importer => {
+                    const importerPath = importer.url || importer.file;
+                    const isCSS = importerPath && CSS_EXTENSIONS.some((ext => importerPath.endsWith(ext)));
+                    isCSS && v.url && cssImportedByCSS.add(v.url);
+                    return isCSS;
+                  }));
+                  const hasJSImporter = Array.from(v.importers).some((importer => {
+                    const importerPath = importer.url || importer.file;
+                    return importerPath && JS_EXTENSIONS.test(importerPath);
+                  }));
+                  if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url) && !added.has(v.url)) {
+                    added.add(v.url);
+                    manifest.injections.push({
+                      tag: "link",
+                      location: "head",
+                      attributes: {
+                        rel: "stylesheet",
+                        href: `${base}${url2.slice(1)}`
+                      }
+                    });
+                  }
                 }
               }));
             }));
@@ -5278,13 +5319,29 @@ globalThis.qwikOptimizer = function(module) {
             res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
             res.writeHead(status);
             const result = await render(renderOpts);
+            "html" in result && res.write(result.html);
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 const {pathId: pathId, query: query} = parseId(v.url);
-                !added.has(v.url) && "" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext))) && res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                if (!added.has(v.url) && "" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
+                  const isEntryCSS = 0 === v.importers.size;
+                  const hasCSSImporter = Array.from(v.importers).some((importer => {
+                    const importerPath = importer.url || importer.file;
+                    const isCSS = importerPath && CSS_EXTENSIONS.some((ext => importerPath.endsWith(ext)));
+                    isCSS && v.url && cssImportedByCSS.add(v.url);
+                    return isCSS;
+                  }));
+                  const hasJSImporter = Array.from(v.importers).some((importer => {
+                    const importerPath = importer.url || importer.file;
+                    return importerPath && JS_EXTENSIONS.test(importerPath);
+                  }));
+                  if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
+                    res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                    added.add(v.url);
+                  }
+                }
               }));
             }));
-            "html" in result && res.write(result.html);
             res.write(END_SSR_SCRIPT(opts, opts.srcDir ? opts.srcDir : path.join(opts.rootDir, "src")));
             res.end();
           } else {
@@ -5426,7 +5483,7 @@ globalThis.qwikOptimizer = function(module) {
     let ssrOutDir = null;
     const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
     const injections = [];
-    const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
+    const qwikPlugin = createQwikPlugin(qwikViteOpts.optimizerOptions);
     async function loadQwikInsights(clientOutDir2 = "") {
       const sys = qwikPlugin.getSys();
       const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2, "q-insights.json");
@@ -5590,7 +5647,7 @@ globalThis.qwikOptimizer = function(module) {
           const origOnwarn = null == (_t = updatedViteConfig.build.rollupOptions) ? void 0 : _t.onwarn;
           updatedViteConfig.build.rollupOptions = {
             input: opts.input,
-            output: normalizeRollupOutputOptions(opts, null == (_v = null == (_u = viteConfig.build) ? void 0 : _u.rollupOptions) ? void 0 : _v.output, useAssetsDir, qwikPlugin.manualChunks, buildOutputDir),
+            output: normalizeRollupOutputOptions(qwikPlugin, null == (_v = null == (_u = viteConfig.build) ? void 0 : _u.rollupOptions) ? void 0 : _v.output, useAssetsDir, buildOutputDir),
             preserveEntrySignatures: "exports-only",
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
