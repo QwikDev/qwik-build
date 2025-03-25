@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+0bd3dad
+ * @builder.io/qwik/optimizer 1.12.1-dev+66d8c7f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.12.1-dev+0bd3dad"
+    qwik: "1.12.1-dev+66d8c7f"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1921,7 +1921,7 @@ globalThis.qwikOptimizer = function(module) {
         clickToSource: [ "Alt" ]
       },
       inlineStylesUpToBytes: 2e4,
-      lint: true,
+      lint: false,
       experimental: void 0
     };
     let lazyNormalizePath;
@@ -2036,7 +2036,7 @@ globalThis.qwikOptimizer = function(module) {
       }
       opts.csr = !!updatedOpts.csr;
       "inlineStylesUpToBytes" in optimizerOptions && ("number" === typeof optimizerOptions.inlineStylesUpToBytes ? opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes : ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0));
-      "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint ??= "development" === updatedOpts.buildMode;
+      "boolean" === typeof updatedOpts.lint && (opts.lint = updatedOpts.lint);
       if ("experimental" in updatedOpts) {
         opts.experimental = void 0;
         for (const feature of updatedOpts.experimental ?? []) {
