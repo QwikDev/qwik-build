@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+a67c3be
+ * @builder.io/qwik/optimizer 1.12.1-dev+e686f63
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.12.1-dev+a67c3be"
+    qwik: "1.12.1-dev+e686f63"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1640,18 +1640,17 @@ globalThis.qwikOptimizer = function(module) {
       }
       const bundleFileName = canonPath(outputBundle.fileName);
       const bundle = {
-        size: outputBundle.code.length
+        size: outputBundle.code.length,
+        hasSymbols: false
       };
       let hasSymbols = false;
-      let hasHW = false;
       for (const symbol of outputBundle.exports) {
         if (qrlNames.has(symbol) && (!manifest.mapping[symbol] || 1 !== outputBundle.exports.length)) {
           hasSymbols = true;
           manifest.mapping[symbol] = bundleFileName;
         }
-        "_hW" === symbol && (hasHW = true);
       }
-      hasSymbols && hasHW && (bundle.isTask = true);
+      hasSymbols && (bundle.hasSymbols = true);
       const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
       bundleImports.length > 0 && (bundle.imports = bundleImports);
       const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
@@ -1921,8 +1920,8 @@ globalThis.qwikOptimizer = function(module) {
         imageDevTools: true,
         clickToSource: [ "Alt" ]
       },
-      inlineStylesUpToBytes: null,
-      lint: true,
+      inlineStylesUpToBytes: 2e4,
+      lint: false,
       experimental: void 0
     };
     let lazyNormalizePath;
@@ -1956,8 +1955,8 @@ globalThis.qwikOptimizer = function(module) {
       const path = optimizer2.sys.path;
       opts.debug = !!updatedOpts.debug;
       updatedOpts.assetsDir && (opts.assetsDir = updatedOpts.assetsDir);
-      "ssr" === updatedOpts.target || "client" === updatedOpts.target || "lib" === updatedOpts.target || "test" === updatedOpts.target ? opts.target = updatedOpts.target : opts.target = "client";
-      "lib" === opts.target ? opts.buildMode = "development" : "production" === updatedOpts.buildMode || "development" === updatedOpts.buildMode ? opts.buildMode = updatedOpts.buildMode : opts.buildMode = "development";
+      "ssr" === updatedOpts.target || "client" === updatedOpts.target || "lib" === updatedOpts.target || "test" === updatedOpts.target ? opts.target = updatedOpts.target : opts.target ||= "client";
+      "lib" === opts.target ? opts.buildMode = "development" : "production" === updatedOpts.buildMode || "development" === updatedOpts.buildMode ? opts.buildMode = updatedOpts.buildMode : opts.buildMode ||= "development";
       updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
         ...updatedOpts.entryStrategy
       });
@@ -1971,7 +1970,7 @@ globalThis.qwikOptimizer = function(module) {
         type: "segment"
       });
       "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
-      "string" !== typeof opts.rootDir && (opts.rootDir = optimizer2.sys.cwd());
+      "string" !== typeof opts.rootDir && (opts.rootDir ||= optimizer2.sys.cwd());
       opts.rootDir = normalizePath(path.resolve(optimizer2.sys.cwd(), opts.rootDir));
       let srcDir = normalizePath(path.resolve(opts.rootDir, SRC_DIR_DEFAULT));
       if ("string" === typeof updatedOpts.srcDir) {
@@ -1982,7 +1981,7 @@ globalThis.qwikOptimizer = function(module) {
         opts.srcInputs = [ ...updatedOpts.srcInputs ];
         opts.srcDir = null;
       } else {
-        opts.srcDir = srcDir;
+        opts.srcDir ||= srcDir;
       }
       Array.isArray(updatedOpts.tsconfigFileNames) && updatedOpts.tsconfigFileNames.length > 0 && (opts.tsconfigFileNames = updatedOpts.tsconfigFileNames);
       Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
@@ -1994,9 +1993,9 @@ globalThis.qwikOptimizer = function(module) {
         } else if ("string" === typeof updatedOpts.input) {
           opts.input = [ updatedOpts.input ];
         } else if ("ssr" === opts.target) {
-          opts.input = [ path.resolve(srcDir, "entry.ssr") ];
+          opts.input ||= [ path.resolve(srcDir, "entry.ssr") ];
         } else if ("client" === opts.target) {
-          opts.input = [ path.resolve(srcDir, "root") ];
+          opts.input ||= [ path.resolve(srcDir, "root") ];
         } else if ("lib" === opts.target) {
           if ("object" === typeof updatedOpts.input) {
             for (const key in updatedOpts.input) {
@@ -2012,36 +2011,37 @@ globalThis.qwikOptimizer = function(module) {
               };
             }
           } else {
-            opts.input = [ path.resolve(srcDir, "index.ts") ];
+            opts.input ||= [ path.resolve(srcDir, "index.ts") ];
           }
         } else {
-          opts.input = [];
+          opts.input ||= [];
         }
-        opts.input = Array.isArray(opts.input) ? opts.input.reduce(((inputs, i) => {
+        Array.isArray(opts.input) && (opts.input = opts.input.reduce(((inputs, i) => {
           let input = i;
           i.startsWith("@") || i.startsWith("~") || i.startsWith("#") || (input = normalizePath(path.resolve(opts.rootDir, i)));
           inputs.includes(input) || inputs.push(input);
           return inputs;
-        }), []) : opts.input;
-        "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : "ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : "lib" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, LIB_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR));
+        }), []));
+        "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : opts.outDir || ("ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : "lib" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, LIB_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR)));
       }
       "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
       const clientManifest = getValidManifest(updatedOpts.manifestInput);
       clientManifest && (opts.manifestInput = clientManifest);
       "function" === typeof updatedOpts.transformedModuleOutput && (opts.transformedModuleOutput = updatedOpts.transformedModuleOutput);
-      opts.scope = updatedOpts.scope ?? null;
+      void 0 !== updatedOpts.scope && (opts.scope = updatedOpts.scope);
       "boolean" === typeof updatedOpts.resolveQwikBuild && (opts.resolveQwikBuild = updatedOpts.resolveQwikBuild);
       if ("object" === typeof updatedOpts.devTools) {
         "imageDevTools" in updatedOpts.devTools && (opts.devTools.imageDevTools = updatedOpts.devTools.imageDevTools);
         "clickToSource" in updatedOpts.devTools && (opts.devTools.clickToSource = updatedOpts.devTools.clickToSource);
       }
       opts.csr = !!updatedOpts.csr;
-      opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
-      ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
-      "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint = "development" === updatedOpts.buildMode;
-      opts.experimental = void 0;
-      for (const feature of updatedOpts.experimental ?? []) {
-        ExperimentalFeatures[feature] ? (opts.experimental ||= {})[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
+      "inlineStylesUpToBytes" in optimizerOptions && ("number" === typeof optimizerOptions.inlineStylesUpToBytes ? opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes : ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0));
+      "boolean" === typeof updatedOpts.lint && (opts.lint = updatedOpts.lint);
+      if ("experimental" in updatedOpts) {
+        opts.experimental = void 0;
+        for (const feature of updatedOpts.experimental ?? []) {
+          ExperimentalFeatures[feature] ? (opts.experimental ||= {})[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
+        }
       }
       return {
         ...opts
@@ -2402,16 +2402,16 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
     function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
-      const module2 = getModuleInfo(id2);
-      const segment = module2.meta.segment;
-      if (segment) {
-        return segment.entry;
-      }
-      if (id2.includes("node_modules")) {
-        return null;
-      }
-      if (/\.(tsx|jsx)$/.test(id2)) {
-        return id2;
+      if (opts.entryStrategy.manual) {
+        const module2 = getModuleInfo(id2);
+        const segment = module2.meta.segment;
+        if (segment) {
+          const {hash: hash} = segment;
+          const chunkName = opts.entryStrategy.manual[hash] || segment.entry;
+          if (chunkName) {
+            return chunkName;
+          }
+        }
       }
       return null;
     }
@@ -5629,6 +5629,7 @@ globalThis.qwikOptimizer = function(module) {
             },
             rollupOptions: {
               output: {
+                hoistTransitiveImports: false,
                 manualChunks: qwikPlugin.manualChunks
               }
             }
@@ -5696,6 +5697,7 @@ globalThis.qwikOptimizer = function(module) {
         }
         const useSourcemap = !!config.build.sourcemap;
         useSourcemap && void 0 === (null == (_b = qwikViteOpts.optimizerOptions) ? void 0 : _b.sourcemap) && qwikPlugin.setSourceMapSupport(true);
+        qwikPlugin.normalizeOptions(qwikViteOpts);
       },
       async buildStart() {
         const resolver = this.resolve.bind(this);
@@ -6051,7 +6053,7 @@ globalThis.qwikOptimizer = function(module) {
         if (!graph[depName]) {
           continue;
         }
-        if (dep.isTask) {
+        if (dep.hasSymbols) {
           if (!didAdd) {
             deps.add("<dynamic>");
             didAdd = true;
