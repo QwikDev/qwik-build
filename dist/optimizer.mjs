@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+2925c4d
+ * @builder.io/qwik/optimizer 1.12.1-dev+7f12634
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.1-dev+2925c4d"
+  qwik: "1.12.1-dev+7f12634"
 };
 
 async function getSystem() {
@@ -1654,18 +1654,17 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     }
     const bundleFileName = canonPath(outputBundle.fileName);
     const bundle = {
-      size: outputBundle.code.length
+      size: outputBundle.code.length,
+      hasSymbols: false
     };
     let hasSymbols = false;
-    let hasHW = false;
     for (const symbol of outputBundle.exports) {
       if (qrlNames.has(symbol) && (!manifest.mapping[symbol] || 1 !== outputBundle.exports.length)) {
         hasSymbols = true;
         manifest.mapping[symbol] = bundleFileName;
       }
-      "_hW" === symbol && (hasHW = true);
     }
-    hasSymbols && hasHW && (bundle.isTask = true);
+    hasSymbols && (bundle.hasSymbols = true);
     const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleImports.length > 0 && (bundle.imports = bundleImports);
     const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
@@ -2441,12 +2440,6 @@ function createQwikPlugin(optimizerOptions = {}) {
           return chunkName;
         }
       }
-    }
-    if (id2.includes("node_modules")) {
-      return null;
-    }
-    if (/\.(tsx|jsx)$/.test(id2)) {
-      return id2;
     }
     return null;
   }
@@ -6588,7 +6581,7 @@ function convertManifestToBundleGraph(manifest) {
       if (!graph[depName]) {
         continue;
       }
-      if (dep.isTask) {
+      if (dep.hasSymbols) {
         if (!didAdd) {
           deps.add("<dynamic>");
           didAdd = true;

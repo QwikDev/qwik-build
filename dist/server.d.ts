@@ -113,8 +113,7 @@ export declare interface PrefetchStrategy {
 /** @public */
 declare interface QwikBundle {
     size: number;
-    /** Not precise, but an indication of whether this import may be a task */
-    isTask?: boolean;
+    hasSymbols?: boolean;
     symbols?: string[];
     imports?: string[];
     dynamicImports?: string[];
