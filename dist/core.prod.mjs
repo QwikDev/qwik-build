@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.1-dev+7f12634
+ * @builder.io/qwik 1.12.1-dev+0bd3dad
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -579,7 +579,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.12.1-dev+7f12634";
+const version = "1.12.1-dev+0bd3dad";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
