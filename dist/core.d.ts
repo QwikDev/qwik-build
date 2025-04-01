@@ -88,6 +88,7 @@ declare type AllEventMapRaw = HTMLElementEventMap & DocumentEventMap & WindowEve
     qinit: QwikInitEvent;
     qsymbol: QwikSymbolEvent;
     qvisible: QwikVisibleEvent;
+    qviewTransition: QwikViewTransitionEvent;
 };
 
 declare type AllEventsMap = Omit<AllEventMapRaw, keyof EventCorrectionMap> & EventCorrectionMap;
@@ -870,7 +871,7 @@ declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAtt
     dangerouslySetInnerHTML?: string | undefined;
 }
 
-/** @public */
+/** @public @deprecated use useVisibleTask$ or useResource$, useTask$ is for running tasks as part of the initial SSR render */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
 /** @public */
@@ -2104,6 +2105,9 @@ export declare type QwikTransitionEvent<T = Element> = NativeTransitionEvent;
 /** @public @deprecated Use `UIEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikUIEvent<T = Element> = NativeUIEvent;
 
+/** Emitted by qwik-core on document when the a view transition start @public */
+declare type QwikViewTransitionEvent = CustomEvent<ViewTransition>;
+
 /** Emitted by qwik-loader when an element becomes visible. Used by `useVisibleTask$` @public */
 export declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 
@@ -2526,7 +2530,7 @@ declare type SpecialAttrs = {
          * For type: HTMLInputTypeAttribute, excluding 'button' | 'reset' | 'submit' | 'checkbox' |
          * 'radio'
          */
-        'bind:value'?: Signal<string | undefined>;
+        'bind:value'?: Signal<string | undefined | number>;
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         height?: Size | undefined;
         max?: number | string | undefined;
@@ -3318,7 +3322,7 @@ export declare const useContext: UseContext;
 export declare const useContextProvider: <STATE>(context: ContextId<STATE>, newValue: STATE) => void;
 
 /** @public */
-export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
+export declare const useErrorBoundary: () => ErrorBoundaryStore;
 
 /** @public */
 export declare const useId: () => string;
@@ -3746,7 +3750,7 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  */
 export declare const useTask$: (qrl: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
-/** @public */
+/** @public @deprecated use useVisibleTask$ or useResource$, useTask$ is for running tasks as part of the initial SSR render */
 export declare interface UseTaskOptions {
     /**
      * - `visible`: run the effect when the element is visible.
@@ -3875,7 +3879,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.12.0
+ * 1.13.0-dev+97aa67d
  *
  * @public
  */

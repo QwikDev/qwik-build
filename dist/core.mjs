@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0
+ * @builder.io/qwik 1.13.0-dev+97aa67d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -761,8 +761,12 @@ class ReadWriteProxyHandler {
         });
     }
     getOwnPropertyDescriptor(target, prop) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
         if (isArray(target) || typeof prop === 'symbol') {
-            return Object.getOwnPropertyDescriptor(target, prop);
+            return descriptor;
+        }
+        if (descriptor && !descriptor.configurable) {
+            return descriptor;
         }
         return {
             enumerable: true,
@@ -915,7 +919,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.12.0";
+const version = "1.13.0-dev+97aa67d";
 
 /**
  * @internal
@@ -5815,10 +5819,15 @@ const executeContextWithScrollAndTransition = async (ctx) => {
         if (document.__q_view_transition__) {
             document.__q_view_transition__ = undefined;
             if (document.startViewTransition) {
-                await document.startViewTransition(() => {
+                const transition = document.startViewTransition(() => {
                     executeDOMRender(ctx);
                     restoreScroll();
-                }).finished;
+                });
+                const event = new CustomEvent('qviewTransition', {
+                    detail: transition,
+                });
+                document.dispatchEvent(event);
+                await transition.finished;
                 return;
             }
         }
@@ -9843,12 +9852,9 @@ const _useStyles = (styleQrl, transform, scoped) => {
 
 /** @public */
 const useErrorBoundary = () => {
-    const store = useStore({
-        error: undefined,
-    });
-    useOn('error-boundary', qrl('/runtime', 'error', [store]));
-    useContextProvider(ERROR_CONTEXT, store);
-    return store;
+    const error = useStore({ error: undefined });
+    useContextProvider(ERROR_CONTEXT, error);
+    return error;
 };
 
 // keep this import from qwik/build so the cjs build works

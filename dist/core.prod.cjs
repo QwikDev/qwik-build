@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.12.0
+ * @builder.io/qwik 1.13.0-dev+97aa67d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -270,7 +270,8 @@
             return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
         }
         getOwnPropertyDescriptor(target, prop) {
-            return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
+            const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+            return isArray(target) || "symbol" == typeof prop || descriptor && !descriptor.configurable ? descriptor : {
                 enumerable: !0,
                 configurable: !0
             };
@@ -351,6 +352,7 @@
             return value;
         }
     };
+    const version = "1.13.0-dev+97aa67d";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -2699,10 +2701,17 @@
         document.__q_scroll_restore__ && (document.__q_scroll_restore__(), document.__q_scroll_restore__ = void 0);
     };
     const executeContextWithScrollAndTransition = async ctx => {
-        build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-        document.startViewTransition) ? await document.startViewTransition((() => {
-            executeDOMRender(ctx), restoreScroll();
-        })).finished : (executeDOMRender(ctx), build.isBrowser && restoreScroll());
+        if (build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
+        document.startViewTransition)) {
+            const transition = document.startViewTransition((() => {
+                executeDOMRender(ctx), restoreScroll();
+            }));
+            const event = new CustomEvent("qviewTransition", {
+                detail: transition
+            });
+            return document.dispatchEvent(event), void await transition.finished;
+        }
+        executeDOMRender(ctx), build.isBrowser && restoreScroll();
     };
     const directAppendChild = (parent, child) => {
         isVirtualElement(child) ? child.appendTo(parent) : parent.appendChild(child);
@@ -4513,7 +4522,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.12.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", version ?? "dev"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4872,7 +4881,7 @@
         const locale = opts.serverData?.locale;
         const containerAttributes = opts.containerAttributes;
         const qRender = containerAttributes["q:render"];
-        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.12.0", 
+        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = version ?? "dev", 
         containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
         containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
         containerAttributes["q:instance"] = hash();
@@ -5027,11 +5036,10 @@
         }
         throw qError(13, context.id);
     }, exports.useContextProvider = useContextProvider, exports.useErrorBoundary = () => {
-        const store = useStore({
+        const error = useStore({
             error: void 0
         });
-        return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
-        store;
+        return useContextProvider(ERROR_CONTEXT, error), error;
     }, exports.useId = () => {
         const {val, set, elCtx, iCtx} = useSequentialScope();
         if (null != val) {
@@ -5048,7 +5056,7 @@
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.12.0", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = version, exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();
