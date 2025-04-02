@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+c355b0f
+ * @builder.io/qwik 1.13.0-dev+cb4e94b
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -919,7 +919,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.13.0-dev+c355b0f";
+const version = "1.13.0-dev+cb4e94b";
 
 /**
  * @internal
@@ -1317,7 +1317,7 @@ const isUnitlessNumber = (name) => {
 };
 
 const executeComponent = (rCtx, elCtx, attempt) => {
-    elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
+    elCtx.$flags$ &= -2;
     elCtx.$flags$ |= HOST_FLAG_MOUNTED;
     elCtx.$slots$ = [];
     elCtx.li.length = 0;
@@ -1758,7 +1758,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
                 const placeholderCtx = createMockQContext(1);
                 const listeners = placeholderCtx.li;
                 listeners.push(...elCtx.li);
-                elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                elCtx.$flags$ &= -3;
                 placeholderCtx.$id$ = getNextIndex(rCtx);
                 const attributes = {
                     type: 'placeholder',
@@ -1928,7 +1928,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             }
             if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 listeners.push(...hostCtx.li);
-                hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                hostCtx.$flags$ &= -3;
             }
         }
         // Reset HOST flags
@@ -1946,7 +1946,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 if (flags & IS_TABLE && !(tagName in tableContent)) {
                     throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                 }
-                flags &= ~IS_TABLE;
+                flags &= -257;
             }
             if (tagName === 'button') {
                 if (flags & IS_BUTTON) {
@@ -2047,7 +2047,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             flags |= IS_HTML;
         }
         else {
-            flags &= ~IS_HTML;
+            flags &= -5;
         }
         if (node.flags & static_subtree) {
             flags |= IS_IMMUTABLE$1;
@@ -4102,7 +4102,7 @@ const runSubscriber = async (task, containerState, rCtx) => {
     }
 };
 const runResource = (task, containerState, rCtx, waitOn) => {
-    task.$flags$ &= ~TaskFlagsIsDirty;
+    task.$flags$ &= -17;
     cleanupTask(task);
     const el = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, TaskEvent);
@@ -4213,7 +4213,7 @@ const runResource = (task, containerState, rCtx, waitOn) => {
     return promise;
 };
 const runTask = (task, containerState, rCtx) => {
-    task.$flags$ &= ~TaskFlagsIsDirty;
+    task.$flags$ &= -17;
     cleanupTask(task);
     const hostElement = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, TaskEvent);
@@ -4265,7 +4265,7 @@ const runTask = (task, containerState, rCtx) => {
 };
 const runComputed = (task, containerState, rCtx) => {
     assertSignal(task.$state$);
-    task.$flags$ &= ~TaskFlagsIsDirty;
+    task.$flags$ &= -17;
     cleanupTask(task);
     const hostElement = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, ComputedEvent);
@@ -4278,7 +4278,7 @@ const runComputed = (task, containerState, rCtx) => {
     const ok = (returnValue) => {
         untrack(() => {
             const signal = task.$state$;
-            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
+            signal[QObjectSignalFlags] &= -3;
             signal.untrackedValue = returnValue;
             signal[QObjectManagerSymbol].$notifySubs$();
         });
@@ -4324,7 +4324,7 @@ const cleanupTask = (task) => {
 };
 const destroyTask = (task) => {
     if (task.$flags$ & TaskFlagsIsCleanup) {
-        task.$flags$ &= ~TaskFlagsIsCleanup;
+        task.$flags$ &= -33;
         const cleanup = task.$qrl$;
         cleanup();
     }
@@ -5248,7 +5248,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
             return;
         }
         if (isSvg && tag === 'foreignObject') {
-            flags &= ~IS_SVG;
+            flags &= -2;
         }
         const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
         if (setsInnerHTML) {
@@ -5338,7 +5338,7 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         slotRctx.$slotCtx$ = slotCtx;
         slotCtx.$vdom$ = newVdom;
         newVdom.$elm$ = slotEl;
-        let newFlags = flags & ~IS_SVG;
+        let newFlags = flags & -2;
         if (slotEl.isSvg) {
             newFlags |= IS_SVG;
         }
@@ -5452,7 +5452,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
     }
     else {
         elm = createElement(doc, tag, isSvg);
-        flags &= ~IS_HEAD;
+        flags &= -3;
     }
     if (vnode.$flags$ & static_subtree) {
         flags |= IS_IMMUTABLE;
@@ -5491,7 +5491,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         }
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
-            flags &= ~IS_SVG;
+            flags &= -2;
         }
         if (currentComponent) {
             const scopedIds = currentComponent.$scopeIds$;
@@ -5502,7 +5502,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
             }
             if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 elCtx.li.push(...currentComponent.li);
-                currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                currentComponent.$flags$ &= -3;
             }
         }
         for (const listener of elCtx.li) {
@@ -5517,7 +5517,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         }
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
-            flags &= ~IS_SVG;
+            flags &= -2;
         }
     }
     else if (OnRenderProp in props) {
@@ -5566,7 +5566,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 slotRctx.$slotCtx$ = slotCtx;
                 slotCtx.$vdom$ = newVnode;
                 newVnode.$elm$ = slotEl;
-                let newFlags = flags & ~IS_SVG;
+                let newFlags = flags & -2;
                 if (slotEl.isSvg) {
                     newFlags |= IS_SVG;
                 }
@@ -9972,9 +9972,6 @@ const PrefetchGraph = (opts = {}) => {
         // /build/q-bundle-graph-${manifestHash}.json is always within the q:base location /build/
         base: serverData['q:base'],
         manifestHash: serverData['q:manifest-hash'],
-        scope: '/',
-        verbose: false,
-        path: 'qwik-prefetch-service-worker.js',
         ...opts,
     };
     const args = JSON.stringify([

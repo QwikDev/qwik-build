@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+c355b0f
+ * @builder.io/qwik 1.13.0-dev+cb4e94b
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.13.0-dev+c355b0f";
+    const version = "1.13.0-dev+cb4e94b";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -436,8 +436,7 @@
     };
     const unitlessNumbers = new Set([ "animationIterationCount", "aspectRatio", "borderImageOutset", "borderImageSlice", "borderImageWidth", "boxFlex", "boxFlexGroup", "boxOrdinalGroup", "columnCount", "columns", "flex", "flexGrow", "flexShrink", "gridArea", "gridRow", "gridRowEnd", "gridRowStart", "gridColumn", "gridColumnEnd", "gridColumnStart", "fontWeight", "lineClamp", "lineHeight", "opacity", "order", "orphans", "scale", "tabSize", "widows", "zIndex", "zoom", "MozAnimationIterationCount", "MozBoxFlex", "msFlex", "msFlexPositive", "WebkitAnimationIterationCount", "WebkitBoxFlex", "WebkitBoxOrdinalGroup", "WebkitColumnCount", "WebkitColumns", "WebkitFlex", "WebkitFlexGrow", "WebkitFlexShrink", "WebkitLineClamp" ]);
     const executeComponent = (rCtx, elCtx, attempt) => {
-        elCtx.$flags$ &= ~HOST_FLAG_DIRTY, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], 
-        elCtx.li.length = 0;
+        elCtx.$flags$ &= -2, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
@@ -671,7 +670,7 @@
             if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 const placeholderCtx = createMockQContext(1);
                 const listeners = placeholderCtx.li;
-                listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
+                listeners.push(...elCtx.li), elCtx.$flags$ &= -3, placeholderCtx.$id$ = getNextIndex(rCtx);
                 const attributes = {
                     type: "placeholder",
                     hidden: "",
@@ -775,7 +774,7 @@
                     classStr = classStr ? `${extra} ${classStr}` : extra;
                 }
                 hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (listeners.push(...hostCtx.li), 
-                hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
+                hostCtx.$flags$ &= -3);
             }
             if (isHead && (flags |= 1), tagName in invisibleElements && (flags |= 16), tagName in textOnlyElements && (flags |= 8), 
             classStr && (openingElement += ' class="' + escapeHtml(classStr) + '"'), listeners.length > 0) {
@@ -1689,7 +1688,7 @@
     const isResourceTask = task => !!(task.$flags$ & TaskFlagsIsResource);
     const runSubscriber = async (task, containerState, rCtx) => (assertEqual(), isResourceTask(task) ? runResource(task, containerState, rCtx) : (task => !!(8 & task.$flags$))(task) ? runComputed(task, containerState, rCtx) : runTask(task, containerState, rCtx));
     const runResource = (task, containerState, rCtx, waitOn) => {
-        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+        task.$flags$ &= -17, cleanupTask(task);
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, task.$el$, void 0, "qTask");
         const {$subsManager$: subsManager} = containerState;
         iCtx.$renderCtx$ = rCtx;
@@ -1744,7 +1743,7 @@
         })) ]) : promise;
     };
     const runTask = (task, containerState, rCtx) => {
-        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+        task.$flags$ &= -17, cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qTask");
         iCtx.$renderCtx$ = rCtx;
@@ -1777,7 +1776,7 @@
         }));
     };
     const runComputed = (task, containerState, rCtx) => {
-        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+        task.$flags$ &= -17, cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qComputed");
         iCtx.$subscriber$ = [ 0, task ], iCtx.$renderCtx$ = rCtx;
@@ -1788,8 +1787,7 @@
         const ok = returnValue => {
             untrack((() => {
                 const signal = task.$state$;
-                signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue = returnValue, 
-                signal[QObjectManagerSymbol].$notifySubs$();
+                signal[QObjectSignalFlags] &= -3, signal.untrackedValue = returnValue, signal[QObjectManagerSymbol].$notifySubs$();
             }));
         };
         const fail = reason => {
@@ -2360,7 +2358,7 @@
             if (2 & vnodeFlags) {
                 return;
             }
-            isSvg && "foreignObject" === tag && (flags &= ~IS_SVG);
+            isSvg && "foreignObject" === tag && (flags &= -2);
             if (void 0 !== props.dangerouslySetInnerHTML) {
                 return void 0;
             }
@@ -2414,7 +2412,7 @@
             const slotRctx = pushRenderContext(rCtx);
             const slotEl = slotCtx.$element$;
             slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotEl;
-            let newFlags = flags & ~IS_SVG;
+            let newFlags = -2 & flags;
             slotEl.isSvg && (newFlags |= IS_SVG);
             const index = staticCtx.$addSlots$.findIndex((slot => slot[0] === slotEl));
             return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, newFlags);
@@ -2490,7 +2488,7 @@
         const staticCtx = rCtx.$static$;
         const containerState = staticCtx.$containerState$;
         isVirtual ? elm = newVirtualElement(doc, isSvg) : "head" === tag ? (elm = doc.head, 
-        flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= ~IS_HEAD), 2 & vnode.$flags$ && (flags |= 4), 
+        flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= -3), 2 & vnode.$flags$ && (flags |= 4), 
         vnode.$elm$ = elm;
         const elCtx = createContext(elm);
         if (rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
@@ -2527,7 +2525,7 @@
                         const slotRctx = pushRenderContext(rCtx);
                         const slotEl = slotCtx.$element$;
                         slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotEl;
-                        let newFlags = flags & ~IS_SVG;
+                        let newFlags = -2 & flags;
                         slotEl.isSvg && (newFlags |= IS_SVG);
                         for (const node of newVnode.$children$) {
                             const nodeElm = createElm(slotRctx, node, newFlags, p);
@@ -2555,12 +2553,12 @@
                 const p = vnode.$immutableProps$ ? Object.fromEntries(Object.entries(props).filter((([k]) => !(k in vnode.$immutableProps$)))) : props;
                 vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, p, isSvg, !1);
             }
-            if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG), currentComponent) {
+            if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2), currentComponent) {
                 const scopedIds = currentComponent.$scopeIds$;
                 scopedIds && scopedIds.forEach((styleId => {
                     elm.classList.add(styleId);
                 })), currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (elCtx.li.push(...currentComponent.li), 
-                currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
+                currentComponent.$flags$ &= -3);
             }
             for (const listener of elCtx.li) {
                 addQwikEvent(staticCtx, elm, listener[0]);
@@ -2568,7 +2566,7 @@
             if (void 0 !== props.dangerouslySetInnerHTML) {
                 return elm;
             }
-            isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG);
+            isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2);
         }
         let children = vnode.$children$;
         if (0 === children.length) {
@@ -4725,9 +4723,6 @@
         const resolvedOpts = {
             base: serverData["q:base"],
             manifestHash: serverData["q:manifest-hash"],
-            scope: "/",
-            verbose: !1,
-            path: "qwik-prefetch-service-worker.js",
             ...opts
         };
         const args = JSON.stringify([ "graph-url", resolvedOpts.base, `q-bundle-graph-${resolvedOpts.manifestHash}.json` ]);
