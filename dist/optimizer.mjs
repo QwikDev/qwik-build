@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+cb4e94b
+ * @builder.io/qwik/optimizer 1.13.0-dev+c11665c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+cb4e94b"
+  qwik: "1.13.0-dev+c11665c"
 };
 
 async function getSystem() {
@@ -6149,8 +6149,8 @@ function qwikVite(qwikViteOpts = {}) {
             exclude: [ /./ ]
           },
           rollupOptions: {
+            maxParallelFileOps: 1,
             output: {
-              hoistTransitiveImports: false,
               manualChunks: qwikPlugin.manualChunks
             }
           }
