@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+c11665c
+ * @builder.io/qwik 1.13.0-dev+fed136d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -59,7 +59,7 @@ const throwErrorAndStop = (message, ...optionalParams) => {
     throw createAndLogError(!1, message, ...optionalParams);
 };
 
-const logErrorAndStop = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
+const logErrorAndStop = (message, ...optionalParams) => createAndLogError(qDev, message, ...optionalParams);
 
 const _printed = /*#__PURE__*/ new Set;
 
@@ -579,7 +579,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.13.0-dev+c11665c";
+const version = "1.13.0-dev+fed136d";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();

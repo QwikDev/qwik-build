@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+c11665c
+ * @builder.io/qwik/optimizer 1.13.0-dev+fed136d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.13.0-dev+c11665c"
+    qwik: "1.13.0-dev+fed136d"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2943,7 +2943,7 @@ globalThis.qwikOptimizer = function(module) {
     throw error;
   };
   var logErrorAndStop = (message, ...optionalParams) => {
-    const err = createAndLogError(true, message, ...optionalParams);
+    const err = createAndLogError(qDev, message, ...optionalParams);
     debugger;
     return err;
   };
