@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.12.1-dev+e686f63
+ * @builder.io/qwik/cli 1.13.0-dev+41cb35e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -101,20 +101,19 @@ var require_src = __commonJS({
   }
 });
 
-// node_modules/.pnpm/picocolors@1.0.1/node_modules/picocolors/picocolors.js
+// node_modules/.pnpm/picocolors@1.1.1/node_modules/picocolors/picocolors.js
 var require_picocolors = __commonJS({
-  "node_modules/.pnpm/picocolors@1.0.1/node_modules/picocolors/picocolors.js"(exports2, module2) {
-    var argv = process.argv || [];
-    var env = process.env;
-    var isColorSupported = !("NO_COLOR" in env || argv.includes("--no-color")) && ("FORCE_COLOR" in env || argv.includes("--color") || process.platform === "win32" || require != null && require("tty").isatty(1) && env.TERM !== "dumb" || "CI" in env);
+  "node_modules/.pnpm/picocolors@1.1.1/node_modules/picocolors/picocolors.js"(exports2, module2) {
+    var p = process || {};
+    var argv = p.argv || [];
+    var env = p.env || {};
+    var isColorSupported = !(!!env.NO_COLOR || argv.includes("--no-color")) && (!!env.FORCE_COLOR || argv.includes("--color") || p.platform === "win32" || (p.stdout || {}).isTTY && env.TERM !== "dumb" || !!env.CI);
     var formatter = (open, close, replace = open) => (input) => {
-      let string = "" + input;
-      let index = string.indexOf(close, open.length);
+      let string = "" + input, index = string.indexOf(close, open.length);
       return ~index ? open + replaceClose(string, close, replace, index) + close : open + string + close;
     };
     var replaceClose = (string, close, replace, index) => {
-      let result = "";
-      let cursor = 0;
+      let result = "", cursor = 0;
       do {
         result += string.substring(cursor, index) + replace;
         cursor = index + close.length;
@@ -123,34 +122,50 @@ var require_picocolors = __commonJS({
       return result + string.substring(cursor);
     };
     var createColors = (enabled = isColorSupported) => {
-      let init2 = enabled ? formatter : () => String;
+      let f3 = enabled ? formatter : () => String;
       return {
         isColorSupported: enabled,
-        reset: init2("\x1B[0m", "\x1B[0m"),
-        bold: init2("\x1B[1m", "\x1B[22m", "\x1B[22m\x1B[1m"),
-        dim: init2("\x1B[2m", "\x1B[22m", "\x1B[22m\x1B[2m"),
-        italic: init2("\x1B[3m", "\x1B[23m"),
-        underline: init2("\x1B[4m", "\x1B[24m"),
-        inverse: init2("\x1B[7m", "\x1B[27m"),
-        hidden: init2("\x1B[8m", "\x1B[28m"),
-        strikethrough: init2("\x1B[9m", "\x1B[29m"),
-        black: init2("\x1B[30m", "\x1B[39m"),
-        red: init2("\x1B[31m", "\x1B[39m"),
-        green: init2("\x1B[32m", "\x1B[39m"),
-        yellow: init2("\x1B[33m", "\x1B[39m"),
-        blue: init2("\x1B[34m", "\x1B[39m"),
-        magenta: init2("\x1B[35m", "\x1B[39m"),
-        cyan: init2("\x1B[36m", "\x1B[39m"),
-        white: init2("\x1B[37m", "\x1B[39m"),
-        gray: init2("\x1B[90m", "\x1B[39m"),
-        bgBlack: init2("\x1B[40m", "\x1B[49m"),
-        bgRed: init2("\x1B[41m", "\x1B[49m"),
-        bgGreen: init2("\x1B[42m", "\x1B[49m"),
-        bgYellow: init2("\x1B[43m", "\x1B[49m"),
-        bgBlue: init2("\x1B[44m", "\x1B[49m"),
-        bgMagenta: init2("\x1B[45m", "\x1B[49m"),
-        bgCyan: init2("\x1B[46m", "\x1B[49m"),
-        bgWhite: init2("\x1B[47m", "\x1B[49m")
+        reset: f3("\x1B[0m", "\x1B[0m"),
+        bold: f3("\x1B[1m", "\x1B[22m", "\x1B[22m\x1B[1m"),
+        dim: f3("\x1B[2m", "\x1B[22m", "\x1B[22m\x1B[2m"),
+        italic: f3("\x1B[3m", "\x1B[23m"),
+        underline: f3("\x1B[4m", "\x1B[24m"),
+        inverse: f3("\x1B[7m", "\x1B[27m"),
+        hidden: f3("\x1B[8m", "\x1B[28m"),
+        strikethrough: f3("\x1B[9m", "\x1B[29m"),
+        black: f3("\x1B[30m", "\x1B[39m"),
+        red: f3("\x1B[31m", "\x1B[39m"),
+        green: f3("\x1B[32m", "\x1B[39m"),
+        yellow: f3("\x1B[33m", "\x1B[39m"),
+        blue: f3("\x1B[34m", "\x1B[39m"),
+        magenta: f3("\x1B[35m", "\x1B[39m"),
+        cyan: f3("\x1B[36m", "\x1B[39m"),
+        white: f3("\x1B[37m", "\x1B[39m"),
+        gray: f3("\x1B[90m", "\x1B[39m"),
+        bgBlack: f3("\x1B[40m", "\x1B[49m"),
+        bgRed: f3("\x1B[41m", "\x1B[49m"),
+        bgGreen: f3("\x1B[42m", "\x1B[49m"),
+        bgYellow: f3("\x1B[43m", "\x1B[49m"),
+        bgBlue: f3("\x1B[44m", "\x1B[49m"),
+        bgMagenta: f3("\x1B[45m", "\x1B[49m"),
+        bgCyan: f3("\x1B[46m", "\x1B[49m"),
+        bgWhite: f3("\x1B[47m", "\x1B[49m"),
+        blackBright: f3("\x1B[90m", "\x1B[39m"),
+        redBright: f3("\x1B[91m", "\x1B[39m"),
+        greenBright: f3("\x1B[92m", "\x1B[39m"),
+        yellowBright: f3("\x1B[93m", "\x1B[39m"),
+        blueBright: f3("\x1B[94m", "\x1B[39m"),
+        magentaBright: f3("\x1B[95m", "\x1B[39m"),
+        cyanBright: f3("\x1B[96m", "\x1B[39m"),
+        whiteBright: f3("\x1B[97m", "\x1B[39m"),
+        bgBlackBright: f3("\x1B[100m", "\x1B[49m"),
+        bgRedBright: f3("\x1B[101m", "\x1B[49m"),
+        bgGreenBright: f3("\x1B[102m", "\x1B[49m"),
+        bgYellowBright: f3("\x1B[103m", "\x1B[49m"),
+        bgBlueBright: f3("\x1B[104m", "\x1B[49m"),
+        bgMagentaBright: f3("\x1B[105m", "\x1B[49m"),
+        bgCyanBright: f3("\x1B[106m", "\x1B[49m"),
+        bgWhiteBright: f3("\x1B[107m", "\x1B[49m")
       };
     };
     module2.exports = createColors();
@@ -5550,7 +5565,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.12.1-dev+e686f63");
+  console.log("1.13.0-dev+41cb35e");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

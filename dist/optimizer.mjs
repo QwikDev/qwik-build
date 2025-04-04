@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.12.1-dev+e686f63
+ * @builder.io/qwik/optimizer 1.13.0-dev+41cb35e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -924,14 +924,14 @@ function createPath(opts = {}) {
   }
   function _format(sep2, pathObject) {
     const dir = pathObject.dir || pathObject.root;
-    const base = pathObject.base || (pathObject.name || "") + (pathObject.ext || "");
+    const base2 = pathObject.base || (pathObject.name || "") + (pathObject.ext || "");
     if (!dir) {
-      return base;
+      return base2;
     }
     if (dir === pathObject.root) {
-      return dir + base;
+      return dir + base2;
     }
-    return dir + sep2 + base;
+    return dir + sep2 + base2;
   }
   const resolve = function(...paths) {
     let resolvedPath = "";
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.12.1-dev+e686f63"
+  qwik: "1.13.0-dev+41cb35e"
 };
 
 async function getSystem() {
@@ -1506,13 +1506,13 @@ function prioritizeSymbolNames(manifest) {
   return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
     const a = symbols[symbolNameA];
     const b = symbols[symbolNameB];
-    if ("event" === a.ctxKind && "event" !== b.ctxKind) {
+    if ("eventHandler" === a.ctxKind && "eventHandler" !== b.ctxKind) {
       return -1;
     }
-    if ("event" !== a.ctxKind && "event" === b.ctxKind) {
+    if ("eventHandler" !== a.ctxKind && "eventHandler" === b.ctxKind) {
       return 1;
     }
-    if ("event" === a.ctxKind && "event" === b.ctxKind) {
+    if ("eventHandler" === a.ctxKind && "eventHandler" === b.ctxKind) {
       const aIndex = EVENT_PRIORITY.indexOf(a.ctxName.toLowerCase());
       const bIndex = EVENT_PRIORITY.indexOf(b.ctxName.toLowerCase());
       if (aIndex > -1 && bIndex > -1) {
@@ -1622,6 +1622,115 @@ function getValidManifest(manifest) {
   return;
 }
 
+var getBundleInteractivity = (bundle, manifest) => {
+  let maxScore = 0;
+  if (bundle.symbols) {
+    for (const symbolName of bundle.symbols) {
+      let score = 1;
+      const symbol = manifest.symbols[symbolName];
+      if (symbol) {
+        if ("function" === symbol.ctxKind) {
+          /(component|useStyles|useStylesScoped)/i.test(symbol.ctxName) ? score += 1 : /(useComputed|useTask|useVisibleTask|useOn)/i.test(symbol.ctxName) && (score += 2);
+        } else {
+          score += 1;
+          /(click|mouse|pointer|touch|key|scroll|gesture|wheel)/i.test(symbol.ctxName) && (score += 3);
+        }
+      }
+      maxScore = Math.max(maxScore, score);
+    }
+  }
+  return maxScore;
+};
+
+function computeTotals(graph2) {
+  let index = 0;
+  const stack = [];
+  const sccList = [];
+  const idx = new Map;
+  const low = new Map;
+  const onStack = new Set;
+  function strongConnect(v) {
+    idx.set(v, index);
+    low.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
+    const children = graph2[v].imports || [];
+    for (const w of children) {
+      if (idx.has(w)) {
+        onStack.has(w) && low.set(v, Math.min(low.get(v), idx.get(w)));
+      } else {
+        strongConnect(w);
+        low.set(v, Math.min(low.get(v), low.get(w)));
+      }
+    }
+    if (low.get(v) === idx.get(v)) {
+      const comp = [];
+      let x;
+      do {
+        x = stack.pop();
+        onStack.delete(x);
+        comp.push(x);
+      } while (x !== v);
+      sccList.push(comp);
+    }
+  }
+  for (const v of Object.keys(graph2)) {
+    idx.has(v) || strongConnect(v);
+  }
+  const sccIndex = new Map;
+  sccList.forEach(((comp, i) => {
+    for (const v of comp) {
+      sccIndex.set(v, i);
+    }
+  }));
+  const sccDAG = Array.from({
+    length: sccList.length
+  }, (() => new Set));
+  for (const v of Object.keys(graph2)) {
+    const i = sccIndex.get(v);
+    for (const w of graph2[v].imports || []) {
+      const j = sccIndex.get(w);
+      i !== j && sccDAG[i].add(j);
+    }
+  }
+  const visited = new Set;
+  const order = [];
+  function dfsSCC(u) {
+    visited.add(u);
+    for (const v of sccDAG[u]) {
+      visited.has(v) || dfsSCC(v);
+    }
+    order.push(u);
+  }
+  for (let i = 0; i < sccList.length; i++) {
+    visited.has(i) || dfsSCC(i);
+  }
+  order.reverse();
+  const sccTotals = new Array(sccList.length).fill(0);
+  for (let i = 0; i < sccList.length; i++) {
+    let sumSize = 0;
+    for (const nodeId of sccList[i]) {
+      sumSize += graph2[nodeId].size;
+    }
+    sccTotals[i] = sumSize;
+  }
+  for (let k = order.length - 1; k >= 0; k--) {
+    const sccId = order[k];
+    let total = sccTotals[sccId];
+    for (const child of sccDAG[sccId]) {
+      total += sccTotals[child];
+    }
+    sccTotals[sccId] = total;
+  }
+  for (let i = 0; i < sccList.length; i++) {
+    const total = sccTotals[i];
+    for (const nodeId of sccList[i]) {
+      graph2[nodeId].total = total;
+    }
+  }
+}
+
 function generateManifestFromBundles(path, segments, injections, outputBundles, opts, debug) {
   var _a3;
   const manifest = {
@@ -1634,7 +1743,9 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     options: {
       target: opts.target,
       buildMode: opts.buildMode,
-      entryStrategy: opts.entryStrategy
+      entryStrategy: opts.entryStrategy && {
+        type: opts.entryStrategy.type
+      }
     }
   };
   const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
@@ -1647,31 +1758,30 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     }
     return canonPath(bundle.fileName);
   };
-  const qrlNames = new Set([ ...segments.map((h => h.name)) ]);
+  const qrlNames = new Set(segments.map((h => h.name)));
   for (const outputBundle of Object.values(outputBundles)) {
     if ("chunk" !== outputBundle.type) {
       continue;
     }
     const bundleFileName = canonPath(outputBundle.fileName);
+    const size = outputBundle.code.length;
     const bundle = {
-      size: outputBundle.code.length,
-      hasSymbols: false
+      size: size,
+      total: -1
     };
-    let hasSymbols = false;
     for (const symbol of outputBundle.exports) {
-      if (qrlNames.has(symbol) && (!manifest.mapping[symbol] || 1 !== outputBundle.exports.length)) {
-        hasSymbols = true;
-        manifest.mapping[symbol] = bundleFileName;
-      }
+      qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
     }
-    hasSymbols && (bundle.hasSymbols = true);
     const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleImports.length > 0 && (bundle.imports = bundleImports);
     const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
     const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
     const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
-    modulePaths.length > 0 && (bundle.origins = modulePaths);
+    if (modulePaths.length > 0) {
+      bundle.origins = modulePaths;
+      modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) && (manifest.preloader = bundleFileName);
+    }
     manifest.bundles[bundleFileName] = bundle;
   }
   for (const segment of segments) {
@@ -1694,6 +1804,11 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
       loc: segment.loc
     };
   }
+  for (const bundle of Object.values(manifest.bundles)) {
+    const interactivityScore = getBundleInteractivity(bundle, manifest);
+    bundle.interactivity = interactivityScore;
+  }
+  computeTotals(manifest.bundles);
   return updateSortAndPriorities(manifest);
 }
 
@@ -1903,6 +2018,147 @@ function isWin(os) {
   return "win32" === os;
 }
 
+function parseId(originalId) {
+  const [pathId, query] = originalId.split("?");
+  const queryStr = query || "";
+  return {
+    originalId: originalId,
+    pathId: pathId,
+    query: queryStr ? `?${query}` : "",
+    params: new URLSearchParams(queryStr)
+  };
+}
+
+var minimumSpeed = 300;
+
+var slowSize = .5 / (1024 * minimumSpeed / 8);
+
+var getSymbolHash = symbolName => {
+  const index = symbolName.lastIndexOf("_");
+  if (index > -1) {
+    return symbolName.slice(index + 1);
+  }
+  return symbolName;
+};
+
+function convertManifestToBundleGraph(manifest, bundleGraphAdders) {
+  const bundleGraph = [];
+  if (!manifest.bundles) {
+    return [];
+  }
+  const graph2 = {
+    ...manifest.bundles
+  };
+  for (const [symbol, bundleName] of Object.entries(manifest.mapping)) {
+    const hash = getSymbolHash(symbol);
+    hash && (graph2[hash] = {
+      dynamicImports: [ bundleName ]
+    });
+  }
+  if (bundleGraphAdders) {
+    for (const adder of bundleGraphAdders) {
+      const result = adder(manifest);
+      result && Object.assign(graph2, result);
+    }
+  }
+  manifest.preloader && delete graph2[manifest.preloader];
+  for (const bundleName of Object.keys(graph2)) {
+    const bundle = graph2[bundleName];
+    const imports = bundle.imports?.filter((dep => graph2[dep])) || [];
+    const dynamicImports = bundle.dynamicImports?.filter((dep => graph2[dep]?.symbols)) || [];
+    graph2[bundleName] = {
+      ...bundle,
+      imports: imports,
+      dynamicImports: dynamicImports
+    };
+  }
+  const notUsed = new Set(Object.keys(graph2));
+  for (const bundleName of Object.keys(graph2)) {
+    for (const dep of graph2[bundleName].imports) {
+      notUsed.delete(dep);
+    }
+    for (const dep of graph2[bundleName].dynamicImports) {
+      notUsed.delete(dep);
+    }
+  }
+  for (const bundleName of notUsed) {
+    const bundle = graph2[bundleName];
+    bundle.imports?.length || bundle.dynamicImports?.length || delete graph2[bundleName];
+  }
+  const names = Object.keys(graph2);
+  const map = new Map;
+  const clearTransitiveDeps = (parentDeps, bundleName, seen = new Set) => {
+    const bundle = graph2[bundleName];
+    for (const dep of bundle.imports) {
+      parentDeps.has(dep) && parentDeps.delete(dep);
+      if (!seen.has(dep)) {
+        seen.add(dep);
+        clearTransitiveDeps(parentDeps, dep, seen);
+      }
+    }
+  };
+  for (const bundleName of names) {
+    const bundle = graph2[bundleName];
+    const deps = new Set(bundle.imports);
+    for (const depName of deps) {
+      clearTransitiveDeps(deps, depName);
+    }
+    const dynDeps = new Set(bundle.dynamicImports);
+    const depProbability = new Map;
+    for (const depName of dynDeps) {
+      clearTransitiveDeps(dynDeps, depName);
+      const dep = graph2[depName];
+      let probability = .5;
+      probability += .04 * (dep.interactivity || 0);
+      if (bundle.origins && dep.origins) {
+        for (const origin of bundle.origins) {
+          if (dep.origins.some((o => o.startsWith(origin)))) {
+            probability += .25;
+            break;
+          }
+        }
+      }
+      dep.total > slowSize && (probability += probability > .5 ? .02 : -.02);
+      depProbability.set(depName, probability);
+    }
+    if (dynDeps.size > 0) {
+      const sorted = Array.from(dynDeps).sort(((a, b) => depProbability.get(b) - depProbability.get(a)));
+      let lastProbability = -1;
+      for (const depName of sorted) {
+        if (depProbability.get(depName) !== lastProbability) {
+          lastProbability = depProbability.get(depName);
+          deps.add(-Math.round(10 * lastProbability));
+        }
+        deps.add(depName);
+      }
+    }
+    const index = bundleGraph.length;
+    bundleGraph.push(bundleName);
+    for (let i = 0; i < deps.size; i++) {
+      bundleGraph.push(null);
+    }
+    map.set(bundleName, {
+      index: index,
+      deps: deps
+    });
+  }
+  for (const bundleName of names) {
+    const bundle = map.get(bundleName);
+    let {index: index, deps: deps} = bundle;
+    index++;
+    for (const depName of deps) {
+      if ("number" === typeof depName) {
+        bundleGraph[index++] = depName;
+        continue;
+      }
+      const dep = map.get(depName);
+      const depIndex = dep.index;
+      bundleGraph[index++] = depIndex;
+    }
+  }
+  return bundleGraph;
+}
+
 var REG_CTX_NAME = [ "server" ];
 
 var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
@@ -1943,7 +2199,6 @@ function createQwikPlugin(optimizerOptions = {}) {
     srcInputs: null,
     sourcemap: !!optimizerOptions.sourcemap,
     manifestInput: null,
-    insightsManifest: null,
     manifestOutput: null,
     transformedModuleOutput: null,
     scope: null,
@@ -2163,7 +2418,7 @@ function createQwikPlugin(optimizerOptions = {}) {
         id: QWIK_CLIENT_MANIFEST_ID,
         moduleSideEffects: false
       };
-    } else {
+    } else if (devServer || isServer2 || !pathId.endsWith(QWIK_PRELOADER_ID)) {
       const qrlMatch = /^(?<parent>.*\.[mc]?[jt]sx?)_(?<name>[^/]+)\.js(?<query>$|\?.*$)/.exec(id2)?.groups;
       if (qrlMatch) {
         const {parent: parent, name: name, query: query} = qrlMatch;
@@ -2191,6 +2446,19 @@ function createQwikPlugin(optimizerOptions = {}) {
             skipSelf: true
           });
         }
+      }
+    } else {
+      debug(`resolveId(${count})`, "Resolved", QWIK_PRELOADER_ID);
+      const preloader = await ctx.resolve(QWIK_PRELOADER_ID, importerId, {
+        skipSelf: true
+      });
+      if (preloader) {
+        ctx.emitFile({
+          id: preloader.id,
+          type: "chunk",
+          preserveSignature: "allow-extension"
+        });
+        return preloader;
       }
     }
     debug(`resolveId(${count}) end`, result?.id || result);
@@ -2267,7 +2535,7 @@ function createQwikPlugin(optimizerOptions = {}) {
     const {pathId: pathId} = parseId(id2);
     const parsedPathId = path.parse(pathId);
     const dir = parsedPathId.dir;
-    const base = parsedPathId.base;
+    const base2 = parsedPathId.base;
     const ext = parsedPathId.ext.toLowerCase();
     if (ext in TRANSFORM_EXTS || TRANSFORM_REGEX.test(pathId)) {
       const strip = "client" === opts.target || "ssr" === opts.target;
@@ -2279,7 +2547,7 @@ function createQwikPlugin(optimizerOptions = {}) {
         }
         return "false";
       })));
-      let filePath = base;
+      let filePath = base2;
       opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
       filePath = normalizePath(filePath);
       const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
@@ -2364,11 +2632,12 @@ function createQwikPlugin(optimizerOptions = {}) {
   const createOutputAnalyzer = rollupBundle => {
     const injections = [];
     const addInjection = b => injections.push(b);
-    const generateManifest = async () => {
+    const generateManifest2 = async extra => {
       const optimizer2 = getOptimizer();
       const path = optimizer2.sys.path;
       const segments = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.segment)).filter((h => !!h));
       const manifest = generateManifestFromBundles(path, segments, injections, rollupBundle, opts, debug);
+      extra && Object.assign(manifest, extra);
       for (const symbol of Object.values(manifest.symbols)) {
         symbol.origin && (symbol.origin = normalizePath(symbol.origin));
       }
@@ -2383,7 +2652,7 @@ function createQwikPlugin(optimizerOptions = {}) {
     };
     return {
       addInjection: addInjection,
-      generateManifest: generateManifest
+      generateManifest: generateManifest2
     };
   };
   const getOptions = () => opts;
@@ -2391,7 +2660,7 @@ function createQwikPlugin(optimizerOptions = {}) {
   const debug = (...str) => {
     opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
   };
-  const log = (...str) => {
+  const log2 = (...str) => {
     console.log(`[QWIK PLUGIN: ${id}]`, ...str);
   };
   const onDiagnostics = cb => {
@@ -2404,7 +2673,15 @@ function createQwikPlugin(optimizerOptions = {}) {
   }
   async function getQwikServerManifestModule(isServer2) {
     const manifest = isServer2 ? opts.manifestInput : null;
-    return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(manifest)};\n`;
+    let serverManifest = null;
+    manifest?.manifestHash && (serverManifest = {
+      manifestHash: manifest.manifestHash,
+      injections: manifest.injections,
+      bundleGraph: manifest.bundleGraph,
+      mapping: manifest.mapping,
+      preloader: manifest.preloader
+    });
+    return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(serverManifest)};\n`;
   }
   function setSourceMapSupport(sourcemap) {
     opts.sourcemap = sourcemap;
@@ -2430,18 +2707,48 @@ function createQwikPlugin(optimizerOptions = {}) {
     }
   }
   function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
-    if (opts.entryStrategy.manual) {
-      const module = getModuleInfo(id2);
-      const segment = module.meta.segment;
-      if (segment) {
-        const {hash: hash} = segment;
-        const chunkName = opts.entryStrategy.manual[hash] || segment.entry;
-        if (chunkName) {
-          return chunkName;
-        }
+    if ("client" === opts.target && (id2.endsWith(QWIK_PRELOADER_REAL_ID) || "\0vite/preload-helper.js" === id2)) {
+      return "qwik-preloader";
+    }
+    const module = getModuleInfo(id2);
+    const segment = module.meta.segment;
+    if (segment) {
+      const {hash: hash} = segment;
+      const chunkName = opts.entryStrategy.manual?.[hash] || segment.entry;
+      if (chunkName) {
+        return chunkName;
       }
     }
     return null;
+  }
+  async function generateManifest(ctx, rollupBundle, bundleGraphAdders, manifestExtra) {
+    const outputAnalyzer = createOutputAnalyzer(rollupBundle);
+    const manifest = await outputAnalyzer.generateManifest(manifestExtra);
+    manifest.platform = {
+      ...manifestExtra?.platform,
+      rollup: ctx.meta?.rollupVersion || "",
+      env: optimizer.sys.env,
+      os: optimizer.sys.os
+    };
+    "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
+    const assetsDir = opts.assetsDir;
+    const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
+    const bundleGraph = convertManifestToBundleGraph(manifest, bundleGraphAdders);
+    ctx.emitFile({
+      type: "asset",
+      fileName: optimizer.sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.js`),
+      source: `export const B=${JSON.stringify(bundleGraph)}`
+    });
+    manifest.bundleGraph = bundleGraph;
+    const manifestStr = JSON.stringify(manifest, null, "\t");
+    ctx.emitFile({
+      fileName: Q_MANIFEST_FILENAME,
+      type: "asset",
+      source: manifestStr
+    });
+    "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+    "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(getTransformedOutputs());
+    return manifestStr;
   }
   return {
     buildStart: buildStart,
@@ -2455,7 +2762,7 @@ function createQwikPlugin(optimizerOptions = {}) {
     init: init2,
     load: load,
     debug: debug,
-    log: log,
+    log: log2,
     normalizeOptions: normalizeOptions,
     normalizePath: normalizePath,
     onDiagnostics: onDiagnostics,
@@ -2465,7 +2772,8 @@ function createQwikPlugin(optimizerOptions = {}) {
     setSourceMapSupport: setSourceMapSupport,
     configureServer: configureServer,
     handleHotUpdate: handleHotUpdate,
-    manualChunks: manualChunks
+    manualChunks: manualChunks,
+    generateManifest: generateManifest
   };
 }
 
@@ -2488,17 +2796,6 @@ function isAdditionalFile(mod) {
   return mod.isEntry || mod.segment;
 }
 
-function parseId(originalId) {
-  const [pathId, query] = originalId.split("?");
-  const queryStr = query || "";
-  return {
-    originalId: originalId,
-    pathId: pathId,
-    query: queryStr ? `?${query}` : "",
-    params: new URLSearchParams(queryStr)
-  };
-}
-
 var TRANSFORM_EXTS = {
   ".jsx": true,
   ".ts": true,
@@ -2518,6 +2815,10 @@ var QWIK_JSX_DEV_RUNTIME_ID = "@builder.io/qwik/jsx-dev-runtime";
 var QWIK_CORE_SERVER = "@builder.io/qwik/server";
 
 var QWIK_CLIENT_MANIFEST_ID = "@qwik-client-manifest";
+
+var QWIK_PRELOADER_ID = "@builder.io/qwik/preloader";
+
+var QWIK_PRELOADER_REAL_ID = "qwik/dist/preloader.mjs";
 
 var SRC_DIR_DEFAULT = "src";
 
@@ -2598,25 +2899,7 @@ function qwikRollup(qwikRollupOpts = {}) {
     },
     async generateBundle(_, rollupBundle) {
       const opts = qwikPlugin.getOptions();
-      if ("client" === opts.target) {
-        const optimizer = qwikPlugin.getOptimizer();
-        const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
-        const manifest = await outputAnalyzer.generateManifest();
-        manifest.platform = {
-          ...versions,
-          rollup: this.meta?.rollupVersion || "",
-          env: optimizer.sys.env,
-          os: optimizer.sys.os
-        };
-        "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-        "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-        "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-        this.emitFile({
-          type: "asset",
-          fileName: Q_MANIFEST_FILENAME,
-          source: JSON.stringify(manifest, null, 2)
-        });
-      }
+      "client" === opts.target && await qwikPlugin.generateManifest(this, rollupBundle);
     }
   };
   return rollupPlugin;
@@ -3068,7 +3351,7 @@ var throwErrorAndStop = (message, ...optionalParams) => {
 };
 
 var logErrorAndStop = (message, ...optionalParams) => {
-  const err = createAndLogError(true, message, ...optionalParams);
+  const err = createAndLogError(qDev, message, ...optionalParams);
   debugger;
   return err;
 };
@@ -3222,7 +3505,7 @@ var createPlatform = () => ({
   isServer: isServer,
   importSymbol(containerEl, url, symbolName) {
     if (isServer) {
-      const hash = getSymbolHash(symbolName);
+      const hash = getSymbolHash2(symbolName);
       const regSym = globalThis.__qwik_reg_symbols?.get(hash);
       if (regSym) {
         return regSym;
@@ -3253,10 +3536,10 @@ var createPlatform = () => ({
   chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
 });
 
-var toUrl = (doc, containerEl, url) => {
-  const baseURI = doc.baseURI;
-  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-  return new URL(url, base);
+var toUrl = (doc2, containerEl, url) => {
+  const baseURI = doc2.baseURI;
+  const base2 = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+  return new URL(url, base2);
 };
 
 var _platform = createPlatform();
@@ -3519,8 +3802,8 @@ var _setProperty = (node, key, value) => {
   }
 };
 
-var createElement = (doc, expectTag, isSvg) => {
-  const el = isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
+var createElement = (doc2, expectTag, isSvg) => {
+  const el = isSvg ? doc2.createElementNS(SVG_NS, expectTag) : doc2.createElement(expectTag);
   return el;
 };
 
@@ -3561,8 +3844,8 @@ var VirtualElementImpl = class {
     __publicField(this, "nodeName", VIRTUAL);
     __publicField(this, "$attributes$");
     __publicField(this, "$template$");
-    const doc = this.ownerDocument = open.ownerDocument;
-    this.$template$ = createElement(doc, "template", false);
+    const doc2 = this.ownerDocument = open.ownerDocument;
+    this.$template$ = createElement(doc2, "template", false);
     this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
     assertTrue(open.data.startsWith("qv "), "comment is not a qv");
     open[VIRTUAL_SYMBOL] = this;
@@ -5098,7 +5381,7 @@ var ErrorSerializer = serializer({
 var DocumentSerializer = serializer({
   $prefix$: "",
   $test$: v => !!v && "object" === typeof v && isDocument(v),
-  $prepare$: (_, _c, doc) => doc
+  $prepare$: (_, _c, doc2) => doc2
 });
 
 var SERIALIZABLE_STATE = Symbol("serializable-data");
@@ -5514,6 +5797,195 @@ var getSubscriptionManager = obj => obj[QObjectManagerSymbol];
 
 var getProxyFlags = obj => obj[QObjectFlagsSymbol];
 
+var doc = isBrowser ? document : void 0;
+
+var modulePreloadStr = "modulepreload";
+
+var preloadStr = "preload";
+
+var maxSimultaneousPreloadsStr = "maxSimultaneousPreloads";
+
+var maxSignificantInverseProbabilityStr = "maxSignificantInverseProbability";
+
+var config = {
+  DEBUG: false,
+  [maxSimultaneousPreloadsStr]: 6,
+  [maxSignificantInverseProbabilityStr]: .75
+};
+
+var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
+
+var loadStart = Date.now();
+
+var BundleImportState = (BundleImportState2 => {
+  BundleImportState2[BundleImportState2.None = 0] = "None";
+  BundleImportState2[BundleImportState2.Queued = 1] = "Queued";
+  BundleImportState2[BundleImportState2.Preload = 2] = "Preload";
+  BundleImportState2[BundleImportState2.Alias = 3] = "Alias";
+  BundleImportState2[BundleImportState2.Loaded = 4] = "Loaded";
+  return BundleImportState2;
+})(BundleImportState || {});
+
+var bundles = new Map;
+
+var queueDirty;
+
+var preloadCount = 0;
+
+var queue = [];
+
+var log = (...args) => {
+  console.log(`Preloader ${Date.now() - loadStart}ms ${preloadCount}/${queue.length} queued>`, ...args);
+};
+
+var sortQueue = () => {
+  if (queueDirty) {
+    queue.sort(((a, b) => a.$inverseProbability$ - b.$inverseProbability$));
+    queueDirty = false;
+  }
+};
+
+var trigger = () => {
+  if (!queue.length) {
+    return;
+  }
+  sortQueue();
+  while (queue.length) {
+    const bundle = queue[0];
+    const inverseProbability = bundle.$inverseProbability$;
+    const probability = 1 - inverseProbability;
+    const allowedPreloads = graph ? Math.max(1, config[maxSimultaneousPreloadsStr] * probability) : 2;
+    if (!(preloadCount < allowedPreloads)) {
+      break;
+    }
+    queue.shift();
+    preloadOne(bundle);
+  }
+  if (config.DEBUG && !queue.length) {
+    const loaded = [ ...bundles.values() ].filter((b => b.$state$ > BundleImportState.None));
+    const waitTime = loaded.reduce(((acc, b) => acc + b.$waitedMs$), 0);
+    const loadTime = loaded.reduce(((acc, b) => acc + b.$loadedMs$), 0);
+    log(`>>>> done ${loaded.length}/${bundles.size} total: ${waitTime}ms waited, ${loadTime}ms loaded`);
+  }
+};
+
+var preloadOne = bundle => {
+  if (bundle.$state$ >= BundleImportState.Preload) {
+    return;
+  }
+  preloadCount++;
+  const start = Date.now();
+  bundle.$waitedMs$ = start - bundle.$createdTs$;
+  bundle.$state$ = BundleImportState.Preload;
+  config.DEBUG && log(`<< load after ${bundle.$waitedMs$}ms`, bundle.$name$);
+  const link = doc.createElement("link");
+  link.href = bundle.$url$;
+  link.rel = rel;
+  link.as = "script";
+  link.onload = link.onerror = () => {
+    preloadCount--;
+    const end = Date.now();
+    bundle.$loadedMs$ = end - start;
+    bundle.$state$ = BundleImportState.Loaded;
+    config.DEBUG && log(`>> done after ${bundle.$loadedMs$}ms`, bundle.$name$);
+    link.remove();
+    trigger();
+  };
+  doc.head.appendChild(link);
+};
+
+var adjustProbabilities = (bundle, adjustFactor, seen) => {
+  if (null == seen ? void 0 : seen.has(bundle)) {
+    return;
+  }
+  const previousInverseProbability = bundle.$inverseProbability$;
+  bundle.$inverseProbability$ *= adjustFactor;
+  if (previousInverseProbability - bundle.$inverseProbability$ < .01) {
+    return;
+  }
+  if (bundle.$state$ < BundleImportState.Preload && bundle.$inverseProbability$ < config[maxSignificantInverseProbabilityStr]) {
+    if (bundle.$state$ === BundleImportState.None) {
+      bundle.$state$ = BundleImportState.Queued;
+      queue.push(bundle);
+      config.DEBUG && log(`queued ${Math.round(100 * (1 - bundle.$inverseProbability$))}%`, bundle.$name$);
+    }
+    queueDirty = true;
+  }
+  if (bundle.$deps$) {
+    seen || (seen = new Set);
+    seen.add(bundle);
+    for (const dep of bundle.$deps$) {
+      const depBundle = getBundle(dep.$name$);
+      const prevAdjust = dep.$factor$;
+      const newInverseProbability = 1 - dep.$probability$ * (1 - bundle.$inverseProbability$);
+      const factor = newInverseProbability / prevAdjust;
+      dep.$factor$ = factor;
+      adjustProbabilities(depBundle, factor, seen);
+    }
+  }
+};
+
+var handleBundle = (name, inverseProbability) => {
+  const bundle = getBundle(name);
+  bundle && bundle.$inverseProbability$ > inverseProbability && adjustProbabilities(bundle, inverseProbability / bundle.$inverseProbability$);
+};
+
+var preload = (name, probability) => {
+  if (null == base || !name.length) {
+    return;
+  }
+  let inverseProbability = probability ? 1 - probability : .4;
+  if (Array.isArray(name)) {
+    for (let i = name.length - 1; i >= 0; i--) {
+      const item = name[i];
+      if ("number" === typeof item) {
+        inverseProbability = 1 - item / 10;
+      } else {
+        handleBundle(item, inverseProbability);
+        inverseProbability *= 1.005;
+      }
+    }
+  } else {
+    handleBundle(name, inverseProbability);
+  }
+  isBrowser && trigger();
+};
+
+var base;
+
+var graph;
+
+var makeBundle = (name, deps) => {
+  const url = name.endsWith(".js") ? doc ? new URL(`${base}${name}`, doc.baseURI).toString() : name : null;
+  return {
+    $name$: name,
+    $url$: url,
+    $state$: url ? BundleImportState.None : BundleImportState.Alias,
+    $deps$: deps,
+    $inverseProbability$: 1,
+    $createdTs$: Date.now(),
+    $waitedMs$: 0,
+    $loadedMs$: 0
+  };
+};
+
+var getBundle = name => {
+  let bundle = bundles.get(name);
+  if (!bundle) {
+    let deps;
+    if (graph) {
+      deps = graph.get(name);
+      if (!deps) {
+        return;
+      }
+      deps.length || (deps = void 0);
+    }
+    bundle = makeBundle(name, deps);
+    bundles.set(name, bundle);
+  }
+  return bundle;
+};
+
 var isQrl = value => "function" === typeof value && "function" === typeof value.getSymbol;
 
 var SYNC_QRL = "<sync>";
@@ -5568,10 +6040,11 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
     if ("" === chunk) {
       assertDefined(_containerEl, "Sync QRL must have container element");
       const hash2 = _containerEl.getAttribute(QInstance);
-      const doc = _containerEl.ownerDocument;
-      const qFuncs = getQFuncs(doc, hash2);
+      const doc2 = _containerEl.ownerDocument;
+      const qFuncs = getQFuncs(doc2, hash2);
       return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
     }
+    isBrowser && chunk && preload(chunk, 1);
     const start = now();
     const ctx = tryGetInvokeContext();
     if (null !== symbolFn) {
@@ -5602,7 +6075,7 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
   }
   const createOrReuseInvocationContext = invoke2 => null == invoke2 ? newInvokeContext() : isArray(invoke2) ? newInvokeContextFromTuple(invoke2) : invoke2;
   const resolvedSymbol = refSymbol ?? symbol;
-  const hash = getSymbolHash(resolvedSymbol);
+  const hash = getSymbolHash2(resolvedSymbol);
   Object.assign(qrl, {
     getSymbol: () => resolvedSymbol,
     getHash: () => hash,
@@ -5622,10 +6095,11 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
   });
   symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved))));
   qDev && seal(qrl);
+  isBrowser && resolvedSymbol && preload(resolvedSymbol, .8);
   return qrl;
 };
 
-var getSymbolHash = symbolName => {
+var getSymbolHash2 = symbolName => {
   const index = symbolName.lastIndexOf("_");
   if (index > -1) {
     return symbolName.slice(index + 1);
@@ -5650,7 +6124,7 @@ var EMITTED = new Set;
 var emitUsedSymbol = (symbol, element, reqTime) => {
   if (!EMITTED.has(symbol)) {
     EMITTED.add(symbol);
-    emitEvent("qsymbol", {
+    emitEvent2("qsymbol", {
       symbol: symbol,
       element: element,
       reqTime: reqTime
@@ -5658,7 +6132,7 @@ var emitUsedSymbol = (symbol, element, reqTime) => {
   }
 };
 
-var emitEvent = (eventName, detail) => {
+var emitEvent2 = (eventName, detail) => {
   qTest || isServerPlatform() || "object" !== typeof document || document.dispatchEvent(new CustomEvent(eventName, {
     bubbles: false,
     detail: detail
@@ -5693,16 +6167,16 @@ function getOrigin(req) {
   return `${protocol}://${host}`;
 }
 
-function createSymbolMapper(base) {
+function createSymbolMapper(base2) {
   return (symbolName, _mapper, parent) => {
     if (symbolName === SYNC_QRL) {
       return [ symbolName, "" ];
     }
     if (!parent) {
       console.error("qwik vite-dev-server symbolMapper: unknown qrl requested without parent:", symbolName);
-      return [ symbolName, `${base}${symbolName}.js` ];
+      return [ symbolName, `${base2}${symbolName}.js` ];
     }
-    const qrlFile = `${base}${parent.startsWith("/") ? parent.slice(1) : parent}_${symbolName}.js`;
+    const qrlFile = `${base2}${parent.startsWith("/") ? parent.slice(1) : parent}_${symbolName}.js`;
     return [ symbolName, qrlFile ];
   };
 }
@@ -5716,8 +6190,8 @@ var symbolMapper = (symbolName, mapper, parent) => {
   throw new Error("symbolMapper not initialized");
 };
 
-async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
-  symbolMapper = lazySymbolMapper = createSymbolMapper(base);
+async function configureDevServer(base2, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
+  symbolMapper = lazySymbolMapper = createSymbolMapper(base2);
   if (!devSsrServer) {
     return;
   }
@@ -5762,11 +6236,8 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
         if ("function" === typeof render) {
           const manifest = {
             manifestHash: "",
-            symbols: {},
             mapping: {},
-            bundles: {},
-            injections: [],
-            version: "1"
+            injections: []
           };
           const added = new Set;
           const CSS_EXTENSIONS = [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ];
@@ -5797,7 +6268,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
                     location: "head",
                     attributes: {
                       rel: "stylesheet",
-                      href: `${base}${url2.slice(1)}`
+                      href: `${base2}${url2.slice(1)}`
                     }
                   });
                 }
@@ -5811,7 +6282,6 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
             snapshot: !isClientDevOnly,
             manifest: isClientDevOnly ? void 0 : manifest,
             symbolMapper: isClientDevOnly ? void 0 : symbolMapper,
-            prefetchStrategy: null,
             serverData: serverData,
             containerAttributes: {
               ...serverData.containerAttributes
@@ -5840,7 +6310,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
                   return importerPath && JS_EXTENSIONS.test(importerPath);
                 }));
                 if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
-                  res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                  res.write(`<link rel="stylesheet" href="${base2}${v.url.slice(1)}">`);
                   added.add(v.url);
                 }
               }
@@ -5960,9 +6430,9 @@ var shouldSsrRender = (req, url) => {
   return true;
 };
 
-function relativeURL(url, base) {
-  if (url.startsWith(base)) {
-    url = url.slice(base.length);
+function relativeURL(url, base2) {
+  if (url.startsWith(base2)) {
+    url = url.slice(base2.length);
     url.startsWith("/") || (url = "/" + url);
   }
   return url;
@@ -6006,26 +6476,16 @@ function qwikVite(qwikViteOpts = {}) {
   const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
   const injections = [];
   const qwikPlugin = createQwikPlugin(qwikViteOpts.optimizerOptions);
-  async function loadQwikInsights(clientOutDir2 = "") {
-    const sys = qwikPlugin.getSys();
-    const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2, "q-insights.json");
-    const path = absolutePathAwareJoin(sys.path, process.cwd(), cwdRelativePath);
-    const fs = await sys.dynamicImport("node:fs");
-    if (fs.existsSync(path)) {
-      qwikPlugin.log("Reading Qwik Insight data from: " + cwdRelativePath);
-      return JSON.parse(await fs.promises.readFile(path, "utf-8"));
-    }
-    return null;
-  }
+  const bundleGraphAdders = new Set;
   const api = {
     getOptimizer: () => qwikPlugin.getOptimizer(),
     getOptions: () => qwikPlugin.getOptions(),
     getManifest: () => manifestInput,
-    getInsightsManifest: (clientOutDir2 = "") => loadQwikInsights(clientOutDir2),
     getRootDir: () => qwikPlugin.getOptions().rootDir,
     getClientOutDir: () => clientOutDir,
     getClientPublicOutDir: () => clientPublicOutDir,
-    getAssetsDir: () => viteAssetsDir
+    getAssetsDir: () => viteAssetsDir,
+    registerBundleGraphAdder: adder => bundleGraphAdders.add(adder)
   };
   const vitePluginPre = {
     name: "vite-plugin-qwik",
@@ -6149,8 +6609,8 @@ function qwikVite(qwikViteOpts = {}) {
             exclude: [ /./ ]
           },
           rollupOptions: {
+            maxParallelFileOps: 1,
             output: {
-              hoistTransitiveImports: false,
               manualChunks: qwikPlugin.manualChunks
             }
           }
@@ -6202,20 +6662,13 @@ function qwikVite(qwikViteOpts = {}) {
       }
       return updatedViteConfig;
     },
-    async configResolved(config) {
-      basePathname = config.base;
+    async configResolved(config2) {
+      basePathname = config2.base;
       if (!(basePathname.startsWith("/") && basePathname.endsWith("/"))) {
         console.error("warning: vite's config.base must begin and end with /. This will be an error in v2. If you have a valid use case, please open an issue.");
         basePathname.endsWith("/") || (basePathname += "/");
       }
-      const sys = qwikPlugin.getSys();
-      if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
-        try {
-          const entryStrategy = await loadQwikInsights(qwikViteOpts.csr ? void 0 : qwikViteOpts.client?.outDir);
-          entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
-        } catch {}
-      }
-      const useSourcemap = !!config.build.sourcemap;
+      const useSourcemap = !!config2.build.sourcemap;
       useSourcemap && void 0 === qwikViteOpts.optimizerOptions?.sourcemap && qwikPlugin.setSourceMapSupport(true);
       qwikPlugin.normalizeOptions(qwikViteOpts);
     },
@@ -6274,7 +6727,6 @@ function qwikVite(qwikViteOpts = {}) {
       async handler(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
         if ("client" === opts.target) {
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
           for (const [fileName, b] of Object.entries(rollupBundle)) {
             if ("asset" === b.type) {
               const baseFilename = basePathname + fileName;
@@ -6310,47 +6762,16 @@ function qwikVite(qwikViteOpts = {}) {
               }
             }
           }
-          for (const i of injections) {
-            outputAnalyzer.addInjection(i);
-          }
-          const optimizer = qwikPlugin.getOptimizer();
-          const manifest = await outputAnalyzer.generateManifest();
-          manifest.platform = {
-            ...versions,
-            vite: "",
-            rollup: this.meta?.rollupVersion || "",
-            env: optimizer.sys.env,
-            os: optimizer.sys.os
-          };
-          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-          const clientManifestStr = JSON.stringify(manifest, null, 2);
-          this.emitFile({
-            type: "asset",
-            fileName: Q_MANIFEST_FILENAME,
-            source: clientManifestStr
+          const clientManifestStr = await qwikPlugin.generateManifest(this, rollupBundle, bundleGraphAdders, {
+            injections: injections,
+            platform: {
+              vite: ""
+            }
           });
-          const assetsDir = qwikPlugin.getOptions().assetsDir || "";
-          const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
           const sys = qwikPlugin.getSys();
-          this.emitFile({
-            type: "asset",
-            fileName: sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.json`),
-            source: JSON.stringify(convertManifestToBundleGraph(manifest))
-          });
-          const fs = await sys.dynamicImport("node:fs");
-          const workerScriptPath = (await this.resolve("@builder.io/qwik/qwik-prefetch.js")).id;
-          const workerScript = await fs.promises.readFile(workerScriptPath, "utf-8");
-          const qwikPrefetchServiceWorkerFile = "qwik-prefetch-service-worker.js";
-          this.emitFile({
-            type: "asset",
-            fileName: useAssetsDir ? sys.path.join(assetsDir, "build", qwikPrefetchServiceWorkerFile) : qwikPrefetchServiceWorkerFile,
-            source: workerScript
-          });
-          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-          "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
           if (tmpClientManifestPath && "node" === sys.env) {
-            const fs2 = await sys.dynamicImport("node:fs");
-            await fs2.promises.writeFile(tmpClientManifestPath, clientManifestStr);
+            const fs = await sys.dynamicImport("node:fs");
+            await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
           }
         }
       }
@@ -6416,11 +6837,11 @@ function qwikVite(qwikViteOpts = {}) {
         type: "full-reload"
       });
     },
-    onLog(level, log) {
-      if ("vite-plugin-qwik" == log.plugin) {
+    onLog(level, log2) {
+      if ("vite-plugin-qwik" == log2.plugin) {
         const color = LOG_COLOR[level] || ANSI_COLOR.White;
-        const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
-        console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${log?.loc?.file}:${log?.loc?.line}:${log?.loc?.column}\n`, `  ${frames.join("\n  ")}\n`);
+        const frames = (log2.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+        console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log2.plugin}](${level}): ${log2.message}\n`, `  ${log2?.loc?.file}:${log2?.loc?.line}:${log2?.loc?.column}\n`, `  ${frames.join("\n  ")}\n`);
         return false;
       }
     }
@@ -6518,7 +6939,7 @@ var findQwikRoots = async (sys, packageJsonDir) => {
         } catch (e) {
           console.error(e);
         }
-      } catch (e) {}
+      } catch {}
       prevPackageJsonDir = packageJsonDir;
       packageJsonDir = sys.path.dirname(packageJsonDir);
     } while (packageJsonDir !== prevPackageJsonDir);
@@ -6532,95 +6953,5 @@ var findQwikRoots = async (sys, packageJsonDir) => {
 var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
 
 var CLIENT_DEV_INPUT = "entry.dev";
-
-function absolutePathAwareJoin(path, ...segments) {
-  for (let i = segments.length - 1; i >= 0; --i) {
-    const segment = segments[i];
-    if (segment.startsWith(path.sep) || -1 !== segment.indexOf(path.delimiter)) {
-      segments.splice(0, i);
-      break;
-    }
-  }
-  return path.join(...segments);
-}
-
-function convertManifestToBundleGraph(manifest) {
-  const bundleGraph = [];
-  const graph = manifest.bundles;
-  if (!graph) {
-    return [];
-  }
-  const names = Object.keys(graph).sort();
-  const map = new Map;
-  const clearTransitiveDeps = (parentDeps, seen, bundleName) => {
-    const bundle = graph[bundleName];
-    if (!bundle) {
-      return;
-    }
-    for (const dep of bundle.imports || []) {
-      parentDeps.has(dep) && parentDeps.delete(dep);
-      if (!seen.has(dep)) {
-        seen.add(dep);
-        clearTransitiveDeps(parentDeps, seen, dep);
-      }
-    }
-  };
-  for (const bundleName of names) {
-    const bundle = graph[bundleName];
-    const index = bundleGraph.length;
-    const deps = new Set(bundle.imports);
-    for (const depName of deps) {
-      if (!graph[depName]) {
-        continue;
-      }
-      clearTransitiveDeps(deps, new Set, depName);
-    }
-    let didAdd = false;
-    for (const depName of bundle.dynamicImports || []) {
-      const dep = graph[depName];
-      if (!graph[depName]) {
-        continue;
-      }
-      if (dep.hasSymbols) {
-        if (!didAdd) {
-          deps.add("<dynamic>");
-          didAdd = true;
-        }
-        deps.add(depName);
-      }
-    }
-    map.set(bundleName, {
-      index: index,
-      deps: deps
-    });
-    bundleGraph.push(bundleName);
-    while (index + deps.size >= bundleGraph.length) {
-      bundleGraph.push(null);
-    }
-  }
-  for (const bundleName of names) {
-    const bundle = map.get(bundleName);
-    if (!bundle) {
-      console.warn(`Bundle ${bundleName} not found in the bundle graph.`);
-      continue;
-    }
-    let {index: index, deps: deps} = bundle;
-    index++;
-    for (const depName of deps) {
-      if ("<dynamic>" === depName) {
-        bundleGraph[index++] = -1;
-        continue;
-      }
-      const dep = map.get(depName);
-      if (!dep) {
-        console.warn(`Dependency ${depName} of ${bundleName} not found in the bundle graph.`);
-        continue;
-      }
-      const depIndex = dep.index;
-      bundleGraph[index++] = depIndex;
-    }
-  }
-  return bundleGraph;
-}
 
 export { createOptimizer, qwikRollup, qwikVite, symbolMapper, versions };
