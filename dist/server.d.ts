@@ -6,6 +6,15 @@ import type { SnapshotResult } from '.';
 import type { StreamWriter } from '.';
 import type { SymbolMapperFn } from './optimizer';
 
+/** @public */
+declare interface ComponentEntryStrategy {
+    type: 'component';
+    manual?: Record<string, string>;
+}
+
+/** @public */
+declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
+
 /**
  * Provides the `qwikloader.js` file as a string. Useful for tooling to inline the qwikloader script
  * into HTML.
@@ -36,6 +45,22 @@ declare interface GlobalInjections {
 }
 
 /** @public */
+declare interface HoistEntryStrategy {
+    type: 'hoist';
+}
+
+/** @deprecated Use SegmentStrategy instead */
+declare interface HookEntryStrategy {
+    type: 'hook';
+    manual?: Record<string, string>;
+}
+
+/** @public */
+declare interface InlineEntryStrategy {
+    type: 'inline';
+}
+
+/** @public */
 export declare interface InOrderAuto {
     strategy: 'auto';
     maximunInitialChunk?: number;
@@ -58,43 +83,52 @@ export declare type InOrderStreaming = InOrderAuto | InOrderDisabled | InOrderDi
 /** @public */
 export declare interface PrefetchImplementation {
     /**
-     * `js-append`: Use JS runtime to create each `<link>` and append to the body.
+     * Maximum number of preload links to add during SSR. These instruct the browser to preload likely
+     * bundles before the preloader script is active. This includes the 2 preloads used for the
+     * preloader script itself and the bundle information. Setting this to 0 will disable all preload
+     * links.
      *
-     * `html-append`: Render each `<link>` within html, appended at the end of the body.
+     * Defaults to `5`
      */
-    linkInsert?: 'js-append' | 'html-append' | null;
+    maxPreloads?: number;
     /**
-     * Value of the `<link rel="...">` attribute when link is used. Defaults to `prefetch` if links
-     * are inserted.
+     * The minimum probability of a bundle to be added as a preload link during SSR.
+     *
+     * Defaults to `0.6` (60% probability)
+     */
+    minProbability?: number;
+    /**
+     * If true, the preloader will log debug information to the console.
+     *
+     * Defaults to `false`
+     */
+    debug?: boolean;
+    /**
+     * Maximum number of simultaneous preload links that the preloader will maintain.
+     *
+     * Defaults to `5`
+     */
+    maxSimultaneousPreloads?: number;
+    /**
+     * The minimum probability for a bundle to be added to the preload queue.
+     *
+     * Defaults to `0.25` (25% probability)
+     */
+    minPreloadProbability?: number;
+    /**
+     * Value of the `<link rel="...">` attribute when links are added. The preloader itself will
+     * autodetect which attribute to use based on the browser capabilities.
+     *
+     * Defaults to `modulepreload`.
      */
     linkRel?: 'prefetch' | 'preload' | 'modulepreload' | null;
-    /**
-     * Value of the `<link fetchpriority="...">` attribute when link is used. Defaults to `null` if
-     * links are inserted.
-     */
+    /** Value of the `<link fetchpriority="...">` attribute when links are added. Defaults to `null`. */
     linkFetchPriority?: 'auto' | 'low' | 'high' | null;
-    /**
-     * `always`: Always include the worker fetch JS runtime.
-     *
-     * `no-link-support`: Only include the worker fetch JS runtime when the browser doesn't support
-     * `<link>` prefetch/preload/modulepreload.
-     */
+    /** @deprecated No longer used. */
+    linkInsert?: 'js-append' | 'html-append' | null;
+    /** @deprecated No longer used. */
     workerFetchInsert?: 'always' | 'no-link-support' | null;
-    /**
-     * Dispatch a `qprefetch` event with detail data containing the bundles that should be prefetched.
-     * The event dispatch script will be inlined into the document's HTML so any listeners of this
-     * event should already be ready to handle the event.
-     *
-     * This implementation will inject a script similar to:
-     *
-     * ```
-     * <script type="module">
-     *   document.dispatchEvent(new CustomEvent("qprefetch", { detail:{ "bundles": [...] } }))
-     * </script>
-     * ```
-     *
-     * By default, the `prefetchEvent` implementation will be set to `always`.
-     */
+    /** @deprecated No longer used. */
     prefetchEvent?: 'always' | null;
 }
 
@@ -112,13 +146,31 @@ export declare interface PrefetchStrategy {
 
 /** @public */
 declare interface QwikBundle {
+    /** Size of the bundle */
     size: number;
-    hasSymbols?: boolean;
+    /** Total size of this bundle's static import graph */
+    total: number;
+    /** Interactivity score of the bundle */
+    interactivity?: number;
+    /** Symbols in the bundle */
     symbols?: string[];
+    /** Direct imports */
     imports?: string[];
+    /** Dynamic imports */
     dynamicImports?: string[];
+    /** Source files of the bundle */
     origins?: string[];
 }
+
+/**
+ * Bundle graph.
+ *
+ * Format: [ 'bundle-a.js', 3, 5 // Depends on 'bundle-b.js' and 'bundle-c.js' 'bundle-b.js', 5, //
+ * Depends on 'bundle-c.js' 'bundle-c.js', ]
+ *
+ * @public
+ */
+declare type QwikBundleGraph = Array<string | number>;
 
 /** @public */
 export declare interface QwikLoaderOptions {
@@ -146,40 +198,36 @@ declare interface QwikManifest_2 {
     bundles: {
         [fileName: string]: QwikBundle;
     };
+    /** All bundles in a compact graph format with probabilities */
+    bundleGraph?: QwikBundleGraph;
+    /** The preloader bundle fileName */
+    preloader?: string;
     /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
+    /** The version of the manifest */
     version: string;
+    /** The options used to build the manifest */
     options?: {
         target?: string;
         buildMode?: string;
         entryStrategy?: {
-            [key: string]: any;
+            type: EntryStrategy['type'];
         };
     };
+    /** The platform used to build the manifest */
     platform?: {
         [name: string]: string;
     };
 }
 
 /**
- * Options which determine how the Qwik Prefetch Service Worker is added to the document.
- *
- * Qwik Prefetch Service Worker is used to prefetch resources so that the QwikLoader will always
- * have a cache hit. This will ensure that there will not be any delays for the end user while
- * interacting with the application.
- *
+ * @deprecated This is no longer used as the preloading happens automatically in qrl-class.ts.
  * @public
  */
 declare interface QwikPrefetchServiceWorkerOptions {
-    /**
-     * Should the Qwik Prefetch Service Worker be added to the container. Defaults to `false` until
-     * the QwikCity Service Worker is deprecated.
-     */
+    /** @deprecated This is no longer used as the preloading happens automatically in qrl-class.ts. */
     include?: boolean;
-    /**
-     * Where should the Qwik Prefetch Service Worker be added to the container. Defaults to `top` to
-     * get prefetching going as fast as possible.
-     */
+    /** @deprecated This is no longer used as the preloading happens automatically in qrl-class.ts. */
     position?: 'top' | 'bottom';
 }
 
@@ -189,7 +237,7 @@ declare interface QwikSymbol {
     displayName: string;
     hash: string;
     canonicalFilename: string;
-    ctxKind: 'function' | 'event';
+    ctxKind: 'function' | 'eventHandler';
     ctxName: string;
     captures: boolean;
     parent: string | null;
@@ -216,11 +264,7 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
      * Defaults to `{ include: true }`.
      */
     qwikLoader?: QwikLoaderOptions;
-    /**
-     * Specifies if the Qwik Prefetch Service Worker script is added to the document or not.
-     *
-     * Defaults to `{ include: false }`. NOTE: This may be change in the future.
-     */
+    /** @deprecated Use `prefetchStrategy` instead */
     qwikPrefetchServiceWorker?: QwikPrefetchServiceWorkerOptions;
     prefetchStrategy?: PrefetchStrategy | null;
     /**
@@ -238,8 +282,6 @@ export declare interface RenderResult {
     snapshotResult: SnapshotResult | undefined;
     isStatic: boolean;
     manifest?: QwikManifest;
-    /** @internal TODO: Move to snapshotResult */
-    _symbols?: string[];
 }
 
 /** @public */
@@ -298,20 +340,43 @@ export declare interface RenderToStringResult extends RenderResult {
 declare interface ResolvedManifest_2 {
     mapper: SymbolMapper;
     manifest: QwikManifest_2;
+    injections: GlobalInjections[];
+}
+
+/**
+ * Merges a given manifest with the built manifest and provides mappings for symbols.
+ *
+ * @public
+ */
+export declare function resolveManifest(manifest?: Partial<QwikManifest | ResolvedManifest_2> | undefined): ResolvedManifest_2 | undefined;
+
+/** @public */
+declare interface SegmentEntryStrategy {
+    type: 'segment';
+    manual?: Record<string, string>;
 }
 
 /** @public */
-export declare function resolveManifest(manifest: QwikManifest | ResolvedManifest_2 | undefined): ResolvedManifest_2 | undefined;
-
-/** @public */
 export declare interface SerializeDocumentOptions {
-    manifest?: QwikManifest | ResolvedManifest;
+    manifest?: Partial<QwikManifest | ResolvedManifest>;
     symbolMapper?: SymbolMapperFn;
     debug?: boolean;
 }
 
 /** @public */
-export declare function setServerPlatform(manifest: QwikManifest | ResolvedManifest | undefined): Promise<void>;
+export declare function setServerPlatform(manifest?: Partial<QwikManifest | ResolvedManifest>): Promise<void>;
+
+/** @public */
+declare interface SingleEntryStrategy {
+    type: 'single';
+    manual?: Record<string, string>;
+}
+
+/** @public */
+declare interface SmartEntryStrategy {
+    type: 'smart';
+    manual?: Record<string, string>;
+}
 
 /** @public */
 export declare interface StreamingOptions {

@@ -1,15 +1,15 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+fed136d
+ * @builder.io/qwik 1.13.0-dev+41cb35e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@builder.io/qwik/build')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@builder.io/qwik/build'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.qwikCore = {}, global.qwikBuild));
-})(this, (function (exports, build) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@builder.io/qwik/build'), require('@builder.io/qwik/preloader')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@builder.io/qwik/build', '@builder.io/qwik/preloader'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.qwikCore = {}, global.qwikBuild, global.qwikPreloader));
+})(this, (function (exports, build, preloader) { 'use strict';
 
     // <docs markdown="../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.13.0-dev+fed136d";
+    const version = "1.13.0-dev+41cb35e";
 
     /**
      * @internal
@@ -7306,10 +7306,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
         if (!announcedQRL.has(symbol)) {
             // Emit event
             announcedQRL.add(symbol);
-            emitEvent('qprefetch', {
-                symbols: [getSymbolHash(symbol)],
-                bundles: chunk && [chunk],
-            });
         }
         // Unwrap subscribers
         return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
@@ -8759,6 +8755,10 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 // No need to wrap, syncQRLs can't have captured scope
                 return (qrl.resolved = symbolRef = qFuncs[Number(symbol)]);
             }
+            if (build.isBrowser && chunk) {
+                /** We run the QRL, so now the probability of the chunk is 100% */
+                preloader.p(chunk, 1);
+            }
             const start = now();
             const ctx = tryGetInvokeContext();
             if (symbolFn !== null) {
@@ -8830,6 +8830,13 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         if (qDev) {
             seal(qrl);
+        }
+        if (build.isBrowser && resolvedSymbol) {
+            /**
+             * Preloading the symbol instead of the chunk allows us to get probabilities for the bundle
+             * based on its contents.
+             */
+            preloader.p(resolvedSymbol, 0.8);
         }
         return qrl;
     };
@@ -9862,22 +9869,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
 
     // keep this import from qwik/build so the cjs build works
     /**
-     * Install a service worker which will prefetch the bundles.
-     *
-     * There can only be one service worker per page. Because there can be many separate Qwik Containers
-     * on the page each container needs to load its prefetch graph using `PrefetchGraph` component.
-     *
-     * @param opts - Options for the prefetch service worker.
-     *
-     *   - `base` - Base URL for the service worker `import.meta.env.BASE_URL` or `/`. Default is
-     *       `import.meta.env.BASE_URL`
-     *   - `scope` - Base URL for when the service-worker will activate. Default is `/`
-     *   - `path` - Path to the service worker. Default is `qwik-prefetch-service-worker.js` unless you pass
-     *       a path that starts with a `/` then the base is ignored. Default is
-     *       `qwik-prefetch-service-worker.js`
-     *   - `verbose` - Verbose logging for the service worker installation. Default is `false`
-     *   - `nonce` - Optional nonce value for security purposes, defaults to `undefined`.
-     *
+     * @deprecated This is no longer needed as the preloading happens automatically in qrl-class.ts.
+     *   Leave this in your app for a while so it uninstalls existing service workers, but don't use it
+     *   for new projects.
      * @alpha
      */
     const PrefetchServiceWorker = (opts) => {
@@ -9888,15 +9882,10 @@ Task Symbol: ${task.$qrl$.$symbol$}
             };
             return _jsxC('script', props, 0, 'prefetch-service-worker');
         }
-        const serverData = useServerData('containerAttributes', {});
         // if an MFE app has a custom BASE_URL then this will be the correct value
         // if you're not using MFE from another codebase then you want to override this value to your custom setup
         const baseUrl = globalThis.BASE_URL||"/" || '/';
         const resolvedOpts = {
-            base: serverData['q:base'],
-            manifestHash: serverData['q:manifest-hash'],
-            scope: '/',
-            verbose: false,
             path: 'qwik-prefetch-service-worker.js',
             ...opts,
         };
@@ -9910,7 +9899,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             // the file 'qwik-prefetch-service-worker.js' is not located in /build/
             resolvedOpts.path = baseUrl + resolvedOpts.path;
         }
-        let code = PREFETCH_CODE.replace('URL', resolvedOpts.path).replace('SCOPE', resolvedOpts.scope);
+        let code = PREFETCH_CODE.replace('URL', resolvedOpts.path);
         if (!build.isDev) {
             code = code.replaceAll(/\s+/gm, '');
         }
@@ -9918,11 +9907,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             dangerouslySetInnerHTML: [
                 '(' + code + ')(',
                 [
-                    JSON.stringify(resolvedOpts.base),
-                    JSON.stringify(resolvedOpts.manifestHash),
-                    'navigator.serviceWorker',
-                    'window.qwikPrefetchSW||(window.qwikPrefetchSW=[])',
-                    resolvedOpts.verbose,
+                    'navigator.serviceWorker', // Service worker container
                 ].join(','),
                 ');',
             ].join(''),
@@ -9930,65 +9915,26 @@ Task Symbol: ${task.$qrl$.$symbol$}
         };
         return _jsxC('script', props, 0, 'prefetch-service-worker');
     };
-    const PREFETCH_CODE = /*#__PURE__*/ ((b, // base
-    h, // manifest hash
-    c, // Service worker container
-    q, // Queue of messages to send to the service worker.
-    v // Verbose mode
+    const PREFETCH_CODE = /*#__PURE__*/ ((c // Service worker container
     ) => {
-        c.register('URL', { scope: 'SCOPE' }).then((sw, onReady) => {
-            onReady = () => q.forEach((q.push = (v) => sw.active.postMessage(v)));
-            sw.installing
-                ? sw.installing.addEventListener('statechange', (e) => e.target.state == 'activated' && onReady())
-                : onReady();
-        });
-        v && q.push(['verbose']);
-        document.addEventListener('qprefetch', (e) => e.detail.bundles && q.push(['prefetch', b, ...e.detail.bundles]));
+        if ('getRegistrations' in c) {
+            c.getRegistrations().then((registrations) => {
+                registrations.forEach((registration) => {
+                    if (registration.active) {
+                        if (registration.active.scriptURL.endsWith('URL')) {
+                            registration.unregister().catch(console.error);
+                        }
+                    }
+                });
+            });
+        }
     }).toString();
     /**
-     * Load the prefetch graph for the container.
-     *
-     * Each Qwik container needs to include its own prefetch graph.
-     *
-     * @param opts - Options for the loading prefetch graph.
-     *
-     *   - `base` - Base of the graph. For a default installation this will default to the q:base value
-     *       `/build/`. But if more than one MFE is installed on the page, then each MFE needs to have
-     *       its own base.
-     *   - `manifestHash` - Hash of the manifest file to load. If not provided the hash will be extracted
-     *       from the container attribute `q:manifest-hash` and assume the default build file
-     *       `${base}/q-bundle-graph-${manifestHash}.json`.
-     *   - `manifestURL` - URL of the manifest file to load if non-standard bundle graph location name.
-     *
+     * @deprecated This is no longer needed as the preloading happens automatically in qrl-class. You
+     *   can remove this component from your app.
      * @alpha
      */
-    const PrefetchGraph = (opts = {}) => {
-        const isTest = undefined.TEST;
-        if (build.isDev && !isTest) {
-            const props = {
-                dangerouslySetInnerHTML: '<!-- PrefetchGraph is disabled in dev mode. -->',
-            };
-            return _jsxC('script', props, 0, 'prefetch-graph');
-        }
-        const serverData = useServerData('containerAttributes', {});
-        const resolvedOpts = {
-            // /build/q-bundle-graph-${manifestHash}.json is always within the q:base location /build/
-            base: serverData['q:base'],
-            manifestHash: serverData['q:manifest-hash'],
-            ...opts,
-        };
-        const args = JSON.stringify([
-            'graph-url',
-            resolvedOpts.base,
-            `q-bundle-graph-${resolvedOpts.manifestHash}.json`,
-        ]);
-        const code = `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`;
-        const props = {
-            dangerouslySetInnerHTML: code,
-            nonce: opts.nonce,
-        };
-        return _jsxC('script', props, 0, 'prefetch-graph');
-    };
+    const PrefetchGraph = (opts = {}) => null;
 
     Object.defineProperty(exports, "isBrowser", {
         enumerable: true,

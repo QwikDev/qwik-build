@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.13.0-dev+fed136d
+ * @builder.io/qwik/testing 1.13.0-dev+41cb35e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2342,15 +2342,15 @@ var require_select = __commonJS({
       return function(el) {
         if (!parentIsElement(el))
           return;
-        var rel = find2(el.parentNode), pos = 0;
-        while (rel) {
-          if (test(rel, el))
+        var rel2 = find2(el.parentNode), pos = 0;
+        while (rel2) {
+          if (test(rel2, el))
             pos++;
-          if (rel === el) {
+          if (rel2 === el) {
             pos -= offset;
             return group && pos ? pos % group === 0 && pos < 0 === group < 0 : !pos;
           }
-          rel = advance(rel);
+          rel2 = advance(rel2);
         }
       };
     };
@@ -2480,8 +2480,8 @@ var require_select = __commonJS({
       ":nth-of-type": function(param, last) {
         return nth(
           param,
-          function(rel, el) {
-            return rel.nodeName === el.nodeName;
+          function(rel2, el) {
+            return rel2.nodeName === el.nodeName;
           },
           last
         );
@@ -2722,7 +2722,7 @@ var require_select = __commonJS({
       ref: function(test, name) {
         var node;
         function ref(el) {
-          var doc = el.ownerDocument, nodes = doc.getElementsByTagName("*"), i = nodes.length;
+          var doc2 = el.ownerDocument, nodes = doc2.getElementsByTagName("*"), i = nodes.length;
           while (i--) {
             node = nodes[i];
             if (ref.test(el)) {
@@ -3198,10 +3198,10 @@ var require_Element = __commonJS({
     var NonDocumentTypeChildNode = require_NonDocumentTypeChildNode();
     var NamedNodeMap = require_NamedNodeMap();
     var uppercaseCache = /* @__PURE__ */ Object.create(null);
-    function Element(doc, localName, namespaceURI, prefix) {
+    function Element(doc2, localName, namespaceURI, prefix) {
       ContainerNode.call(this);
       this.nodeType = Node.ELEMENT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this.localName = localName;
       this.namespaceURI = namespaceURI;
       this.prefix = prefix;
@@ -4527,10 +4527,10 @@ var require_Text = __commonJS({
     var utils = require_utils();
     var Node = require_Node();
     var CharacterData = require_CharacterData();
-    function Text(doc, data) {
+    function Text(doc2, data) {
       CharacterData.call(this);
       this.nodeType = Node.TEXT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this._data = utils.escapeText(data);
       this._index = void 0;
     }
@@ -4610,10 +4610,10 @@ var require_Comment = __commonJS({
     var Node = require_Node();
     var utils = require_utils();
     var CharacterData = require_CharacterData();
-    function Comment(doc, data) {
+    function Comment(doc2, data) {
       CharacterData.call(this);
       this.nodeType = Node.COMMENT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this._data = utils.escapeText(data);
     }
     var nodeValue = {
@@ -4662,10 +4662,10 @@ var require_DocumentFragment = __commonJS({
     var Element = require_Element();
     var select = require_select();
     var utils = require_utils();
-    function DocumentFragment(doc) {
+    function DocumentFragment(doc2) {
       ContainerNode.call(this);
       this.nodeType = Node.DOCUMENT_FRAGMENT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
     }
     DocumentFragment.prototype = Object.create(ContainerNode.prototype, {
       nodeName: { value: "#document-fragment" },
@@ -4733,10 +4733,10 @@ var require_ProcessingInstruction = __commonJS({
     var Node = require_Node();
     var CharacterData = require_CharacterData();
     var utils = require_utils();
-    function ProcessingInstruction(doc, target, data) {
+    function ProcessingInstruction(doc2, target, data) {
       CharacterData.call(this);
       this.nodeType = Node.PROCESSING_INSTRUCTION_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this.target = target;
       this._data = data;
     }
@@ -5473,7 +5473,7 @@ var require_URL = __commonJS({
       // See: http://tools.ietf.org/html/rfc3986#section-5.2
       // and https://url.spec.whatwg.org/#constructors
       resolve: function(relative) {
-        var base = this;
+        var base2 = this;
         var r = new URL2(relative);
         var t = new URL2();
         if (r.scheme !== void 0) {
@@ -5485,7 +5485,7 @@ var require_URL = __commonJS({
           t.path = remove_dot_segments(r.path);
           t.query = r.query;
         } else {
-          t.scheme = base.scheme;
+          t.scheme = base2.scheme;
           if (r.host !== void 0) {
             t.username = r.username;
             t.password = r.password;
@@ -5494,21 +5494,21 @@ var require_URL = __commonJS({
             t.path = remove_dot_segments(r.path);
             t.query = r.query;
           } else {
-            t.username = base.username;
-            t.password = base.password;
-            t.host = base.host;
-            t.port = base.port;
+            t.username = base2.username;
+            t.password = base2.password;
+            t.host = base2.host;
+            t.port = base2.port;
             if (!r.path) {
-              t.path = base.path;
+              t.path = base2.path;
               if (r.query !== void 0)
                 t.query = r.query;
               else
-                t.query = base.query;
+                t.query = base2.query;
             } else {
               if (r.path.charAt(0) === "/") {
                 t.path = remove_dot_segments(r.path);
               } else {
-                t.path = merge(base.path, r.path);
+                t.path = merge(base2.path, r.path);
                 t.path = remove_dot_segments(t.path);
               }
               t.query = r.query;
@@ -5518,7 +5518,7 @@ var require_URL = __commonJS({
         t.fragment = r.fragment;
         return t.toString();
         function merge(basepath, refpath) {
-          if (base.host !== void 0 && !base.path)
+          if (base2.host !== void 0 && !base2.path)
             return "/" + refpath;
           var lastslash = basepath.lastIndexOf("/");
           if (lastslash === -1)
@@ -11059,9 +11059,9 @@ var require_defineElement = __commonJS({
       };
     };
     function EventHandlerChangeHandler(elt, name, oldval, newval) {
-      var doc = elt.ownerDocument || /* @__PURE__ */ Object.create(null);
+      var doc2 = elt.ownerDocument || /* @__PURE__ */ Object.create(null);
       var form = elt.form || /* @__PURE__ */ Object.create(null);
-      elt[name] = new EventHandlerBuilder(newval, doc, form, elt).build();
+      elt[name] = new EventHandlerBuilder(newval, doc2, form, elt).build();
     }
     function addEventHandlers(c, eventHandlerTypes) {
       var p = c.prototype;
@@ -11092,9 +11092,9 @@ var require_htmlelts = __commonJS({
     var defineElement = require_defineElement();
     var htmlElements = exports2.elements = {};
     var htmlNameToImpl = /* @__PURE__ */ Object.create(null);
-    exports2.createElement = function(doc, localName, prefix) {
+    exports2.createElement = function(doc2, localName, prefix) {
       var impl = htmlNameToImpl[localName] || HTMLUnknownElement;
-      return new impl(doc, localName, prefix);
+      return new impl(doc2, localName, prefix);
     };
     function define(spec) {
       return defineElement(spec, HTMLElement, htmlElements, htmlNameToImpl);
@@ -11158,15 +11158,15 @@ var require_htmlelts = __commonJS({
       TEXTAREA: true,
       COMMAND: true
     };
-    var HTMLFormElement = function(doc, localName, prefix) {
-      HTMLElement.call(this, doc, localName, prefix);
+    var HTMLFormElement = function(doc2, localName, prefix) {
+      HTMLElement.call(this, doc2, localName, prefix);
       this._form = null;
     };
     var HTMLElement = exports2.HTMLElement = define({
       superclass: Element,
       name: "HTMLElement",
-      ctor: function HTMLElement2(doc, localName, prefix) {
-        Element.call(this, doc, localName, utils.NAMESPACE.HTML, prefix);
+      ctor: function HTMLElement2(doc2, localName, prefix) {
+        Element.call(this, doc2, localName, utils.NAMESPACE.HTML, prefix);
       },
       props: {
         dangerouslySetInnerHTML: {
@@ -11330,8 +11330,8 @@ var require_htmlelts = __commonJS({
     });
     var HTMLUnknownElement = define({
       name: "HTMLUnknownElement",
-      ctor: function HTMLUnknownElement2(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLUnknownElement2(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     var formAssociatedProps = {
@@ -11345,8 +11345,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "a",
       name: "HTMLAnchorElement",
-      ctor: function HTMLAnchorElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLAnchorElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         _post_click_activation_steps: {
@@ -11379,8 +11379,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "area",
       name: "HTMLAreaElement",
-      ctor: function HTMLAreaElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLAreaElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         alt: String,
@@ -11404,8 +11404,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "br",
       name: "HTMLBRElement",
-      ctor: function HTMLBRElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLBRElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11415,8 +11415,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "base",
       name: "HTMLBaseElement",
-      ctor: function HTMLBaseElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLBaseElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         target: String
@@ -11425,8 +11425,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "body",
       name: "HTMLBodyElement",
-      ctor: function HTMLBodyElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLBodyElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       // Certain event handler attributes on a <body> tag actually set
       // handlers for the window rather than just that element.  Define
@@ -11469,8 +11469,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "button",
       name: "HTMLButtonElement",
-      ctor: function HTMLButtonElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLButtonElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11492,8 +11492,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "dl",
       name: "HTMLDListElement",
-      ctor: function HTMLDListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11503,8 +11503,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "data",
       name: "HTMLDataElement",
-      ctor: function HTMLDataElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDataElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         value: String
@@ -11513,15 +11513,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "datalist",
       name: "HTMLDataListElement",
-      ctor: function HTMLDataListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDataListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "details",
       name: "HTMLDetailsElement",
-      ctor: function HTMLDetailsElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDetailsElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         open: Boolean
@@ -11530,8 +11530,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "div",
       name: "HTMLDivElement",
-      ctor: function HTMLDivElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDivElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11541,8 +11541,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "embed",
       name: "HTMLEmbedElement",
-      ctor: function HTMLEmbedElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLEmbedElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -11557,8 +11557,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "fieldset",
       name: "HTMLFieldSetElement",
-      ctor: function HTMLFieldSetElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFieldSetElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11569,8 +11569,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "form",
       name: "HTMLFormElement",
-      ctor: function HTMLFormElement2(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFormElement2(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         action: String,
@@ -11597,8 +11597,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "hr",
       name: "HTMLHRElement",
-      ctor: function HTMLHRElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHRElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11612,15 +11612,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "head",
       name: "HTMLHeadElement",
-      ctor: function HTMLHeadElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHeadElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tags: ["h1", "h2", "h3", "h4", "h5", "h6"],
       name: "HTMLHeadingElement",
-      ctor: function HTMLHeadingElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHeadingElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11630,8 +11630,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "html",
       name: "HTMLHtmlElement",
-      ctor: function HTMLHtmlElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHtmlElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11641,8 +11641,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "iframe",
       name: "HTMLIFrameElement",
-      ctor: function HTMLIFrameElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLIFrameElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -11668,8 +11668,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "img",
       name: "HTMLImageElement",
-      ctor: function HTMLImageElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLImageElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         alt: String,
@@ -11694,8 +11694,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "input",
       name: "HTMLInputElement",
-      ctor: function HTMLInputElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLInputElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: formAssociatedProps.form,
@@ -11801,8 +11801,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "keygen",
       name: "HTMLKeygenElement",
-      ctor: function HTMLKeygenElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLKeygenElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11816,8 +11816,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "li",
       name: "HTMLLIElement",
-      ctor: function HTMLLIElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLIElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         value: { type: "long", default: 0 },
@@ -11828,8 +11828,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "label",
       name: "HTMLLabelElement",
-      ctor: function HTMLLabelElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLabelElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11839,8 +11839,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "legend",
       name: "HTMLLegendElement",
-      ctor: function HTMLLegendElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLegendElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11850,8 +11850,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "link",
       name: "HTMLLinkElement",
-      ctor: function HTMLLinkElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLinkElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // XXX Reflect DOMSettableTokenList sizes also DOMTokenList relList
@@ -11873,8 +11873,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "map",
       name: "HTMLMapElement",
-      ctor: function HTMLMapElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMapElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         name: String
@@ -11883,8 +11883,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "menu",
       name: "HTMLMenuElement",
-      ctor: function HTMLMenuElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMenuElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // XXX: not quite right, default should be popup if parent element is
@@ -11898,8 +11898,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "meta",
       name: "HTMLMetaElement",
-      ctor: function HTMLMetaElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMetaElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         name: String,
@@ -11912,16 +11912,16 @@ var require_htmlelts = __commonJS({
     define({
       tag: "meter",
       name: "HTMLMeterElement",
-      ctor: function HTMLMeterElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMeterElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps
     });
     define({
       tags: ["ins", "del"],
       name: "HTMLModElement",
-      ctor: function HTMLModElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLModElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         cite: URL2,
@@ -11931,8 +11931,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "ol",
       name: "HTMLOListElement",
-      ctor: function HTMLOListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         // Utility function (see the start attribute default value). Returns
@@ -11967,8 +11967,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "object",
       name: "HTMLObjectElement",
-      ctor: function HTMLObjectElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLObjectElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11995,8 +11995,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "optgroup",
       name: "HTMLOptGroupElement",
-      ctor: function HTMLOptGroupElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOptGroupElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         disabled: Boolean,
@@ -12006,8 +12006,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "option",
       name: "HTMLOptionElement",
-      ctor: function HTMLOptionElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOptionElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: {
@@ -12047,8 +12047,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "output",
       name: "HTMLOutputElement",
-      ctor: function HTMLOutputElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOutputElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -12059,8 +12059,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "p",
       name: "HTMLParagraphElement",
-      ctor: function HTMLParagraphElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLParagraphElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -12070,8 +12070,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "param",
       name: "HTMLParamElement",
-      ctor: function HTMLParamElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLParamElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         name: String,
@@ -12089,8 +12089,8 @@ var require_htmlelts = __commonJS({
         "xmp"
       ],
       name: "HTMLPreElement",
-      ctor: function HTMLPreElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLPreElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -12100,8 +12100,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "progress",
       name: "HTMLProgressElement",
-      ctor: function HTMLProgressElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLProgressElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -12111,8 +12111,8 @@ var require_htmlelts = __commonJS({
     define({
       tags: ["q", "blockquote"],
       name: "HTMLQuoteElement",
-      ctor: function HTMLQuoteElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLQuoteElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         cite: URL2
@@ -12121,8 +12121,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "script",
       name: "HTMLScriptElement",
-      ctor: function HTMLScriptElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLScriptElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         text: {
@@ -12157,8 +12157,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "select",
       name: "HTMLSelectElement",
-      ctor: function HTMLSelectElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSelectElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: formAssociatedProps.form,
@@ -12182,8 +12182,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "source",
       name: "HTMLSourceElement",
-      ctor: function HTMLSourceElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSourceElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -12194,15 +12194,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "span",
       name: "HTMLSpanElement",
-      ctor: function HTMLSpanElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSpanElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "style",
       name: "HTMLStyleElement",
-      ctor: function HTMLStyleElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLStyleElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         media: String,
@@ -12213,8 +12213,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "caption",
       name: "HTMLTableCaptionElement",
-      ctor: function HTMLTableCaptionElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableCaptionElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -12223,8 +12223,8 @@ var require_htmlelts = __commonJS({
     });
     define({
       name: "HTMLTableCellElement",
-      ctor: function HTMLTableCellElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableCellElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         colSpan: { type: "unsigned long", default: 1 },
@@ -12247,8 +12247,8 @@ var require_htmlelts = __commonJS({
     define({
       tags: ["col", "colgroup"],
       name: "HTMLTableColElement",
-      ctor: function HTMLTableColElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableColElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         span: { type: "limited unsigned long with fallback", default: 1, min: 1 },
@@ -12263,8 +12263,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "table",
       name: "HTMLTableElement",
-      ctor: function HTMLTableElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         rows: {
@@ -12289,9 +12289,9 @@ var require_htmlelts = __commonJS({
     define({
       tag: "template",
       name: "HTMLTemplateElement",
-      ctor: function HTMLTemplateElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
-        this._contentFragment = doc._templateDoc.createDocumentFragment();
+      ctor: function HTMLTemplateElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
+        this._contentFragment = doc2._templateDoc.createDocumentFragment();
       },
       props: {
         content: {
@@ -12309,8 +12309,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "tr",
       name: "HTMLTableRowElement",
-      ctor: function HTMLTableRowElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableRowElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         cells: {
@@ -12331,8 +12331,8 @@ var require_htmlelts = __commonJS({
     define({
       tags: ["thead", "tfoot", "tbody"],
       name: "HTMLTableSectionElement",
-      ctor: function HTMLTableSectionElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableSectionElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         rows: {
@@ -12352,8 +12352,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "textarea",
       name: "HTMLTextAreaElement",
-      ctor: function HTMLTextAreaElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTextAreaElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: formAssociatedProps.form,
@@ -12421,8 +12421,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "time",
       name: "HTMLTimeElement",
-      ctor: function HTMLTimeElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTimeElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         dateTime: String,
@@ -12432,8 +12432,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "title",
       name: "HTMLTitleElement",
-      ctor: function HTMLTitleElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTitleElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         text: {
@@ -12446,8 +12446,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "ul",
       name: "HTMLUListElement",
-      ctor: function HTMLUListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLUListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         type: String,
@@ -12457,8 +12457,8 @@ var require_htmlelts = __commonJS({
     });
     define({
       name: "HTMLMediaElement",
-      ctor: function HTMLMediaElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMediaElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -12475,16 +12475,16 @@ var require_htmlelts = __commonJS({
       tag: "audio",
       superclass: htmlElements.HTMLMediaElement,
       name: "HTMLAudioElement",
-      ctor: function HTMLAudioElement(doc, localName, prefix) {
-        htmlElements.HTMLMediaElement.call(this, doc, localName, prefix);
+      ctor: function HTMLAudioElement(doc2, localName, prefix) {
+        htmlElements.HTMLMediaElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "video",
       superclass: htmlElements.HTMLMediaElement,
       name: "HTMLVideoElement",
-      ctor: function HTMLVideoElement(doc, localName, prefix) {
-        htmlElements.HTMLMediaElement.call(this, doc, localName, prefix);
+      ctor: function HTMLVideoElement(doc2, localName, prefix) {
+        htmlElements.HTMLMediaElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         poster: URL2,
@@ -12496,37 +12496,37 @@ var require_htmlelts = __commonJS({
       tag: "td",
       superclass: htmlElements.HTMLTableCellElement,
       name: "HTMLTableDataCellElement",
-      ctor: function HTMLTableDataCellElement(doc, localName, prefix) {
-        htmlElements.HTMLTableCellElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableDataCellElement(doc2, localName, prefix) {
+        htmlElements.HTMLTableCellElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "th",
       superclass: htmlElements.HTMLTableCellElement,
       name: "HTMLTableHeaderCellElement",
-      ctor: function HTMLTableHeaderCellElement(doc, localName, prefix) {
-        htmlElements.HTMLTableCellElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableHeaderCellElement(doc2, localName, prefix) {
+        htmlElements.HTMLTableCellElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "frameset",
       name: "HTMLFrameSetElement",
-      ctor: function HTMLFrameSetElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFrameSetElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "frame",
       name: "HTMLFrameElement",
-      ctor: function HTMLFrameElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFrameElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "canvas",
       name: "HTMLCanvasElement",
-      ctor: function HTMLCanvasElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLCanvasElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         getContext: { value: utils.nyi },
@@ -12544,8 +12544,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "dialog",
       name: "HTMLDialogElement",
-      ctor: function HTMLDialogElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDialogElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         show: { value: utils.nyi },
@@ -12560,8 +12560,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "menuitem",
       name: "HTMLMenuItemElement",
-      ctor: function HTMLMenuItemElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMenuItemElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         // The menuitem's label
@@ -12601,8 +12601,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "source",
       name: "HTMLSourceElement",
-      ctor: function HTMLSourceElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSourceElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         srcset: String,
@@ -12615,8 +12615,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "track",
       name: "HTMLTrackElement",
-      ctor: function HTMLTrackElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTrackElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -12658,8 +12658,8 @@ var require_htmlelts = __commonJS({
       // obsolete
       tag: "font",
       name: "HTMLFontElement",
-      ctor: function HTMLFontElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFontElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         color: { type: String, treatNullAsEmptyString: true },
@@ -12671,8 +12671,8 @@ var require_htmlelts = __commonJS({
       // obsolete
       tag: "dir",
       name: "HTMLDirectoryElement",
-      ctor: function HTMLDirectoryElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDirectoryElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         compact: Boolean
@@ -12746,9 +12746,9 @@ var require_svg = __commonJS({
     var CSSStyleDeclaration = require_CSSStyleDeclaration();
     var svgElements = exports2.elements = {};
     var svgNameToImpl = /* @__PURE__ */ Object.create(null);
-    exports2.createElement = function(doc, localName, prefix) {
+    exports2.createElement = function(doc2, localName, prefix) {
       var impl = svgNameToImpl[localName] || SVGElement;
-      return new impl(doc, localName, prefix);
+      return new impl(doc2, localName, prefix);
     };
     function define(spec) {
       return defineElement(spec, SVGElement, svgElements, svgNameToImpl);
@@ -12756,8 +12756,8 @@ var require_svg = __commonJS({
     var SVGElement = define({
       superclass: Element,
       name: "SVGElement",
-      ctor: function SVGElement2(doc, localName, prefix) {
-        Element.call(this, doc, localName, utils.NAMESPACE.SVG, prefix);
+      ctor: function SVGElement2(doc2, localName, prefix) {
+        Element.call(this, doc2, localName, utils.NAMESPACE.SVG, prefix);
       },
       props: {
         style: {
@@ -12771,8 +12771,8 @@ var require_svg = __commonJS({
     });
     define({
       name: "SVGSVGElement",
-      ctor: function SVGSVGElement(doc, localName, prefix) {
-        SVGElement.call(this, doc, localName, prefix);
+      ctor: function SVGSVGElement(doc2, localName, prefix) {
+        SVGElement.call(this, doc2, localName, prefix);
       },
       tag: "svg",
       props: {
@@ -13597,9 +13597,9 @@ var require_Document = __commonJS({
           var url = this._address;
           if (url === "about:blank")
             url = "/";
-          var base = this.querySelector("base[href]");
-          if (base) {
-            return new URL2(url).resolve(base.getAttribute("href"));
+          var base2 = this.querySelector("base[href]");
+          if (base2) {
+            return new URL2(url).resolve(base2.getAttribute("href"));
           }
           return url;
         }
@@ -16856,13 +16856,13 @@ var require_HTMLParser = __commonJS({
       var ignore_linefeed = false;
       var htmlparser = {
         document: function() {
-          return doc;
+          return doc2;
         },
         // Convenience function for internal use. Can only be called once,
         // as it removes the nodes from `doc` to add them to fragment.
         _asDocumentFragment: function() {
-          var frag = doc.createDocumentFragment();
-          var root2 = doc.firstChild;
+          var frag = doc2.createDocumentFragment();
+          var root2 = doc2.firstChild;
           while (root2.hasChildNodes()) {
             frag.appendChild(root2.firstChild);
           }
@@ -16933,14 +16933,14 @@ var require_HTMLParser = __commonJS({
           return moreToDo;
         }
       };
-      var doc = new Document(true, address);
-      doc._parser = htmlparser;
-      doc._scripting_enabled = scripting_enabled;
+      var doc2 = new Document(true, address);
+      doc2._parser = htmlparser;
+      doc2._scripting_enabled = scripting_enabled;
       if (fragmentContext) {
         if (fragmentContext.ownerDocument._quirks)
-          doc._quirks = true;
+          doc2._quirks = true;
         if (fragmentContext.ownerDocument._limitedQuirks)
-          doc._limitedQuirks = true;
+          doc2._limitedQuirks = true;
         if (fragmentContext.namespaceURI === NAMESPACE.HTML) {
           switch (fragmentContext.localName) {
             case "title":
@@ -16961,8 +16961,8 @@ var require_HTMLParser = __commonJS({
                 tokenizer = plaintext_state;
           }
         }
-        var root = doc.createElement("html");
-        doc._appendChild(root);
+        var root = doc2.createElement("html");
+        doc2._appendChild(root);
         stack.push(root);
         if (fragmentContext instanceof impl.HTMLTemplateElement) {
           templateInsertionModes.push(in_template_mode);
@@ -17240,7 +17240,7 @@ var require_HTMLParser = __commonJS({
       function emitEOF() {
         flushText();
         parser(EOF);
-        doc.modclock = 1;
+        doc2.modclock = 1;
       }
       var insertToken = htmlparser.insertToken = function insertToken2(t, value, arg3, arg4) {
         flushText();
@@ -17264,8 +17264,8 @@ var require_HTMLParser = __commonJS({
       function insertComment(data) {
         var parent = stack.top;
         if (foster_parent_mode && isA(parent, tablesectionrowSet)) {
-          fosterParent(function(doc2) {
-            return doc2.createComment(data);
+          fosterParent(function(doc3) {
+            return doc3.createComment(data);
           });
         } else {
           if (parent instanceof impl.HTMLTemplateElement) {
@@ -17277,8 +17277,8 @@ var require_HTMLParser = __commonJS({
       function insertText(s) {
         var parent = stack.top;
         if (foster_parent_mode && isA(parent, tablesectionrowSet)) {
-          fosterParent(function(doc2) {
-            return doc2.createTextNode(s);
+          fosterParent(function(doc3) {
+            return doc3.createTextNode(s);
           });
         } else {
           if (parent instanceof impl.HTMLTemplateElement) {
@@ -17292,8 +17292,8 @@ var require_HTMLParser = __commonJS({
           }
         }
       }
-      function createHTMLElt(doc2, name, attrs) {
-        var elt = html.createElement(doc2, name, null);
+      function createHTMLElt(doc3, name, attrs) {
+        var elt = html.createElement(doc3, name, null);
         if (attrs) {
           for (var i = 0, n = attrs.length; i < n; i++) {
             elt._setAttribute(attrs[i][0], attrs[i][1]);
@@ -17303,8 +17303,8 @@ var require_HTMLParser = __commonJS({
       }
       var foster_parent_mode = false;
       function insertHTMLElement(name, attrs) {
-        var elt = insertElement(function(doc2) {
-          return createHTMLElt(doc2, name, attrs);
+        var elt = insertElement(function(doc3) {
+          return createHTMLElt(doc3, name, attrs);
         });
         if (isA(elt, formassociatedSet)) {
           elt._form = form_element_pointer;
@@ -17326,8 +17326,8 @@ var require_HTMLParser = __commonJS({
         return elt;
       }
       function insertForeignElement(name, attrs, ns) {
-        return insertElement(function(doc2) {
-          var elt = doc2._createElementNS(name, ns, null);
+        return insertElement(function(doc3) {
+          var elt = doc3._createElementNS(name, ns, null);
           if (attrs) {
             for (var i = 0, n = attrs.length; i < n; i++) {
               var attr = attrs[i];
@@ -17475,9 +17475,9 @@ var require_HTMLParser = __commonJS({
         originalInsertionMode = parser;
         parser = text_mode;
       }
-      function afeclone(doc2, i) {
+      function afeclone(doc3, i) {
         return {
-          elt: createHTMLElt(doc2, afe.list[i].localName, afe.attrs[i]),
+          elt: createHTMLElt(doc3, afe.list[i].localName, afe.attrs[i]),
           attrs: afe.attrs[i]
         };
       }
@@ -17497,8 +17497,8 @@ var require_HTMLParser = __commonJS({
             break;
         }
         for (i = i + 1; i < afe.list.length; i++) {
-          var newelt = insertElement(function(doc2) {
-            return afeclone(doc2, i).elt;
+          var newelt = insertElement(function(doc3) {
+            return afeclone(doc3, i).elt;
           });
           afe.list[i] = newelt;
         }
@@ -17598,10 +17598,10 @@ var require_HTMLParser = __commonJS({
         return;
       }
       function stopParsing() {
-        delete doc._parser;
+        delete doc2._parser;
         stack.elements.length = 0;
-        if (doc.defaultView) {
-          doc.defaultView.dispatchEvent(new impl.Event("load", {}));
+        if (doc2.defaultView) {
+          doc2.defaultView.dispatchEvent(new impl.Event("load", {}));
         }
       }
       function reconsume(c, new_state) {
@@ -20164,21 +20164,21 @@ var require_HTMLParser = __commonJS({
               return;
             break;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 5:
             var name = value;
             var publicid = arg3;
             var systemid = arg4;
-            doc.appendChild(new DocumentType(doc, name, publicid, systemid));
+            doc2.appendChild(new DocumentType(doc2, name, publicid, systemid));
             if (force_quirks || name.toLowerCase() !== "html" || quirkyPublicIds.test(publicid) || systemid && systemid.toLowerCase() === quirkySystemId || systemid === void 0 && conditionallyQuirkyPublicIds.test(publicid))
-              doc._quirks = true;
+              doc2._quirks = true;
             else if (limitedQuirkyPublicIds.test(publicid) || systemid !== void 0 && conditionallyQuirkyPublicIds.test(publicid))
-              doc._limitedQuirks = true;
+              doc2._limitedQuirks = true;
             parser = before_html_mode;
             return;
         }
-        doc._quirks = true;
+        doc2._quirks = true;
         parser = before_html_mode;
         parser(t, value, arg3, arg4);
       }
@@ -20193,13 +20193,13 @@ var require_HTMLParser = __commonJS({
           case 5:
             return;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 2:
             if (value === "html") {
-              elt = createHTMLElt(doc, value, arg3);
+              elt = createHTMLElt(doc2, value, arg3);
               stack.push(elt);
-              doc.appendChild(elt);
+              doc2.appendChild(elt);
               parser = before_head_mode;
               return;
             }
@@ -20215,9 +20215,9 @@ var require_HTMLParser = __commonJS({
                 return;
             }
         }
-        elt = createHTMLElt(doc, "html", null);
+        elt = createHTMLElt(doc2, "html", null);
         stack.push(elt);
-        doc.appendChild(elt);
+        doc2.appendChild(elt);
         parser = before_head_mode;
         parser(t, value, arg3, arg4);
       }
@@ -20302,8 +20302,8 @@ var require_HTMLParser = __commonJS({
                 parseRawText(value, arg3);
                 return;
               case "script":
-                insertElement(function(doc2) {
-                  var elt = createHTMLElt(doc2, value, arg3);
+                insertElement(function(doc3) {
+                  var elt = createHTMLElt(doc3, value, arg3);
                   elt._parser_inserted = true;
                   elt._force_async = false;
                   if (fragment)
@@ -20684,7 +20684,7 @@ var require_HTMLParser = __commonJS({
                 frameset_ok = false;
                 return;
               case "table":
-                if (!doc._quirks && stack.inButtonScope("p")) {
+                if (!doc2._quirks && stack.inButtonScope("p")) {
                   in_body_mode(ENDTAG, "p");
                 }
                 insertHTMLElement(value, arg3);
@@ -21591,7 +21591,7 @@ var require_HTMLParser = __commonJS({
             in_body_mode(t, value);
             return;
           case 4:
-            stack.elements[0]._appendChild(doc.createComment(value));
+            stack.elements[0]._appendChild(doc2.createComment(value));
             return;
           case 5:
             return;
@@ -21701,7 +21701,7 @@ var require_HTMLParser = __commonJS({
             in_body_mode(t, value, arg3, arg4);
             return;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 5:
             in_body_mode(t, value, arg3, arg4);
@@ -21727,7 +21727,7 @@ var require_HTMLParser = __commonJS({
               in_body_mode(t, value, arg3, arg4);
             return;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 5:
             in_body_mode(t, value, arg3, arg4);
@@ -22017,10 +22017,10 @@ var require_DOMImplementation = __commonJS({
         d.modclock = 1;
         return d;
       },
-      mozSetOutputMutationHandler: function(doc, handler) {
-        doc.mutationHandler = handler;
+      mozSetOutputMutationHandler: function(doc2, handler) {
+        doc2.mutationHandler = handler;
       },
-      mozGetInputMutationHandler: function(doc) {
+      mozGetInputMutationHandler: function(doc2) {
         utils.nyi();
       },
       mozHTMLParser: HTMLParser
@@ -22670,10 +22670,10 @@ var createPlatform = () => {
     }
   };
 };
-var toUrl = (doc, containerEl, url) => {
-  const baseURI = doc.baseURI;
-  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-  return new URL(url, base);
+var toUrl = (doc2, containerEl, url) => {
+  const baseURI = doc2.baseURI;
+  const base2 = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+  return new URL(url, base2);
 };
 var _platform = /* @__PURE__ */ createPlatform();
 var getPlatform = () => {
@@ -22907,7 +22907,194 @@ var isSignal = (obj) => {
   return obj instanceof SignalBase;
 };
 
+// packages/qwik/dist/preloader.mjs
+var import_build2 = require("@builder.io/qwik/build");
+var doc = import_build2.isBrowser ? document : void 0;
+var modulePreloadStr = "modulepreload";
+var preloadStr = "preload";
+var maxSimultaneousPreloadsStr = "maxSimultaneousPreloads";
+var maxSignificantInverseProbabilityStr = "maxSignificantInverseProbability";
+var config = {
+  DEBUG: false,
+  [maxSimultaneousPreloadsStr]: 6,
+  [maxSignificantInverseProbabilityStr]: 0.75
+};
+var rel = import_build2.isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
+var loadStart = Date.now();
+var BundleImportState = /* @__PURE__ */ ((BundleImportState2) => {
+  BundleImportState2[BundleImportState2["None"] = 0] = "None";
+  BundleImportState2[BundleImportState2["Queued"] = 1] = "Queued";
+  BundleImportState2[BundleImportState2["Preload"] = 2] = "Preload";
+  BundleImportState2[BundleImportState2["Alias"] = 3] = "Alias";
+  BundleImportState2[BundleImportState2["Loaded"] = 4] = "Loaded";
+  return BundleImportState2;
+})(BundleImportState || {});
+var bundles = /* @__PURE__ */ new Map();
+var queueDirty;
+var preloadCount = 0;
+var queue = [];
+var log = (...args) => {
+  console.log(
+    `Preloader ${Date.now() - loadStart}ms ${preloadCount}/${queue.length} queued>`,
+    ...args
+  );
+};
+var sortQueue = () => {
+  if (queueDirty) {
+    queue.sort((a, b) => a.$inverseProbability$ - b.$inverseProbability$);
+    queueDirty = false;
+  }
+};
+var trigger = () => {
+  if (!queue.length) {
+    return;
+  }
+  sortQueue();
+  while (queue.length) {
+    const bundle = queue[0];
+    const inverseProbability = bundle.$inverseProbability$;
+    const probability = 1 - inverseProbability;
+    const allowedPreloads = graph ? (
+      // The more likely the bundle, the more simultaneous preloads we want to allow
+      Math.max(1, config[maxSimultaneousPreloadsStr] * probability)
+    ) : (
+      // While the graph is not available, we limit to 2 preloads
+      2
+    );
+    if (preloadCount < allowedPreloads) {
+      queue.shift();
+      preloadOne(bundle);
+    } else {
+      break;
+    }
+  }
+  if (config.DEBUG && !queue.length) {
+    const loaded = [...bundles.values()].filter((b) => b.$state$ > BundleImportState.None);
+    const waitTime = loaded.reduce((acc, b) => acc + b.$waitedMs$, 0);
+    const loadTime = loaded.reduce((acc, b) => acc + b.$loadedMs$, 0);
+    log(
+      `>>>> done ${loaded.length}/${bundles.size} total: ${waitTime}ms waited, ${loadTime}ms loaded`
+    );
+  }
+};
+var preloadOne = (bundle) => {
+  if (bundle.$state$ >= BundleImportState.Preload) {
+    return;
+  }
+  preloadCount++;
+  const start = Date.now();
+  bundle.$waitedMs$ = start - bundle.$createdTs$;
+  bundle.$state$ = BundleImportState.Preload;
+  config.DEBUG && log(`<< load after ${`${bundle.$waitedMs$}ms`}`, bundle.$name$);
+  const link = doc.createElement("link");
+  link.href = bundle.$url$;
+  link.rel = rel;
+  link.as = "script";
+  link.onload = link.onerror = () => {
+    preloadCount--;
+    const end = Date.now();
+    bundle.$loadedMs$ = end - start;
+    bundle.$state$ = BundleImportState.Loaded;
+    config.DEBUG && log(`>> done after ${bundle.$loadedMs$}ms`, bundle.$name$);
+    link.remove();
+    trigger();
+  };
+  doc.head.appendChild(link);
+};
+var adjustProbabilities = (bundle, adjustFactor, seen) => {
+  if (seen == null ? void 0 : seen.has(bundle)) {
+    return;
+  }
+  const previousInverseProbability = bundle.$inverseProbability$;
+  bundle.$inverseProbability$ *= adjustFactor;
+  if (previousInverseProbability - bundle.$inverseProbability$ < 0.01) {
+    return;
+  }
+  if (bundle.$state$ < BundleImportState.Preload && bundle.$inverseProbability$ < config[maxSignificantInverseProbabilityStr]) {
+    if (bundle.$state$ === BundleImportState.None) {
+      bundle.$state$ = BundleImportState.Queued;
+      queue.push(bundle);
+      config.DEBUG && log(`queued ${Math.round((1 - bundle.$inverseProbability$) * 100)}%`, bundle.$name$);
+    }
+    queueDirty = true;
+  }
+  if (bundle.$deps$) {
+    seen || (seen = /* @__PURE__ */ new Set());
+    seen.add(bundle);
+    for (const dep of bundle.$deps$) {
+      const depBundle = getBundle(dep.$name$);
+      const prevAdjust = dep.$factor$;
+      const newInverseProbability = 1 - dep.$probability$ * (1 - bundle.$inverseProbability$);
+      const factor = newInverseProbability / prevAdjust;
+      dep.$factor$ = factor;
+      adjustProbabilities(depBundle, factor, seen);
+    }
+  }
+};
+var handleBundle = (name, inverseProbability) => {
+  const bundle = getBundle(name);
+  if (bundle && bundle.$inverseProbability$ > inverseProbability) {
+    adjustProbabilities(bundle, inverseProbability / bundle.$inverseProbability$);
+  }
+};
+var preload = (name, probability) => {
+  if (base == null || !name.length) {
+    return;
+  }
+  let inverseProbability = probability ? 1 - probability : 0.4;
+  if (Array.isArray(name)) {
+    for (let i = name.length - 1; i >= 0; i--) {
+      const item = name[i];
+      if (typeof item === "number") {
+        inverseProbability = 1 - item / 10;
+      } else {
+        handleBundle(item, inverseProbability);
+        inverseProbability *= 1.005;
+      }
+    }
+  } else {
+    handleBundle(name, inverseProbability);
+  }
+  if (import_build2.isBrowser) {
+    trigger();
+  }
+};
+var base;
+var graph;
+var makeBundle = (name, deps) => {
+  const url = name.endsWith(".js") ? doc ? new URL(`${base}${name}`, doc.baseURI).toString() : name : null;
+  return {
+    $name$: name,
+    $url$: url,
+    $state$: url ? BundleImportState.None : BundleImportState.Alias,
+    $deps$: deps,
+    $inverseProbability$: 1,
+    $createdTs$: Date.now(),
+    $waitedMs$: 0,
+    $loadedMs$: 0
+  };
+};
+var getBundle = (name) => {
+  let bundle = bundles.get(name);
+  if (!bundle) {
+    let deps;
+    if (graph) {
+      deps = graph.get(name);
+      if (!deps) {
+        return;
+      }
+      if (!deps.length) {
+        deps = void 0;
+      }
+    }
+    bundle = makeBundle(name, deps);
+    bundles.set(name, bundle);
+  }
+  return bundle;
+};
+
 // packages/qwik/src/core/qrl/qrl-class.ts
+var import_build3 = require("@builder.io/qwik/build");
 var isQrl = (value) => {
   return typeof value === "function" && typeof value.getSymbol === "function";
 };
@@ -22971,9 +23158,12 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
     if (chunk === "") {
       assertDefined(_containerEl, "Sync QRL must have container element");
       const hash2 = _containerEl.getAttribute(QInstance);
-      const doc = _containerEl.ownerDocument;
-      const qFuncs2 = getQFuncs(doc, hash2);
+      const doc2 = _containerEl.ownerDocument;
+      const qFuncs2 = getQFuncs(doc2, hash2);
       return qrl.resolved = symbolRef = qFuncs2[Number(symbol)];
+    }
+    if (import_build3.isBrowser && chunk) {
+      preload(chunk, 1);
     }
     const start = now();
     const ctx = tryGetInvokeContext();
@@ -23043,6 +23233,9 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
   }
   if (qDev) {
     seal(qrl);
+  }
+  if (import_build3.isBrowser && resolvedSymbol) {
+    preload(resolvedSymbol, 0.8);
   }
   return qrl;
 };
@@ -23392,7 +23585,7 @@ var isRecoverable = (err) => {
 };
 
 // packages/qwik/src/core/util/event.ts
-var import_build2 = require("@builder.io/qwik/build");
+var import_build4 = require("@builder.io/qwik/build");
 
 // packages/qwik/src/core/state/store.ts
 var getOrCreateProxy = (target, containerState, flags = 0) => {
@@ -23614,7 +23807,7 @@ var static_subtree = 1 << 1;
 var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
 // packages/qwik/src/core/render/dom/visitor.ts
-var import_build3 = require("@builder.io/qwik/build");
+var import_build5 = require("@builder.io/qwik/build");
 var SVG_NS = "http://www.w3.org/2000/svg";
 var IS_SVG = 1 << 0;
 var IS_HEAD = 1 << 1;
@@ -23731,8 +23924,8 @@ var _setProperty = (node, key, value) => {
     logError(codeToText(QError_setProperty), key, { node, value }, err);
   }
 };
-var createElement = (doc, expectTag, isSvg) => {
-  const el = isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
+var createElement = (doc2, expectTag, isSvg) => {
+  const el = isSvg ? doc2.createElementNS(SVG_NS, expectTag) : doc2.createElement(expectTag);
   return el;
 };
 
@@ -23776,8 +23969,8 @@ var VirtualElementImpl = class {
     this.open = open;
     this.close = close;
     this.isSvg = isSvg;
-    const doc = this.ownerDocument = open.ownerDocument;
-    this.$template$ = createElement(doc, "template", false);
+    const doc2 = this.ownerDocument = open.ownerDocument;
+    this.$template$ = createElement(doc2, "template", false);
     this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
     assertTrue(open.data.startsWith("qv "), "comment is not a qv");
     open[VIRTUAL_SYMBOL] = this;
@@ -24198,7 +24391,7 @@ var MockElement = class {
 };
 
 // packages/qwik/src/core/render/jsx/jsx-runtime.ts
-var import_build4 = require("@builder.io/qwik/build");
+var import_build6 = require("@builder.io/qwik/build");
 var _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
   assertString(type, "jsx type must be a string");
   const processed = key == null ? null : String(key);
@@ -24306,7 +24499,7 @@ var validateJSXNode = (node) => {
             }
           });
         }
-        if (import_build4.isBrowser) {
+        if (import_build6.isBrowser) {
           if (isFunction(type) || immutableProps) {
             const keys = {};
             flatChildren.forEach((child) => {
@@ -24652,8 +24845,8 @@ var ErrorSerializer = /* @__PURE__ */ serializer({
 var DocumentSerializer = /* @__PURE__ */ serializer({
   $prefix$: "",
   $test$: (v) => !!v && typeof v === "object" && isDocument(v),
-  $prepare$: (_, _c, doc) => {
-    return doc;
+  $prepare$: (_, _c, doc2) => {
+    return doc2;
   }
 });
 var SERIALIZABLE_STATE = Symbol("serializable-data");
@@ -25426,29 +25619,29 @@ var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefi
 
 // packages/qwik/src/testing/document.ts
 function createDocument(opts) {
-  const doc = import_qwik_dom.default.createDocument(opts == null ? void 0 : opts.html);
-  ensureGlobals(doc, opts);
-  return doc;
+  const doc2 = import_qwik_dom.default.createDocument(opts == null ? void 0 : opts.html);
+  ensureGlobals(doc2, opts);
+  return doc2;
 }
 function createWindow(opts = {}) {
   return createDocument(opts).defaultView;
 }
-function ensureGlobals(doc, opts) {
-  if (doc && doc[QWIK_DOC]) {
-    return doc.defaultView;
+function ensureGlobals(doc2, opts) {
+  if (doc2 && doc2[QWIK_DOC]) {
+    return doc2.defaultView;
   }
-  if (!doc || doc.nodeType !== 9) {
+  if (!doc2 || doc2.nodeType !== 9) {
     throw new Error(`Invalid document`);
   }
-  doc[QWIK_DOC] = true;
+  doc2[QWIK_DOC] = true;
   const loc = normalizeUrl(opts == null ? void 0 : opts.url);
-  Object.defineProperty(doc, "baseURI", {
+  Object.defineProperty(doc2, "baseURI", {
     get: () => loc.href,
     set: (url) => loc.href = normalizeUrl(url).href
   });
-  doc.defaultView = {
+  doc2.defaultView = {
     get document() {
-      return doc;
+      return doc2;
     },
     get location() {
       return loc;
@@ -25473,7 +25666,7 @@ function ensureGlobals(doc, opts) {
       }
     }
   };
-  return doc.defaultView;
+  return doc2.defaultView;
 }
 var noop2 = () => {
 };
@@ -25555,9 +25748,9 @@ function createPlatform2() {
 function setTestPlatform(_setPlatform) {
   _setPlatform(testPlatform);
 }
-function toUrl2(doc, containerEl, url) {
-  const base = new URL((containerEl == null ? void 0 : containerEl.getAttribute("q:base")) ?? doc.baseURI, doc.baseURI);
-  return new URL(url, base);
+function toUrl2(doc2, containerEl, url) {
+  const base2 = new URL((containerEl == null ? void 0 : containerEl.getAttribute("q:base")) ?? doc2.baseURI, doc2.baseURI);
+  return new URL(url, base2);
 }
 function toPath(url) {
   const normalizedUrl = new URL(String(url));
@@ -25615,7 +25808,7 @@ var ElementFixture = class {
     }
   }
 };
-async function trigger(root, queryOrElement, eventNameCamel, eventPayload = {}) {
+async function trigger2(root, queryOrElement, eventNameCamel, eventPayload = {}) {
   const elements = typeof queryOrElement === "string" ? Array.from(root.querySelectorAll(queryOrElement)) : [queryOrElement];
   for (const element of elements) {
     const kebabEventName = fromCamelToKebabCase(eventNameCamel);
@@ -25695,7 +25888,7 @@ var createDOM = async function({ html } = {}) {
     },
     screen: host,
     userEvent: async function(queryOrElement, eventNameCamel, eventPayload = {}) {
-      return trigger(host, queryOrElement, eventNameCamel, eventPayload);
+      return trigger2(host, queryOrElement, eventNameCamel, eventPayload);
     }
   };
 };

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+fed136d
+ * @builder.io/qwik 1.13.0-dev+41cb35e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -8,6 +8,8 @@
 import { isServer, isBrowser, isDev } from "@builder.io/qwik/build";
 
 export { isBrowser, isDev, isServer } from "@builder.io/qwik/build";
+
+import { p } from "@builder.io/qwik/preloader";
 
 const implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $(first), ...rest);
@@ -579,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.13.0-dev+fed136d";
+const version = "1.13.0-dev+41cb35e";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -4592,10 +4594,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset =
         }
         chunk = chunkOrFn;
     }
-    return announcedQRL.has(symbol) || (announcedQRL.add(symbol), emitEvent("qprefetch", {
-        symbols: [ getSymbolHash(symbol) ],
-        bundles: chunk && [ chunk ]
-    })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+    return announcedQRL.has(symbol) || announcedQRL.add(symbol), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
 };
 
 const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
@@ -5494,6 +5493,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             const qFuncs = getQFuncs(_containerEl.ownerDocument, hash);
             return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
         }
+        isBrowser && chunk && p(chunk, 1);
         const start = now();
         const ctx = tryGetInvokeContext();
         if (null !== symbolFn) {
@@ -5539,7 +5539,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         dev: null,
         resolved: void 0
     }), symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved)))), 
-    qrl;
+    isBrowser && resolvedSymbol && p(resolvedSymbol, .8), qrl;
 };
 
 const getSymbolHash = symbolName => {
@@ -5949,51 +5949,29 @@ const PrefetchServiceWorker = opts => {
             dangerouslySetInnerHTML: "\x3c!-- PrefetchServiceWorker is disabled in dev mode. --\x3e"
         }, 0, "prefetch-service-worker");
     }
-    const serverData = useServerData("containerAttributes", {});
     const baseUrl = import.meta.env.BASE_URL || "/";
     const resolvedOpts = {
-        base: serverData["q:base"],
-        manifestHash: serverData["q:manifest-hash"],
-        scope: "/",
-        verbose: !1,
         path: "qwik-prefetch-service-worker.js",
         ...opts
     };
     resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-    let code = PREFETCH_CODE.replace("URL", resolvedOpts.path).replace("SCOPE", resolvedOpts.scope);
+    let code = PREFETCH_CODE.replace("URL", resolvedOpts.path);
     isDev || (code = code.replaceAll(/\s+/gm, ""));
     const props = {
-        dangerouslySetInnerHTML: [ "(" + code + ")(", [ JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join(""),
+        dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),
         nonce: resolvedOpts.nonce
     };
     return _jsxC("script", props, 0, "prefetch-service-worker");
 };
 
-const PREFETCH_CODE = /*#__PURE__*/ ((b, h, c, q, v) => {
-    c.register("URL", {
-        scope: "SCOPE"
-    }).then(((sw, onReady) => {
-        onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
-    })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
+const PREFETCH_CODE = /*#__PURE__*/ (c => {
+    "getRegistrations" in c && c.getRegistrations().then((registrations => {
+        registrations.forEach((registration => {
+            registration.active && registration.active.scriptURL.endsWith("URL") && registration.unregister().catch(console.error);
+        }));
+    }));
 }).toString();
 
-const PrefetchGraph = (opts = {}) => {
-    if (isDev && !import.meta.env.TEST) {
-        return _jsxC("script", {
-            dangerouslySetInnerHTML: "\x3c!-- PrefetchGraph is disabled in dev mode. --\x3e"
-        }, 0, "prefetch-graph");
-    }
-    const serverData = useServerData("containerAttributes", {});
-    const resolvedOpts = {
-        base: serverData["q:base"],
-        manifestHash: serverData["q:manifest-hash"],
-        ...opts
-    };
-    const args = JSON.stringify([ "graph-url", resolvedOpts.base, `q-bundle-graph-${resolvedOpts.manifestHash}.json` ]);
-    return _jsxC("script", {
-        dangerouslySetInnerHTML: `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`,
-        nonce: opts.nonce
-    }, 0, "prefetch-graph");
-};
+const PrefetchGraph = () => null;
 
 export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, unwrapProxy as unwrapStore, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

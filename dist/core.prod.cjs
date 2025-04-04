@@ -1,13 +1,13 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+fed136d
+ * @builder.io/qwik 1.13.0-dev+41cb35e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 !function(global, factory) {
-    "object" == typeof exports && "undefined" != typeof module ? factory(exports, require("@builder.io/qwik/build")) : "function" == typeof define && define.amd ? define([ "exports", "@builder.io/qwik/build" ], factory) : factory((global = "undefined" != typeof globalThis ? globalThis : global || self).qwikCore = {}, global.qwikBuild);
-}(this, (function(exports, build) {
+    "object" == typeof exports && "undefined" != typeof module ? factory(exports, require("@builder.io/qwik/build"), require("@builder.io/qwik/preloader")) : "function" == typeof define && define.amd ? define([ "exports", "@builder.io/qwik/build", "@builder.io/qwik/preloader" ], factory) : factory((global = "undefined" != typeof globalThis ? globalThis : global || self).qwikCore = {}, global.qwikBuild, global.qwikPreloader);
+}(this, (function(exports, build, preloader) {
     "use strict";
     const implicit$FirstArg = fn => function(first, ...rest) {
         return fn.call(null, $(first), ...rest);
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.13.0-dev+fed136d";
+    const version = "1.13.0-dev+41cb35e";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -3634,10 +3634,7 @@
             }
             chunk = chunkOrFn;
         }
-        return announcedQRL.has(symbol) || (announcedQRL.add(symbol), emitEvent("qprefetch", {
-            symbols: [ getSymbolHash(symbol) ],
-            bundles: chunk && [ chunk ]
-        })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+        return announcedQRL.has(symbol) || announcedQRL.add(symbol), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
     };
     const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
     const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
@@ -4399,6 +4396,7 @@
                 const qFuncs = getQFuncs(_containerEl.ownerDocument, hash);
                 return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
             }
+            build.isBrowser && chunk && preloader.p(chunk, 1);
             const start = now();
             const ctx = tryGetInvokeContext();
             if (null !== symbolFn) {
@@ -4444,7 +4442,7 @@
             dev: null,
             resolved: void 0
         }), symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved)))), 
-        qrl;
+        build.isBrowser && resolvedSymbol && preloader.p(resolvedSymbol, .8), qrl;
     };
     const getSymbolHash = symbolName => {
         const index = symbolName.lastIndexOf("_");
@@ -4537,10 +4535,6 @@
             return set(newStore), newStore;
         }
     };
-    function useServerData(key, defaultValue) {
-        const ctx = tryGetInvokeContext();
-        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-    }
     const STYLE_CACHE = /*#__PURE__*/ new Map;
     const getScopedStyles = (css, scopeId) => {
         let styleCss = STYLE_CACHE.get(scopeId);
@@ -4689,12 +4683,12 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    const PREFETCH_CODE = /*#__PURE__*/ ((b, h, c, q, v) => {
-        c.register("URL", {
-            scope: "SCOPE"
-        }).then(((sw, onReady) => {
-            onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
-        })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
+    const PREFETCH_CODE = /*#__PURE__*/ (c => {
+        "getRegistrations" in c && c.getRegistrations().then((registrations => {
+            registrations.forEach((registration => {
+                registration.active && registration.active.scriptURL.endsWith("URL") && registration.unregister().catch(console.error);
+            }));
+        }));
     }).toString();
     Object.defineProperty(exports, "isBrowser", {
         enumerable: !0,
@@ -4712,46 +4706,23 @@
             return build.isServer;
         }
     }), exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
-    exports.PrefetchGraph = (opts = {}) => {
-        const isTest = (void 0).TEST;
-        if (build.isDev && !isTest) {
-            return _jsxC("script", {
-                dangerouslySetInnerHTML: "\x3c!-- PrefetchGraph is disabled in dev mode. --\x3e"
-            }, 0, "prefetch-graph");
-        }
-        const serverData = useServerData("containerAttributes", {});
-        const resolvedOpts = {
-            base: serverData["q:base"],
-            manifestHash: serverData["q:manifest-hash"],
-            ...opts
-        };
-        const args = JSON.stringify([ "graph-url", resolvedOpts.base, `q-bundle-graph-${resolvedOpts.manifestHash}.json` ]);
-        return _jsxC("script", {
-            dangerouslySetInnerHTML: `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`,
-            nonce: opts.nonce
-        }, 0, "prefetch-graph");
-    }, exports.PrefetchServiceWorker = opts => {
+    exports.PrefetchGraph = () => null, exports.PrefetchServiceWorker = opts => {
         const isTest = (void 0).TEST;
         if (build.isDev && !isTest) {
             return _jsxC("script", {
                 dangerouslySetInnerHTML: "\x3c!-- PrefetchServiceWorker is disabled in dev mode. --\x3e"
             }, 0, "prefetch-service-worker");
         }
-        const serverData = useServerData("containerAttributes", {});
         const baseUrl = globalThis.BASE_URL || "/";
         const resolvedOpts = {
-            base: serverData["q:base"],
-            manifestHash: serverData["q:manifest-hash"],
-            scope: "/",
-            verbose: !1,
             path: "qwik-prefetch-service-worker.js",
             ...opts
         };
         resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-        let code = PREFETCH_CODE.replace("URL", resolvedOpts.path).replace("SCOPE", resolvedOpts.scope);
+        let code = PREFETCH_CODE.replace("URL", resolvedOpts.path);
         build.isDev || (code = code.replaceAll(/\s+/gm, ""));
         const props = {
-            dangerouslySetInnerHTML: [ "(" + code + ")(", [ JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join(""),
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),
             nonce: resolvedOpts.nonce
         };
         return _jsxC("script", props, 0, "prefetch-service-worker");
@@ -5046,8 +5017,10 @@
     exports.useOnWindow = (event, eventQrl) => {
         _useOn(createEventName(event, "window"), eventQrl);
     }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
-    exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
-    exports.useSignal = initialState => useConstant((() => createSignal(initialState))), 
+    exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
+        const ctx = tryGetInvokeContext();
+        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+    }, exports.useSignal = initialState => useConstant((() => createSignal(initialState))), 
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
