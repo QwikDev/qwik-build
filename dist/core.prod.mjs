@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+41cb35e
+ * @builder.io/qwik 1.13.0-dev+46e83fb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.13.0-dev+41cb35e";
+const version = "1.13.0-dev+46e83fb";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -5503,7 +5503,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
         }
         return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, ctx?.$element$, start)), (err => {
-            throw console.error(`qrl ${symbol} failed to load`, err), symbolRef = null, err;
+            console.error(`qrl ${symbol} failed to load`, err), symbolRef = null;
         })), symbolRef;
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
