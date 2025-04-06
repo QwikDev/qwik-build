@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+46e83fb
+ * @builder.io/qwik/server 1.13.0-dev+bdc32df
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -119,6 +119,13 @@ var config = {
 var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
 var loadStart = Date.now();
 
+// packages/qwik/src/core/preloader/types.ts
+var BundleImportState_None = 0;
+var BundleImportState_Queued = 1;
+var BundleImportState_Preload = 2;
+var BundleImportState_Alias = 3;
+var BundleImportState_Loaded = 4;
+
 // packages/qwik/src/core/preloader/bundle-graph.ts
 var base;
 var graph;
@@ -127,7 +134,7 @@ var makeBundle = (name, deps) => {
   return {
     $name$: name,
     $url$: url,
-    $state$: url ? 0 /* None */ : 3 /* Alias */,
+    $state$: url ? BundleImportState_None : BundleImportState_Alias,
     $deps$: deps,
     $inverseProbability$: 1,
     $createdTs$: Date.now(),
@@ -242,7 +249,7 @@ var trigger = () => {
       // While the graph is not available, we limit to 2 preloads
       2
     );
-    if (preloadCount < allowedPreloads) {
+    if (probability === 1 || preloadCount < allowedPreloads) {
       queue.shift();
       preloadOne(bundle);
     } else {
@@ -250,7 +257,7 @@ var trigger = () => {
     }
   }
   if (config.DEBUG && !queue.length) {
-    const loaded = [...bundles.values()].filter((b) => b.$state$ > 0 /* None */);
+    const loaded = [...bundles.values()].filter((b) => b.$state$ > BundleImportState_None);
     const waitTime = loaded.reduce((acc, b) => acc + b.$waitedMs$, 0);
     const loadTime = loaded.reduce((acc, b) => acc + b.$loadedMs$, 0);
     log(
@@ -259,14 +266,17 @@ var trigger = () => {
   }
 };
 var preloadOne = (bundle) => {
-  if (bundle.$state$ >= 2 /* Preload */) {
+  if (bundle.$state$ >= BundleImportState_Preload) {
     return;
   }
   preloadCount++;
   const start = Date.now();
   bundle.$waitedMs$ = start - bundle.$createdTs$;
-  bundle.$state$ = 2 /* Preload */;
-  config.DEBUG && log(`<< load after ${`${bundle.$waitedMs$}ms`}`, bundle.$name$);
+  bundle.$state$ = BundleImportState_Preload;
+  config.DEBUG && log(
+    `<< load ${Math.round((1 - bundle.$inverseProbability$) * 100)}% after ${`${bundle.$waitedMs$}ms`}`,
+    bundle.$name$
+  );
   const link = doc.createElement("link");
   link.href = bundle.$url$;
   link.rel = rel;
@@ -275,7 +285,7 @@ var preloadOne = (bundle) => {
     preloadCount--;
     const end = Date.now();
     bundle.$loadedMs$ = end - start;
-    bundle.$state$ = 4 /* Loaded */;
+    bundle.$state$ = BundleImportState_Loaded;
     config.DEBUG && log(`>> done after ${bundle.$loadedMs$}ms`, bundle.$name$);
     link.remove();
     trigger();
@@ -291,9 +301,9 @@ var adjustProbabilities = (bundle, adjustFactor, seen) => {
   if (previousInverseProbability - bundle.$inverseProbability$ < 0.01) {
     return;
   }
-  if (bundle.$state$ < 2 /* Preload */ && bundle.$inverseProbability$ < config[maxSignificantInverseProbabilityStr]) {
-    if (bundle.$state$ === 0 /* None */) {
-      bundle.$state$ = 1 /* Queued */;
+  if (bundle.$state$ < BundleImportState_Preload && bundle.$inverseProbability$ < config[maxSignificantInverseProbabilityStr]) {
+    if (bundle.$state$ === BundleImportState_None) {
+      bundle.$state$ = BundleImportState_Queued;
       queue.push(bundle);
       config.DEBUG && log(`queued ${Math.round((1 - bundle.$inverseProbability$) * 100)}%`, bundle.$name$);
     }
@@ -392,7 +402,14 @@ function getPreloadPaths(snapshotResult, opts, resolvedManifest) {
       console.error("getPrefetchUrls, symbolsToPrefetch()", e);
     }
   }
-  return snapshotResult?.qrls?.map((qrl) => getSymbolHash(qrl.$refSymbol$ || qrl.$symbol$)).filter(Boolean);
+  const symbols = /* @__PURE__ */ new Set();
+  for (const qrl of snapshotResult?.qrls || []) {
+    const symbol = getSymbolHash(qrl.$refSymbol$ || qrl.$symbol$);
+    if (symbol && symbol.length >= 10) {
+      symbols.add(symbol);
+    }
+  }
+  return [...symbols];
 }
 var expandBundles = (names, resolvedManifest) => {
   if (!resolvedManifest?.manifest.bundleGraph) {
@@ -548,7 +565,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+46e83fb",
+  qwik: "1.13.0-dev+bdc32df",
   qwikDom: "2.1.19"
 };
 

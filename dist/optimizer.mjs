@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+46e83fb
+ * @builder.io/qwik/optimizer 1.13.0-dev+bdc32df
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+46e83fb"
+  qwik: "1.13.0-dev+bdc32df"
 };
 
 async function getSystem() {
@@ -5808,7 +5808,7 @@ var maxSimultaneousPreloadsStr = "maxSimultaneousPreloads";
 var maxSignificantInverseProbabilityStr = "maxSignificantInverseProbability";
 
 var config = {
-  DEBUG: false,
+  t: 0,
   [maxSimultaneousPreloadsStr]: 6,
   [maxSignificantInverseProbabilityStr]: .75
 };
@@ -5817,14 +5817,15 @@ var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadS
 
 var loadStart = Date.now();
 
-var BundleImportState = (BundleImportState2 => {
-  BundleImportState2[BundleImportState2.None = 0] = "None";
-  BundleImportState2[BundleImportState2.Queued = 1] = "Queued";
-  BundleImportState2[BundleImportState2.Preload = 2] = "Preload";
-  BundleImportState2[BundleImportState2.Alias = 3] = "Alias";
-  BundleImportState2[BundleImportState2.Loaded = 4] = "Loaded";
-  return BundleImportState2;
-})(BundleImportState || {});
+var BundleImportState_None = 0;
+
+var BundleImportState_Queued = 1;
+
+var BundleImportState_Preload = 2;
+
+var BundleImportState_Alias = 3;
+
+var BundleImportState_Loaded = 4;
 
 var bundles = new Map;
 
@@ -5834,14 +5835,14 @@ var preloadCount = 0;
 
 var queue = [];
 
-var log = (...args) => {
-  console.log(`Preloader ${Date.now() - loadStart}ms ${preloadCount}/${queue.length} queued>`, ...args);
+var log = (...e) => {
+  console.log(`Preloader ${Date.now() - loadStart}ms ${preloadCount}/${queue.length} queued>`, ...e);
 };
 
 var sortQueue = () => {
   if (queueDirty) {
-    queue.sort(((a, b) => a.$inverseProbability$ - b.$inverseProbability$));
-    queueDirty = false;
+    queue.sort(((e, t) => e.o - t.o));
+    queueDirty = 0;
   }
 };
 
@@ -5851,102 +5852,102 @@ var trigger = () => {
   }
   sortQueue();
   while (queue.length) {
-    const bundle = queue[0];
-    const inverseProbability = bundle.$inverseProbability$;
-    const probability = 1 - inverseProbability;
-    const allowedPreloads = graph ? Math.max(1, config[maxSimultaneousPreloadsStr] * probability) : 2;
-    if (!(preloadCount < allowedPreloads)) {
+    const e = queue[0];
+    const t = e.o;
+    const o = 1 - t;
+    const n = graph ? Math.max(1, config[maxSimultaneousPreloadsStr] * o) : 2;
+    if (!(1 === o || preloadCount < n)) {
       break;
     }
     queue.shift();
-    preloadOne(bundle);
+    preloadOne(e);
   }
-  if (config.DEBUG && !queue.length) {
-    const loaded = [ ...bundles.values() ].filter((b => b.$state$ > BundleImportState.None));
-    const waitTime = loaded.reduce(((acc, b) => acc + b.$waitedMs$), 0);
-    const loadTime = loaded.reduce(((acc, b) => acc + b.$loadedMs$), 0);
-    log(`>>>> done ${loaded.length}/${bundles.size} total: ${waitTime}ms waited, ${loadTime}ms loaded`);
+  if (config.t && !queue.length) {
+    const e = [ ...bundles.values() ].filter((e2 => e2.l > BundleImportState_None));
+    const t = e.reduce(((e2, t2) => e2 + t2.i), 0);
+    const o = e.reduce(((e2, t2) => e2 + t2.u), 0);
+    log(`>>>> done ${e.length}/${bundles.size} total: ${t}ms waited, ${o}ms loaded`);
   }
 };
 
-var preloadOne = bundle => {
-  if (bundle.$state$ >= BundleImportState.Preload) {
+var preloadOne = e => {
+  if (e.l >= BundleImportState_Preload) {
     return;
   }
   preloadCount++;
-  const start = Date.now();
-  bundle.$waitedMs$ = start - bundle.$createdTs$;
-  bundle.$state$ = BundleImportState.Preload;
-  config.DEBUG && log(`<< load after ${bundle.$waitedMs$}ms`, bundle.$name$);
-  const link = doc.createElement("link");
-  link.href = bundle.$url$;
-  link.rel = rel;
-  link.as = "script";
-  link.onload = link.onerror = () => {
+  const t = Date.now();
+  e.i = t - e.p;
+  e.l = BundleImportState_Preload;
+  config.t && log(`<< load ${Math.round(100 * (1 - e.o))}% after ${e.i}ms`, e.m);
+  const o = doc.createElement("link");
+  o.href = e.S;
+  o.rel = rel;
+  o.as = "script";
+  o.onload = o.onerror = () => {
     preloadCount--;
-    const end = Date.now();
-    bundle.$loadedMs$ = end - start;
-    bundle.$state$ = BundleImportState.Loaded;
-    config.DEBUG && log(`>> done after ${bundle.$loadedMs$}ms`, bundle.$name$);
-    link.remove();
+    const n = Date.now();
+    e.u = n - t;
+    e.l = BundleImportState_Loaded;
+    config.t && log(`>> done after ${e.u}ms`, e.m);
+    o.remove();
     trigger();
   };
-  doc.head.appendChild(link);
+  doc.head.appendChild(o);
 };
 
-var adjustProbabilities = (bundle, adjustFactor, seen) => {
-  if (null == seen ? void 0 : seen.has(bundle)) {
+var adjustProbabilities = (e, t, o) => {
+  if (null == o ? void 0 : o.has(e)) {
     return;
   }
-  const previousInverseProbability = bundle.$inverseProbability$;
-  bundle.$inverseProbability$ *= adjustFactor;
-  if (previousInverseProbability - bundle.$inverseProbability$ < .01) {
+  const n = e.o;
+  e.o *= t;
+  if (n - e.o < .01) {
     return;
   }
-  if (bundle.$state$ < BundleImportState.Preload && bundle.$inverseProbability$ < config[maxSignificantInverseProbabilityStr]) {
-    if (bundle.$state$ === BundleImportState.None) {
-      bundle.$state$ = BundleImportState.Queued;
-      queue.push(bundle);
-      config.DEBUG && log(`queued ${Math.round(100 * (1 - bundle.$inverseProbability$))}%`, bundle.$name$);
+  if (e.l < BundleImportState_Preload && e.o < config[maxSignificantInverseProbabilityStr]) {
+    if (e.l === BundleImportState_None) {
+      e.l = BundleImportState_Queued;
+      queue.push(e);
+      config.t && log(`queued ${Math.round(100 * (1 - e.o))}%`, e.m);
     }
-    queueDirty = true;
+    queueDirty = 1;
   }
-  if (bundle.$deps$) {
-    seen || (seen = new Set);
-    seen.add(bundle);
-    for (const dep of bundle.$deps$) {
-      const depBundle = getBundle(dep.$name$);
-      const prevAdjust = dep.$factor$;
-      const newInverseProbability = 1 - dep.$probability$ * (1 - bundle.$inverseProbability$);
-      const factor = newInverseProbability / prevAdjust;
-      dep.$factor$ = factor;
-      adjustProbabilities(depBundle, factor, seen);
+  if (e.$) {
+    o || (o = new Set);
+    o.add(e);
+    for (const t2 of e.$) {
+      const n2 = getBundle(t2.m);
+      const r = t2.h;
+      const a = 1 - t2.I * (1 - e.o);
+      const l = a / r;
+      t2.h = l;
+      adjustProbabilities(n2, l, o);
     }
   }
 };
 
-var handleBundle = (name, inverseProbability) => {
-  const bundle = getBundle(name);
-  bundle && bundle.$inverseProbability$ > inverseProbability && adjustProbabilities(bundle, inverseProbability / bundle.$inverseProbability$);
+var handleBundle = (e, t) => {
+  const o = getBundle(e);
+  o && o.o > t && adjustProbabilities(o, t / o.o);
 };
 
-var preload = (name, probability) => {
-  if (null == base || !name.length) {
+var preload = (e, t) => {
+  if (null == base || !e.length) {
     return;
   }
-  let inverseProbability = probability ? 1 - probability : .4;
-  if (Array.isArray(name)) {
-    for (let i = name.length - 1; i >= 0; i--) {
-      const item = name[i];
-      if ("number" === typeof item) {
-        inverseProbability = 1 - item / 10;
+  let o = t ? 1 - t : .4;
+  if (Array.isArray(e)) {
+    for (let t2 = e.length - 1; t2 >= 0; t2--) {
+      const n = e[t2];
+      if ("number" === typeof n) {
+        o = 1 - n / 10;
       } else {
-        handleBundle(item, inverseProbability);
-        inverseProbability *= 1.005;
+        handleBundle(n, o);
+        o *= 1.005;
       }
     }
   } else {
-    handleBundle(name, inverseProbability);
+    handleBundle(e, o);
   }
   isBrowser && trigger();
 };
@@ -5955,35 +5956,35 @@ var base;
 
 var graph;
 
-var makeBundle = (name, deps) => {
-  const url = name.endsWith(".js") ? doc ? new URL(`${base}${name}`, doc.baseURI).toString() : name : null;
+var makeBundle = (e, t) => {
+  const o = e.endsWith(".js") ? doc ? new URL(`${base}${e}`, doc.baseURI).toString() : e : null;
   return {
-    $name$: name,
-    $url$: url,
-    $state$: url ? BundleImportState.None : BundleImportState.Alias,
-    $deps$: deps,
-    $inverseProbability$: 1,
-    $createdTs$: Date.now(),
-    $waitedMs$: 0,
-    $loadedMs$: 0
+    m: e,
+    S: o,
+    l: o ? BundleImportState_None : BundleImportState_Alias,
+    $: t,
+    o: 1,
+    p: Date.now(),
+    i: 0,
+    u: 0
   };
 };
 
-var getBundle = name => {
-  let bundle = bundles.get(name);
-  if (!bundle) {
-    let deps;
+var getBundle = e => {
+  let t = bundles.get(e);
+  if (!t) {
+    let o;
     if (graph) {
-      deps = graph.get(name);
-      if (!deps) {
+      o = graph.get(e);
+      if (!o) {
         return;
       }
-      deps.length || (deps = void 0);
+      o.length || (o = void 0);
     }
-    bundle = makeBundle(name, deps);
-    bundles.set(name, bundle);
+    t = makeBundle(e, o);
+    bundles.set(e, t);
   }
-  return bundle;
+  return t;
 };
 
 var isQrl = value => "function" === typeof value && "function" === typeof value.getSymbol;
