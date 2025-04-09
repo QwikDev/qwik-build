@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.13.0-dev+bdc32df
+ * @builder.io/qwik/testing 1.13.0-dev+23ed7db
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23004,13 +23004,14 @@ var adjustProbabilities = (e, t, o) => {
   if (e.$) {
     o || (o = /* @__PURE__ */ new Set());
     o.add(e);
-    for (const t2 of e.$) {
-      const n2 = getBundle(t2.m);
-      const r = t2.h;
-      const a = 1 - t2.I * (1 - e.o);
+    const t2 = 1 - e.o;
+    for (const n2 of e.$) {
+      const e2 = getBundle(n2.m);
+      const r = n2.B;
+      const a = 1 - n2.h * t2;
       const l = a / r;
-      t2.h = l;
-      adjustProbabilities(n2, l, o);
+      n2.B = l;
+      adjustProbabilities(e2, l, o);
     }
   }
 };

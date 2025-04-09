@@ -55,6 +55,10 @@
 
   This will add a basic service worker setup that you can customize for specific caching strategies, offline support, or other PWA features beyond just prefetching.
 
+### Patch Changes
+
+- 🐞🩹 now qwikloader is loaded only once in all cases (by [@wmertens](https://github.com/wmertens) in [#7506](https://github.com/QwikDev/qwik/pull/7506))
+
 ## 1.13.0
 
 ### Minor Changes
