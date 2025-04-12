@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+bdc32df
+ * @builder.io/qwik/optimizer 1.13.0-dev+23ed7db
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+bdc32df"
+  qwik: "1.13.0-dev+23ed7db"
 };
 
 async function getSystem() {
@@ -2061,7 +2061,6 @@ function convertManifestToBundleGraph(manifest, bundleGraphAdders) {
       result && Object.assign(graph2, result);
     }
   }
-  manifest.preloader && delete graph2[manifest.preloader];
   for (const bundleName of Object.keys(graph2)) {
     const bundle = graph2[bundleName];
     const imports = bundle.imports?.filter((dep => graph2[dep])) || [];
@@ -2109,7 +2108,7 @@ function convertManifestToBundleGraph(manifest, bundleGraphAdders) {
       clearTransitiveDeps(dynDeps, depName);
       const dep = graph2[depName];
       let probability = .5;
-      probability += .04 * (dep.interactivity || 0);
+      probability += .08 * (dep.interactivity || 0);
       if (bundle.origins && dep.origins) {
         for (const origin of bundle.origins) {
           if (dep.origins.some((o => o.startsWith(origin)))) {
@@ -2119,7 +2118,8 @@ function convertManifestToBundleGraph(manifest, bundleGraphAdders) {
         }
       }
       dep.total > slowSize && (probability += probability > .5 ? .02 : -.02);
-      depProbability.set(depName, probability);
+      dep.total < 1e3 && (probability += .15);
+      depProbability.set(depName, Math.min(probability, .99));
     }
     if (dynDeps.size > 0) {
       const sorted = Array.from(dynDeps).sort(((a, b) => depProbability.get(b) - depProbability.get(a)));
@@ -2736,8 +2736,8 @@ function createQwikPlugin(optimizerOptions = {}) {
     const bundleGraph = convertManifestToBundleGraph(manifest, bundleGraphAdders);
     ctx.emitFile({
       type: "asset",
-      fileName: optimizer.sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.js`),
-      source: `export const B=${JSON.stringify(bundleGraph)}`
+      fileName: optimizer.sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.json`),
+      source: JSON.stringify(bundleGraph)
     });
     manifest.bundleGraph = bundleGraph;
     const manifestStr = JSON.stringify(manifest, null, "\t");
@@ -5915,13 +5915,14 @@ var adjustProbabilities = (e, t, o) => {
   if (e.$) {
     o || (o = new Set);
     o.add(e);
-    for (const t2 of e.$) {
-      const n2 = getBundle(t2.m);
-      const r = t2.h;
-      const a = 1 - t2.I * (1 - e.o);
+    const t2 = 1 - e.o;
+    for (const n2 of e.$) {
+      const e2 = getBundle(n2.m);
+      const r = n2.B;
+      const a = 1 - n2.h * t2;
       const l = a / r;
-      t2.h = l;
-      adjustProbabilities(n2, l, o);
+      n2.B = l;
+      adjustProbabilities(e2, l, o);
     }
   }
 };

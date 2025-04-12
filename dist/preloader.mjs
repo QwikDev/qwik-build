@@ -89,13 +89,14 @@ const adjustProbabilities = (e, t, o) => {
   if (e.$) {
     o || (o = /* @__PURE__ */ new Set());
     o.add(e);
-    for (const t2 of e.$) {
-      const n2 = getBundle(t2.m);
-      const r = t2.h;
-      const a = 1 - t2.I * (1 - e.o);
+    const t2 = 1 - e.o;
+    for (const n2 of e.$) {
+      const e2 = getBundle(n2.m);
+      const r = n2.B;
+      const a = 1 - n2.h * t2;
       const l = a / r;
-      t2.h = l;
-      adjustProbabilities(n2, l, o);
+      n2.B = l;
+      adjustProbabilities(e2, l, o);
     }
   }
 };
@@ -133,7 +134,7 @@ const parseBundleGraph = (e) => {
     let l = 1;
     while (a = e[o], typeof a === "number") {
       if (a < 0) l = -a / 10;
-      else r.push({ m: e[a], I: l, h: 1 });
+      else r.push({ m: e[a], h: l, B: 1 });
       o++;
     }
     t.set(n, r);
@@ -162,11 +163,8 @@ const loadBundleGraph = (e, t, o) => {
   }
   if (!isBrowser || e == null) return;
   base = e;
-  if (t) import(
-    /* @vite-ignore */
-    `${e}q-bundle-graph-${t}.js`
-  ).then((e2) => {
-    graph = parseBundleGraph(e2.B);
+  if (t) t.then((e2) => e2.text()).then((e2) => {
+    graph = parseBundleGraph(JSON.parse(e2));
     const t2 = [];
     for (const [e3, o2] of graph.entries()) {
       const n = getBundle(e3);

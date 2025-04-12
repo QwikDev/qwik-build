@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+bdc32df
+ * @builder.io/qwik/server 1.13.0-dev+23ed7db
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -182,7 +182,7 @@ var makeBundle = (name, deps) => {
     $name$: name,
     $url$: url,
     $state$: url ? BundleImportState_None : BundleImportState_Alias,
-    $deps$: deps,
+    $deps$: shouldResetFactor ? deps == null ? void 0 : deps.map((d) => ({ ...d, $factor$: 1 })) : deps,
     $inverseProbability$: 1,
     $createdTs$: Date.now(),
     $waitedMs$: 0,
@@ -245,6 +245,7 @@ var initPreloader = (serializedBundleGraph, opts) => {
 
 // packages/qwik/src/core/preloader/queue.ts
 var bundles = /* @__PURE__ */ new Map();
+var shouldResetFactor;
 var queueDirty;
 var preloadCount = 0;
 var queue = [];
@@ -257,6 +258,7 @@ var log = (...args) => {
 var resetQueue = () => {
   bundles.clear();
   queueDirty = false;
+  shouldResetFactor = true;
   preloadCount = 0;
   queue.length = 0;
 };
@@ -359,10 +361,11 @@ var adjustProbabilities = (bundle, adjustFactor, seen) => {
   if (bundle.$deps$) {
     seen ||= /* @__PURE__ */ new Set();
     seen.add(bundle);
+    const probability = 1 - bundle.$inverseProbability$;
     for (const dep of bundle.$deps$) {
       const depBundle = getBundle(dep.$name$);
       const prevAdjust = dep.$factor$;
-      const newInverseProbability = 1 - dep.$probability$ * (1 - bundle.$inverseProbability$);
+      const newInverseProbability = 1 - dep.$probability$ * probability;
       const factor = newInverseProbability / prevAdjust;
       dep.$factor$ = factor;
       adjustProbabilities(depBundle, factor, seen);
@@ -465,7 +468,7 @@ var expandBundles = (names, resolvedManifest) => {
     return [...new Set(names)];
   }
   resetQueue();
-  let probability = 0.8;
+  let probability = 0.99;
   for (const name of names) {
     preload(name, probability);
     probability *= 0.95;
@@ -506,16 +509,7 @@ function includePreloader(base2, manifest, prefetchStrategy, referencedBundles, 
     }
     return (0, import_qwik3.jsx)("link", linkProps);
   };
-  const preloadChunk = manifest == null ? void 0 : manifest.manifest.preloader;
   const manifestHash = manifest == null ? void 0 : manifest.manifest.manifestHash;
-  if (allowed && preloadChunk) {
-    allowed--;
-    nodes.push(makeLink(base2, preloadChunk));
-    if (allowed && manifestHash) {
-      allowed--;
-      nodes.push(makeLink(base2, `q-bundle-graph-${manifestHash}.js`));
-    }
-  }
   if (allowed) {
     const expandedBundles = expandBundles(referencedBundles, manifest);
     let probability = 8;
@@ -534,6 +528,7 @@ function includePreloader(base2, manifest, prefetchStrategy, referencedBundles, 
       }
     }
   }
+  const preloadChunk = manifestHash && (manifest == null ? void 0 : manifest.manifest.preloader);
   if (preloadChunk) {
     const opts = [];
     if (debug) {
@@ -546,11 +541,12 @@ function includePreloader(base2, manifest, prefetchStrategy, referencedBundles, 
       opts.push(`Q:${minPreloadProbability}`);
     }
     const optsStr = opts.length ? `,{${opts.join(",")}}` : "";
+    const script = `let b=fetch("${base2}q-bundle-graph-${manifestHash}.json");import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})`;
     nodes.push(
       (0, import_qwik3.jsx)("script", {
         type: "module",
         "q:type": "link-js",
-        dangerouslySetInnerHTML: `import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)}${manifestHash ? `,${JSON.stringify(manifestHash)}` : ""}${optsStr});p(${JSON.stringify(referencedBundles)});})`,
+        dangerouslySetInnerHTML: script,
         nonce
       })
     );
@@ -564,7 +560,7 @@ function normalizePrefetchImplementation(input) {
   return { ...PrefetchImplementationDefault, ...input };
 }
 var PrefetchImplementationDefault = {
-  maxPreloads: false ? 10 : 5,
+  maxPreloads: false ? 15 : 7,
   minProbability: 0.6,
   debug: false,
   maxSimultaneousPreloads: 5,
@@ -614,7 +610,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+bdc32df",
+  qwik: "1.13.0-dev+23ed7db",
   qwikDom: "2.1.19"
 };
 
@@ -723,7 +719,9 @@ async function renderToStream(rootNode, opts) {
   const beforeContent = injections ? injections.map((injection) => (0, import_qwik4.jsx)(injection.tag, injection.attributes ?? {})) : [];
   const includeMode = ((_b = opts.qwikLoader) == null ? void 0 : _b.include) ?? "auto";
   const positionMode = ((_c = opts.qwikLoader) == null ? void 0 : _c.position) ?? "bottom";
+  let didAddQwikLoader = false;
   if (positionMode === "top" && includeMode !== "never") {
+    didAddQwikLoader = true;
     const qwikLoaderScript = getQwikLoaderScript({
       debug: opts.debug
     });
@@ -735,7 +733,7 @@ async function renderToStream(rootNode, opts) {
     );
     beforeContent.push(
       (0, import_qwik4.jsx)("script", {
-        dangerouslySetInnerHTML: `window.qwikevents.push('click')`
+        dangerouslySetInnerHTML: `window.qwikevents.push('click','input')`
       })
     );
   }
@@ -790,7 +788,7 @@ async function renderToStream(rootNode, opts) {
           })
         );
       }
-      const needLoader = !snapshotResult || snapshotResult.mode !== "static";
+      const needLoader = !didAddQwikLoader && (!snapshotResult || snapshotResult.mode !== "static");
       const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({
