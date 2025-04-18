@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+031eeb4
+ * @builder.io/qwik/optimizer 1.13.0-dev+868a944
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+031eeb4"
+  qwik: "1.13.0-dev+868a944"
 };
 
 async function getSystem() {
@@ -5803,14 +5803,10 @@ var modulePreloadStr = "modulepreload";
 
 var preloadStr = "preload";
 
-var maxSimultaneousPreloadsStr = "maxSimultaneousPreloads";
-
-var maxSignificantInverseProbabilityStr = "maxSignificantInverseProbability";
-
 var config = {
   t: 0,
-  [maxSimultaneousPreloadsStr]: 6,
-  [maxSignificantInverseProbabilityStr]: .75
+  o: 25,
+  l: .65
 };
 
 var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
@@ -5841,7 +5837,7 @@ var log = (...e) => {
 
 var sortQueue = () => {
   if (queueDirty) {
-    queue.sort(((e, t) => e.o - t.o));
+    queue.sort(((e, t) => e.u - t.u));
     queueDirty = 0;
   }
 };
@@ -5853,9 +5849,9 @@ var trigger = () => {
   sortQueue();
   while (queue.length) {
     const e = queue[0];
-    const t = e.o;
+    const t = e.u;
     const o = 1 - t;
-    const n = graph ? Math.max(1, config[maxSimultaneousPreloadsStr] * o) : 2;
+    const n = graph ? Math.max(1, config.o * o) : 2;
     if (!(1 === o || preloadCount < n)) {
       break;
     }
@@ -5863,32 +5859,32 @@ var trigger = () => {
     preloadOne(e);
   }
   if (config.t && !queue.length) {
-    const e = [ ...bundles.values() ].filter((e2 => e2.l > BundleImportState_None));
-    const t = e.reduce(((e2, t2) => e2 + t2.i), 0);
-    const o = e.reduce(((e2, t2) => e2 + t2.u), 0);
+    const e = [ ...bundles.values() ].filter((e2 => e2.i > BundleImportState_None));
+    const t = e.reduce(((e2, t2) => e2 + t2.p), 0);
+    const o = e.reduce(((e2, t2) => e2 + t2.$), 0);
     log(`>>>> done ${e.length}/${bundles.size} total: ${t}ms waited, ${o}ms loaded`);
   }
 };
 
 var preloadOne = e => {
-  if (e.l >= BundleImportState_Preload) {
+  if (e.i >= BundleImportState_Preload) {
     return;
   }
   preloadCount++;
   const t = Date.now();
-  e.i = t - e.p;
-  e.l = BundleImportState_Preload;
-  config.t && log(`<< load ${Math.round(100 * (1 - e.o))}% after ${e.i}ms`, e.m);
+  e.p = t - e.B;
+  e.i = BundleImportState_Preload;
+  config.t && log(`<< load ${Math.round(100 * (1 - e.u))}% after ${e.p}ms`, e.m);
   const o = doc.createElement("link");
-  o.href = e.S;
+  o.href = e.h;
   o.rel = rel;
   o.as = "script";
   o.onload = o.onerror = () => {
     preloadCount--;
     const n = Date.now();
-    e.u = n - t;
-    e.l = BundleImportState_Loaded;
-    config.t && log(`>> done after ${e.u}ms`, e.m);
+    e.$ = n - t;
+    e.i = BundleImportState_Loaded;
+    config.t && log(`>> done after ${e.$}ms`, e.m);
     o.remove();
     trigger();
   };
@@ -5899,37 +5895,37 @@ var adjustProbabilities = (e, t, o) => {
   if (null == o ? void 0 : o.has(e)) {
     return;
   }
-  const n = e.o;
-  e.o *= t;
-  if (n - e.o < .01) {
+  const n = e.u;
+  e.u *= t;
+  if (n - e.u < .01) {
     return;
   }
-  if (e.l < BundleImportState_Preload && e.o < config[maxSignificantInverseProbabilityStr]) {
-    if (e.l === BundleImportState_None) {
-      e.l = BundleImportState_Queued;
+  if (e.i < BundleImportState_Preload && e.u < config.l) {
+    if (e.i === BundleImportState_None) {
+      e.i = BundleImportState_Queued;
       queue.push(e);
-      config.t && log(`queued ${Math.round(100 * (1 - e.o))}%`, e.m);
+      config.t && log(`queued ${Math.round(100 * (1 - e.u))}%`, e.m);
     }
     queueDirty = 1;
   }
-  if (e.$) {
+  if (e.S) {
     o || (o = new Set);
     o.add(e);
-    const t2 = 1 - e.o;
-    for (const n2 of e.$) {
+    const t2 = 1 - e.u;
+    for (const n2 of e.S) {
       const e2 = getBundle(n2.m);
-      const r = n2.B;
-      const a = 1 - n2.h * t2;
-      const l = a / r;
-      n2.B = l;
-      adjustProbabilities(e2, l, o);
+      const r = n2.q;
+      const l = 1 - n2.I * t2;
+      const a = l / r;
+      n2.q = a;
+      adjustProbabilities(e2, a, o);
     }
   }
 };
 
 var handleBundle = (e, t) => {
   const o = getBundle(e);
-  o && o.o > t && adjustProbabilities(o, t / o.o);
+  o && o.u > t && adjustProbabilities(o, t / o.u);
 };
 
 var preload = (e, t) => {
@@ -5961,13 +5957,13 @@ var makeBundle = (e, t) => {
   const o = e.endsWith(".js") ? doc ? new URL(`${base}${e}`, doc.baseURI).toString() : e : null;
   return {
     m: e,
-    S: o,
-    l: o ? BundleImportState_None : BundleImportState_Alias,
-    $: t,
-    o: 1,
-    p: Date.now(),
-    i: 0,
-    u: 0
+    h: o,
+    i: o ? BundleImportState_None : BundleImportState_Alias,
+    S: t,
+    u: 1,
+    B: Date.now(),
+    p: 0,
+    $: 0
   };
 };
 

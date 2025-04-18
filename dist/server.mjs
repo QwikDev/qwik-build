@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+031eeb4
+ * @builder.io/qwik/server 1.13.0-dev+868a944
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -95,7 +95,7 @@ import { isDev } from "@builder.io/qwik";
 // packages/qwik/src/core/util/markers.ts
 var QInstance = "q:instance";
 
-// packages/qwik/src/server/prefetch-implementation.ts
+// packages/qwik/src/server/preload-impl.ts
 import { Fragment, jsx } from "@builder.io/qwik";
 
 // packages/qwik/src/core/preloader/queue.ts
@@ -109,12 +109,10 @@ import { isBrowser } from "@builder.io/qwik/build";
 var doc = isBrowser ? document : void 0;
 var modulePreloadStr = "modulepreload";
 var preloadStr = "preload";
-var maxSimultaneousPreloadsStr = "maxSimultaneousPreloads";
-var maxSignificantInverseProbabilityStr = "maxSignificantInverseProbability";
 var config = {
-  DEBUG: false,
-  [maxSimultaneousPreloadsStr]: 6,
-  [maxSignificantInverseProbabilityStr]: 0.75
+  $DEBUG$: false,
+  $maxBufferPreloads$: 25,
+  $invPreloadProbability$: 0.65
 };
 var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
 var loadStart = Date.now();
@@ -183,10 +181,10 @@ var getBundle = (name) => {
 var initPreloader = (serializedBundleGraph, opts) => {
   if (opts) {
     if ("debug" in opts) {
-      config.DEBUG = !!opts.debug;
+      config.$DEBUG$ = !!opts.debug;
     }
-    if (maxSignificantInverseProbabilityStr in opts) {
-      config[maxSignificantInverseProbabilityStr] = opts[maxSignificantInverseProbabilityStr];
+    if ("preloadProbability" in opts) {
+      config.$invPreloadProbability$ = 1 - opts.preloadProbability;
     }
   }
   if (base != null || !serializedBundleGraph) {
@@ -246,7 +244,7 @@ var trigger = () => {
     const probability = 1 - inverseProbability;
     const allowedPreloads = graph ? (
       // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config[maxSimultaneousPreloadsStr] * probability)
+      Math.max(1, config.$maxBufferPreloads$ * probability)
     ) : (
       // While the graph is not available, we limit to 2 preloads
       2
@@ -258,7 +256,7 @@ var trigger = () => {
       break;
     }
   }
-  if (config.DEBUG && !queue.length) {
+  if (config.$DEBUG$ && !queue.length) {
     const loaded = [...bundles.values()].filter((b) => b.$state$ > BundleImportState_None);
     const waitTime = loaded.reduce((acc, b) => acc + b.$waitedMs$, 0);
     const loadTime = loaded.reduce((acc, b) => acc + b.$loadedMs$, 0);
@@ -275,7 +273,7 @@ var preloadOne = (bundle) => {
   const start = Date.now();
   bundle.$waitedMs$ = start - bundle.$createdTs$;
   bundle.$state$ = BundleImportState_Preload;
-  config.DEBUG && log(
+  config.$DEBUG$ && log(
     `<< load ${Math.round((1 - bundle.$inverseProbability$) * 100)}% after ${`${bundle.$waitedMs$}ms`}`,
     bundle.$name$
   );
@@ -288,7 +286,7 @@ var preloadOne = (bundle) => {
     const end = Date.now();
     bundle.$loadedMs$ = end - start;
     bundle.$state$ = BundleImportState_Loaded;
-    config.DEBUG && log(`>> done after ${bundle.$loadedMs$}ms`, bundle.$name$);
+    config.$DEBUG$ && log(`>> done after ${bundle.$loadedMs$}ms`, bundle.$name$);
     link.remove();
     trigger();
   };
@@ -303,11 +301,11 @@ var adjustProbabilities = (bundle, adjustFactor, seen) => {
   if (previousInverseProbability - bundle.$inverseProbability$ < 0.01) {
     return;
   }
-  if (bundle.$state$ < BundleImportState_Preload && bundle.$inverseProbability$ < config[maxSignificantInverseProbabilityStr]) {
+  if (bundle.$state$ < BundleImportState_Preload && bundle.$inverseProbability$ < config.$invPreloadProbability$) {
     if (bundle.$state$ === BundleImportState_None) {
       bundle.$state$ = BundleImportState_Queued;
       queue.push(bundle);
-      config.DEBUG && log(`queued ${Math.round((1 - bundle.$inverseProbability$) * 100)}%`, bundle.$name$);
+      config.$DEBUG$ && log(`queued ${Math.round((1 - bundle.$inverseProbability$) * 100)}%`, bundle.$name$);
     }
     queueDirty = true;
   }
@@ -427,21 +425,13 @@ var expandBundles = (names, resolvedManifest) => {
   return getQueue();
 };
 
-// packages/qwik/src/server/prefetch-implementation.ts
-function includePreloader(base2, manifest, prefetchStrategy, referencedBundles, nonce) {
-  if (referencedBundles.length === 0) {
+// packages/qwik/src/server/preload-impl.ts
+function includePreloader(base2, manifest, options, referencedBundles, nonce) {
+  if (referencedBundles.length === 0 || options === false) {
     return null;
   }
-  const {
-    maxPreloads,
-    linkRel,
-    linkFetchPriority,
-    minProbability,
-    debug,
-    maxSimultaneousPreloads,
-    minPreloadProbability
-  } = normalizePrefetchImplementation(prefetchStrategy?.implementation);
-  let allowed = maxPreloads;
+  const { ssrPreloads, ssrPreloadProbability, debug, maxBufferPreloads, preloadProbability } = normalizePreLoaderOptions(typeof options === "boolean" ? void 0 : options);
+  let allowed = ssrPreloads;
   const nodes = [];
   if (import.meta.env.DEV) {
     base2 = import.meta.env.BASE_URL;
@@ -449,54 +439,55 @@ function includePreloader(base2, manifest, prefetchStrategy, referencedBundles, 
       base2 = base2.slice(0, -1);
     }
   }
-  const makeLink = (base3, href) => {
-    const linkProps = {
-      rel: linkRel,
-      href: `${base3}${href}`
-    };
-    if (linkRel !== "modulepreload") {
-      linkProps["fetchPriority"] = linkFetchPriority;
-      linkProps["as"] = "script";
-    }
-    return jsx("link", linkProps);
-  };
+  const links = [];
   const manifestHash = manifest?.manifest.manifestHash;
   if (allowed) {
     const expandedBundles = expandBundles(referencedBundles, manifest);
-    let probability = 8;
-    const tenXMinProbability = minProbability * 10;
-    for (const bundleOrProbability of expandedBundles) {
-      if (typeof bundleOrProbability === "string") {
+    let probability = 4;
+    const tenXMinProbability = ssrPreloadProbability * 10;
+    for (const hrefOrProbability of expandedBundles) {
+      if (typeof hrefOrProbability === "string") {
         if (probability < tenXMinProbability) {
           break;
         }
-        nodes.push(makeLink(base2, bundleOrProbability));
+        links.push(hrefOrProbability);
         if (--allowed === 0) {
           break;
         }
       } else {
-        probability = bundleOrProbability;
+        probability = hrefOrProbability;
       }
     }
   }
   const preloadChunk = manifestHash && manifest?.manifest.preloader;
   if (preloadChunk) {
+    const insertLinks = links.length ? (
+      /**
+       * We only use modulepreload links because they behave best. Older browsers can rely on the
+       * preloader which does feature detection and which will be available soon after inserting these
+       * links.
+       */
+      `${JSON.stringify(links)}.map((l,e)=>{e=document.createElement('link');e.rel='modulepreload';e.href=${JSON.stringify(base2)}+l;document.body.appendChild(e)});`
+    ) : "";
     const opts = [];
     if (debug) {
       opts.push("d:1");
     }
-    if (maxSimultaneousPreloads) {
-      opts.push(`P:${maxSimultaneousPreloads}`);
+    if (maxBufferPreloads) {
+      opts.push(`P:${maxBufferPreloads}`);
     }
-    if (minPreloadProbability) {
-      opts.push(`Q:${minPreloadProbability}`);
+    if (preloadProbability) {
+      opts.push(`Q:${preloadProbability}`);
     }
     const optsStr = opts.length ? `,{${opts.join(",")}}` : "";
-    const script = `let b=fetch("${base2}q-bundle-graph-${manifestHash}.json");import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})`;
+    const script = (
+      // First we wait for the onload event
+      `window.addEventListener('load',f=>{f=b=>{${insertLinks}b=fetch("${base2}q-bundle-graph-${manifestHash}.json");import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})};try{requestIdleCallback(f,{timeout:2000})}catch(e){setTimeout(f,200)}})`
+    );
     nodes.push(
       jsx("script", {
         type: "module",
-        "q:type": "link-js",
+        "q:type": "preload",
         dangerouslySetInnerHTML: script,
         nonce
       })
@@ -507,20 +498,15 @@ function includePreloader(base2, manifest, prefetchStrategy, referencedBundles, 
   }
   return null;
 }
-function normalizePrefetchImplementation(input) {
-  return { ...PrefetchImplementationDefault, ...input };
+function normalizePreLoaderOptions(input) {
+  return { ...PreLoaderOptionsDefault, ...input };
 }
-var PrefetchImplementationDefault = {
-  maxPreloads: import.meta.env.DEV ? 15 : 7,
-  minProbability: 0.6,
+var PreLoaderOptionsDefault = {
+  ssrPreloads: 5,
+  ssrPreloadProbability: 0.7,
   debug: false,
-  maxSimultaneousPreloads: 5,
-  minPreloadProbability: 0.25,
-  linkRel: "modulepreload",
-  linkFetchPriority: void 0,
-  linkInsert: void 0,
-  workerFetchInsert: void 0,
-  prefetchEvent: void 0
+  maxBufferPreloads: 25,
+  preloadProbability: 0.35
 };
 
 // packages/qwik/src/server/scripts.ts
@@ -561,7 +547,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+031eeb4",
+  qwik: "1.13.0-dev+868a944",
   qwikDom: "2.1.19"
 };
 
@@ -663,7 +649,11 @@ async function renderToStream(rootNode, opts) {
   await setServerPlatform(opts, resolvedManifest);
   const bundleGraph = resolvedManifest?.manifest.bundleGraph;
   if (bundleGraph) {
-    initPreloader(bundleGraph);
+    const preloaderOpts = typeof opts.preloader === "object" ? {
+      debug: opts.preloader.debug,
+      preloadProbability: opts.preloader.ssrPreloadProbability
+    } : void 0;
+    initPreloader(bundleGraph, preloaderOpts);
   }
   const injections = resolvedManifest?.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes ?? {})) : [];
@@ -703,14 +693,14 @@ async function renderToStream(rootNode, opts) {
       const snapshotTimer = createTimer();
       snapshotResult = await _pauseFromContexts(contexts, containerState, void 0, textNodes);
       const children = [];
-      if (opts.prefetchStrategy !== null) {
+      if (opts.preloader !== false) {
         const preloadBundles = getPreloadPaths(snapshotResult, opts, resolvedManifest);
         const base2 = containerAttributes["q:base"];
         if (preloadBundles.length > 0) {
           const prefetchImpl = includePreloader(
             base2,
             resolvedManifest,
-            opts.prefetchStrategy,
+            opts.preloader,
             preloadBundles,
             opts.serverData?.nonce
           );
