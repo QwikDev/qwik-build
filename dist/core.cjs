@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+2a41ab7
+ * @builder.io/qwik 1.13.0-dev+bca4545
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.13.0-dev+2a41ab7";
+    const version = "1.13.0-dev+bca4545";
 
     /**
      * @internal
@@ -7749,7 +7749,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
 
     /**
-     * Allows to project the children of the current component. <Slot/> can only be used within the
+     * Allows to project the children of the current component. `<Slot/>` can only be used within the
      * context of a component defined with `component$`.
      *
      * @public

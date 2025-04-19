@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik/loader",
-  "version": "1.13.0-dev+2a41ab7",
+  "version": "1.13.0-dev+bca4545",
   "main": "index.mjs",
   "types": "index.d.ts",
   "private": true,
