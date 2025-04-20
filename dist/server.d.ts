@@ -80,49 +80,11 @@ export declare interface InOrderDisabled {
 /** @public */
 export declare type InOrderStreaming = InOrderAuto | InOrderDisabled | InOrderDirect;
 
-/** @public */
+/** @public @deprecated Use `preloader` instead */
 export declare interface PrefetchImplementation {
-    /**
-     * Maximum number of preload links to add during SSR. These instruct the browser to preload likely
-     * bundles before the preloader script is active. This includes the 2 preloads used for the
-     * preloader script itself and the bundle information. Setting this to 0 will disable all preload
-     * links.
-     *
-     * Defaults to `5`
-     */
-    maxPreloads?: number;
-    /**
-     * The minimum probability of a bundle to be added as a preload link during SSR.
-     *
-     * Defaults to `0.6` (60% probability)
-     */
-    minProbability?: number;
-    /**
-     * If true, the preloader will log debug information to the console.
-     *
-     * Defaults to `false`
-     */
-    debug?: boolean;
-    /**
-     * Maximum number of simultaneous preload links that the preloader will maintain.
-     *
-     * Defaults to `5`
-     */
-    maxSimultaneousPreloads?: number;
-    /**
-     * The minimum probability for a bundle to be added to the preload queue.
-     *
-     * Defaults to `0.25` (25% probability)
-     */
-    minPreloadProbability?: number;
-    /**
-     * Value of the `<link rel="...">` attribute when links are added. The preloader itself will
-     * autodetect which attribute to use based on the browser capabilities.
-     *
-     * Defaults to `modulepreload`.
-     */
+    /** @deprecated No longer used. */
     linkRel?: 'prefetch' | 'preload' | 'modulepreload' | null;
-    /** Value of the `<link fetchpriority="...">` attribute when links are added. Defaults to `null`. */
+    /** @deprecated No longer used. */
     linkFetchPriority?: 'auto' | 'low' | 'high' | null;
     /** @deprecated No longer used. */
     linkInsert?: 'js-append' | 'html-append' | null;
@@ -142,6 +104,51 @@ export declare interface PrefetchResource {
 export declare interface PrefetchStrategy {
     implementation?: PrefetchImplementation;
     symbolsToPrefetch?: SymbolsToPrefetch;
+}
+
+/** @public */
+export declare interface PreloaderOptions {
+    /**
+     * Maximum number of preload links to add during SSR. These instruct the browser to preload likely
+     * bundles before the preloader script is active. This most likely includes the core and the
+     * preloader script itself. Setting this to 0 will disable all preload links.
+     *
+     * Preload links can delay LCP, which is a Core Web Vital, but it can increase TTI, which is not a
+     * Core Web Vital but more noticeable to the user.
+     *
+     * Defaults to `5`
+     */
+    ssrPreloads?: number;
+    /**
+     * The minimum probability for a bundle to be added as a preload link during SSR.
+     *
+     * Defaults to `0.7` (70% probability)
+     */
+    ssrPreloadProbability?: number;
+    /**
+     * Log preloader debug information to the console.
+     *
+     * Defaults to `false`
+     */
+    debug?: boolean;
+    /**
+     * Maximum number of simultaneous preload links that the preloader will maintain. If you set this
+     * higher, the browser will have all JS files in memory sooner, but it will contend with other
+     * resource downloads. Furthermore, if a bundle suddenly becomes more likely, it will have to wait
+     * longer to be preloaded.
+     *
+     * Bundles that reach 100% probability (static imports of other bundles) will always be preloaded
+     * immediately, no limit.
+     *
+     * Defaults to `25`
+     */
+    maxBufferedPreloads?: number;
+    /**
+     * The minimum probability for a bundle to be added to the preload queue.
+     *
+     * Defaults to `0.35` (35% probability)
+     */
+    preloadProbability?: number;
 }
 
 /** @public */
@@ -264,8 +271,10 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
      * Defaults to `{ include: true }`.
      */
     qwikLoader?: QwikLoaderOptions;
-    /** @deprecated Use `prefetchStrategy` instead */
+    preloader?: PreloaderOptions | boolean;
+    /** @deprecated Use `preloader` instead */
     qwikPrefetchServiceWorker?: QwikPrefetchServiceWorkerOptions;
+    /** @deprecated Use `preloader` instead */
     prefetchStrategy?: PrefetchStrategy | null;
     /**
      * When set, the app is serialized into a fragment. And the returned html is not a complete

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+23ed7db
+ * @builder.io/qwik 1.13.0-dev+465483f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.13.0-dev+23ed7db";
+const version = "1.13.0-dev+465483f";
 
 /**
  * @internal
@@ -7747,7 +7747,7 @@ const parseResourceReturn = (data) => {
 };
 
 /**
- * Allows to project the children of the current component. <Slot/> can only be used within the
+ * Allows to project the children of the current component. `<Slot/>` can only be used within the
  * context of a component defined with `component$`.
  *
  * @public

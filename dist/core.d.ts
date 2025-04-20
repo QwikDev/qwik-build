@@ -2378,7 +2378,7 @@ declare const SKIP_RENDER_TYPE = ":skipRender";
 export declare const SkipRender: JSXNode;
 
 /**
- * Allows to project the children of the current component. <Slot/> can only be used within the
+ * Allows to project the children of the current component. `<Slot/>` can only be used within the
  * context of a component defined with `component$`.
  *
  * @public
@@ -3854,7 +3854,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.13.0-dev+23ed7db
+ * 1.13.0-dev+465483f
  *
  * @public
  */
