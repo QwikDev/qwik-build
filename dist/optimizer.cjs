@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+4571b3c
+ * @builder.io/qwik/optimizer 1.13.0-dev+f736793
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.13.0-dev+4571b3c"
+    qwik: "1.13.0-dev+f736793"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1805,23 +1805,16 @@ globalThis.qwikOptimizer = function(module) {
     if (invalidEslintConfig) {
       const options = {
         cache: true,
-        useEslintrc: false,
         overrideConfig: {
-          root: true,
-          env: {
-            browser: true,
-            es2021: true,
-            node: true
-          },
-          extends: [ "plugin:qwik/recommended" ],
-          parser: "@typescript-eslint/parser",
-          parserOptions: {
-            tsconfigRootDir: rootDir,
-            project: tsconfigFileNames,
-            ecmaVersion: 2021,
-            sourceType: "module",
-            ecmaFeatures: {
-              jsx: true
+          languageOptions: {
+            parserOptions: {
+              tsconfigRootDir: rootDir,
+              project: tsconfigFileNames,
+              ecmaVersion: 2021,
+              sourceType: "module",
+              ecmaFeatures: {
+                jsx: true
+              }
             }
           }
         }
