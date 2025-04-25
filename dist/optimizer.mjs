@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+f736793
+ * @builder.io/qwik/optimizer 1.13.0-dev+b54ecc1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1263,7 +1263,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+f736793"
+  qwik: "1.13.0-dev+b54ecc1"
 };
 
 async function getSystem() {
@@ -2049,15 +2049,19 @@ function convertManifestToBundleGraph(manifest, bundleGraphAdders) {
     });
   }
   if (bundleGraphAdders) {
+    const combined = {
+      ...manifest,
+      bundles: graph2
+    };
     for (const adder of bundleGraphAdders) {
-      const result = adder(manifest);
+      const result = adder(combined);
       result && Object.assign(graph2, result);
     }
   }
   for (const bundleName of Object.keys(graph2)) {
     const bundle = graph2[bundleName];
     const imports = bundle.imports?.filter((dep => graph2[dep])) || [];
-    const dynamicImports = bundle.dynamicImports?.filter((dep => graph2[dep]?.symbols)) || [];
+    const dynamicImports = bundle.dynamicImports?.filter((dep => graph2[dep] && (graph2[dep].symbols || graph2[dep].origins?.some((o => !o.includes("node_modules")))))) || [];
     graph2[bundleName] = {
       ...bundle,
       imports: imports,
