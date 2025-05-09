@@ -19,13 +19,13 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // packages/qwik/src/build/index.ts
-var build_exports = {};
-__export(build_exports, {
+var index_exports = {};
+__export(index_exports, {
   isBrowser: () => isBrowser,
   isDev: () => isDev,
   isServer: () => isServer
 });
-module.exports = __toCommonJS(build_exports);
+module.exports = __toCommonJS(index_exports);
 var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && typeof HTMLElement !== "undefined" && !!window.document && String(HTMLElement).includes("[native code]"))();
 var isServer = !isBrowser;
 var isDev = /* @__PURE__ */ (() => {

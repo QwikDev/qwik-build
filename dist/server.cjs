@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+b54ecc1
+ * @builder.io/qwik/server 1.13.0-dev+b834b3e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -48,8 +48,8 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // packages/qwik/src/server/index.ts
-var server_exports = {};
-__export(server_exports, {
+var index_exports = {};
+__export(index_exports, {
   getQwikLoaderScript: () => getQwikLoaderScript,
   getQwikPrefetchWorkerScript: () => getQwikPrefetchWorkerScript,
   renderToStream: () => renderToStream,
@@ -58,7 +58,7 @@ __export(server_exports, {
   setServerPlatform: () => setServerPlatform2,
   versions: () => versions
 });
-module.exports = __toCommonJS(server_exports);
+module.exports = __toCommonJS(index_exports);
 var import_qwik6 = require("@builder.io/qwik");
 
 // packages/qwik/src/server/platform.ts
@@ -596,7 +596,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+b54ecc1",
+  qwik: "1.13.0-dev+b834b3e",
   qwikDom: "2.1.19"
 };
 

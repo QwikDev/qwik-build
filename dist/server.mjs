@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+b54ecc1
+ * @builder.io/qwik/server 1.13.0-dev+b834b3e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -8,8 +8,7 @@
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
 }) : x)(function(x) {
-  if (typeof require !== "undefined")
-    return require.apply(this, arguments);
+  if (typeof require !== "undefined") return require.apply(this, arguments);
   throw Error('Dynamic require of "' + x + '" is not supported');
 });
 
@@ -547,7 +546,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+b54ecc1",
+  qwik: "1.13.0-dev+b834b3e",
   qwikDom: "2.1.19"
 };
 

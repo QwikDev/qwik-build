@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+b54ecc1
+ * @builder.io/qwik/optimizer 1.13.0-dev+b834b3e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -48,10 +48,7 @@ __copyProps(!isNodeMode && mod && mod.__esModule ? target : __defProp(target, "d
   enumerable: true
 }), mod));
 
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, "symbol" !== typeof key ? key + "" : key, value);
-  return value;
-};
+var __publicField = (obj, key, value) => __defNormalProp(obj, "symbol" !== typeof key ? key + "" : key, value);
 
 var require_utils = __commonJS({
   "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/utils.js"(exports) {
@@ -1263,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+b54ecc1"
+  qwik: "1.13.0-dev+b834b3e"
 };
 
 async function getSystem() {
@@ -3654,14 +3651,15 @@ var SignalUnassignedException = Symbol("unassigned signal");
 
 var SignalBase = class {};
 
-var _a, _b;
+var _a, _b, _c;
 
-var SignalImpl = class extends SignalBase {
+var SignalImpl = class extends(_c = SignalBase, _b = QObjectManagerSymbol, _a = QObjectSignalFlags, 
+_c){
   constructor(v, manager, flags) {
     super();
     __publicField(this, "untrackedValue");
-    __publicField(this, _a);
-    __publicField(this, _b, 0);
+    __publicField(this, _b);
+    __publicField(this, _a, 0);
     this.untrackedValue = v;
     this[QObjectManagerSymbol] = manager;
     this[QObjectSignalFlags] = flags;
@@ -3704,8 +3702,6 @@ var SignalImpl = class extends SignalBase {
     }
   }
 };
-
-_a = QObjectManagerSymbol, _b = QObjectSignalFlags;
 
 var SignalDerived = class extends SignalBase {
   constructor($func$, $args$, $funcStr$) {
@@ -5018,6 +5014,8 @@ var IS_IMMUTABLE2 = 1024;
 
 var _a2;
 
+_a2 = Q_CTX;
+
 var MockElement = class {
   constructor(nodeType) {
     this.nodeType = nodeType;
@@ -5025,8 +5023,6 @@ var MockElement = class {
     seal(this);
   }
 };
-
-_a2 = Q_CTX;
 
 var _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
   assertString(type, "jsx type must be a string");
@@ -5378,7 +5374,7 @@ var ErrorSerializer = serializer({
 var DocumentSerializer = serializer({
   $prefix$: "",
   $test$: v => !!v && "object" === typeof v && isDocument(v),
-  $prepare$: (_, _c, doc2) => doc2
+  $prepare$: (_, _c2, doc2) => doc2
 });
 
 var SERIALIZABLE_STATE = Symbol("serializable-data");
