@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+b64d65e
+ * @builder.io/qwik/server 1.13.0-dev+aa29938
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -546,7 +546,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+b64d65e",
+  qwik: "1.13.0-dev+aa29938",
   qwikDom: "2.1.19"
 };
 
@@ -640,7 +640,7 @@ async function renderToStream(rootNode, opts) {
       };
     }
   }
-  if (!resolvedManifest) {
+  if (!resolvedManifest && !isDev) {
     console.warn(
       `Missing client manifest, loading symbols in the client might 404. Please ensure the client build has run and generated the manifest for the server build.`
     );
