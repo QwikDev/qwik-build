@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+465483f
+ * @builder.io/qwik/optimizer 1.13.0-dev+376aea1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -816,15 +816,15 @@ globalThis.qwikOptimizer = function(module) {
       };
     }
   });
-  var src_exports = {};
-  __export(src_exports, {
+  var index_exports = {};
+  __export(index_exports, {
     createOptimizer: () => createOptimizer,
     qwikRollup: () => qwikRollup,
     qwikVite: () => qwikVite,
     symbolMapper: () => symbolMapper,
     versions: () => versions
   });
-  module.exports = __toCommonJS(src_exports);
+  module.exports = __toCommonJS(index_exports);
   function createPath(opts = {}) {
     function assertPath(path) {
       if ("string" !== typeof path) {
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.13.0-dev+465483f"
+    qwik: "1.13.0-dev+376aea1"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1805,23 +1805,16 @@ globalThis.qwikOptimizer = function(module) {
     if (invalidEslintConfig) {
       const options = {
         cache: true,
-        useEslintrc: false,
         overrideConfig: {
-          root: true,
-          env: {
-            browser: true,
-            es2021: true,
-            node: true
-          },
-          extends: [ "plugin:qwik/recommended" ],
-          parser: "@typescript-eslint/parser",
-          parserOptions: {
-            tsconfigRootDir: rootDir,
-            project: tsconfigFileNames,
-            ecmaVersion: 2021,
-            sourceType: "module",
-            ecmaFeatures: {
-              jsx: true
+          languageOptions: {
+            parserOptions: {
+              tsconfigRootDir: rootDir,
+              project: tsconfigFileNames,
+              ecmaVersion: 2021,
+              sourceType: "module",
+              ecmaFeatures: {
+                jsx: true
+              }
             }
           }
         }
@@ -2025,8 +2018,12 @@ globalThis.qwikOptimizer = function(module) {
       });
     }
     if (bundleGraphAdders) {
+      const combined = {
+        ...manifest,
+        bundles: graph2
+      };
       for (const adder of bundleGraphAdders) {
-        const result = adder(manifest);
+        const result = adder(combined);
         result && Object.assign(graph2, result);
       }
     }
@@ -2035,7 +2032,7 @@ globalThis.qwikOptimizer = function(module) {
       const imports = (null == (_a = bundle.imports) ? void 0 : _a.filter((dep => graph2[dep]))) || [];
       const dynamicImports = (null == (_b = bundle.dynamicImports) ? void 0 : _b.filter((dep => {
         var _a2;
-        return null == (_a2 = graph2[dep]) ? void 0 : _a2.symbols;
+        return graph2[dep] && (graph2[dep].symbols || (null == (_a2 = graph2[dep].origins) ? void 0 : _a2.some((o => !o.includes("node_modules")))));
       }))) || [];
       graph2[bundleName] = {
         ...bundle,

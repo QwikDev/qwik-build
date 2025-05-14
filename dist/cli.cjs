@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.13.0-dev+465483f
+ * @builder.io/qwik/cli 1.13.0-dev+376aea1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -49,20 +49,15 @@ var require_src = __commonJS({
     var beep = "\x07";
     var cursor = {
       to(x3, y3) {
-        if (!y3)
-          return `${CSI}${x3 + 1}G`;
+        if (!y3) return `${CSI}${x3 + 1}G`;
         return `${CSI}${y3 + 1};${x3 + 1}H`;
       },
       move(x3, y3) {
         let ret = "";
-        if (x3 < 0)
-          ret += `${CSI}${-x3}D`;
-        else if (x3 > 0)
-          ret += `${CSI}${x3}C`;
-        if (y3 < 0)
-          ret += `${CSI}${-y3}A`;
-        else if (y3 > 0)
-          ret += `${CSI}${y3}B`;
+        if (x3 < 0) ret += `${CSI}${-x3}D`;
+        else if (x3 > 0) ret += `${CSI}${x3}C`;
+        if (y3 < 0) ret += `${CSI}${-y3}A`;
+        else if (y3 > 0) ret += `${CSI}${y3}B`;
         return ret;
       },
       up: (count = 1) => `${CSI}${count}A`,
@@ -179,23 +174,20 @@ function q({ onlyFirst: t = false } = {}) {
   return new RegExp(u, t ? void 0 : "g");
 }
 function S(t) {
-  if (typeof t != "string")
-    throw new TypeError(`Expected a \`string\`, got \`${typeof t}\``);
+  if (typeof t != "string") throw new TypeError(`Expected a \`string\`, got \`${typeof t}\``);
   return t.replace(q(), "");
 }
 function j(t) {
   return t && t.__esModule && Object.prototype.hasOwnProperty.call(t, "default") ? t.default : t;
 }
 function A(t, u = {}) {
-  if (typeof t != "string" || t.length === 0 || (u = { ambiguousIsNarrow: true, ...u }, t = S(t), t.length === 0))
-    return 0;
+  if (typeof t != "string" || t.length === 0 || (u = { ambiguousIsNarrow: true, ...u }, t = S(t), t.length === 0)) return 0;
   t = t.replace(DD(), "  ");
   const F = u.ambiguousIsNarrow ? 1 : 2;
   let e2 = 0;
   for (const s2 of t) {
     const C2 = s2.codePointAt(0);
-    if (C2 <= 31 || C2 >= 127 && C2 <= 159 || C2 >= 768 && C2 <= 879)
-      continue;
+    if (C2 <= 31 || C2 >= 127 && C2 <= 159 || C2 >= 768 && C2 <= 879) continue;
     switch (Q.eastAsianWidth(s2)) {
       case "F":
       case "W":
@@ -213,34 +205,28 @@ function A(t, u = {}) {
 function tD() {
   const t = /* @__PURE__ */ new Map();
   for (const [u, F] of Object.entries(r)) {
-    for (const [e2, s2] of Object.entries(F))
-      r[e2] = { open: `\x1B[${s2[0]}m`, close: `\x1B[${s2[1]}m` }, F[e2] = r[e2], t.set(s2[0], s2[1]);
+    for (const [e2, s2] of Object.entries(F)) r[e2] = { open: `\x1B[${s2[0]}m`, close: `\x1B[${s2[1]}m` }, F[e2] = r[e2], t.set(s2[0], s2[1]);
     Object.defineProperty(r, u, { value: F, enumerable: false });
   }
   return Object.defineProperty(r, "codes", { value: t, enumerable: false }), r.color.close = "\x1B[39m", r.bgColor.close = "\x1B[49m", r.color.ansi = T(), r.color.ansi256 = P(), r.color.ansi16m = W(), r.bgColor.ansi = T(m), r.bgColor.ansi256 = P(m), r.bgColor.ansi16m = W(m), Object.defineProperties(r, { rgbToAnsi256: { value: (u, F, e2) => u === F && F === e2 ? u < 8 ? 16 : u > 248 ? 231 : Math.round((u - 8) / 247 * 24) + 232 : 16 + 36 * Math.round(u / 255 * 5) + 6 * Math.round(F / 255 * 5) + Math.round(e2 / 255 * 5), enumerable: false }, hexToRgb: { value: (u) => {
     const F = /[a-f\d]{6}|[a-f\d]{3}/i.exec(u.toString(16));
-    if (!F)
-      return [0, 0, 0];
+    if (!F) return [0, 0, 0];
     let [e2] = F;
     e2.length === 3 && (e2 = [...e2].map((C2) => C2 + C2).join(""));
     const s2 = Number.parseInt(e2, 16);
     return [s2 >> 16 & 255, s2 >> 8 & 255, s2 & 255];
   }, enumerable: false }, hexToAnsi256: { value: (u) => r.rgbToAnsi256(...r.hexToRgb(u)), enumerable: false }, ansi256ToAnsi: { value: (u) => {
-    if (u < 8)
-      return 30 + u;
-    if (u < 16)
-      return 90 + (u - 8);
+    if (u < 8) return 30 + u;
+    if (u < 16) return 90 + (u - 8);
     let F, e2, s2;
-    if (u >= 232)
-      F = ((u - 232) * 10 + 8) / 255, e2 = F, s2 = F;
+    if (u >= 232) F = ((u - 232) * 10 + 8) / 255, e2 = F, s2 = F;
     else {
       u -= 16;
       const i = u % 36;
       F = Math.floor(u / 36) / 5, e2 = Math.floor(i / 6) / 5, s2 = i % 6 / 5;
     }
     const C2 = Math.max(F, e2, s2) * 2;
-    if (C2 === 0)
-      return 30;
+    if (C2 === 0) return 30;
     let D = 30 + (Math.round(s2) << 2 | Math.round(e2) << 1 | Math.round(F));
     return C2 === 2 && (D += 60), D;
   }, enumerable: false }, rgbToAnsi: { value: (u, F, e2) => r.ansi256ToAnsi(r.rgbToAnsi256(u, F, e2)), enumerable: false }, hexToAnsi: { value: (u) => r.ansi256ToAnsi(r.hexToAnsi256(u)), enumerable: false } }), r;
@@ -252,13 +238,11 @@ function R(t, u, F) {
 `);
 }
 function aD(t, u) {
-  if (t === u)
-    return;
+  if (t === u) return;
   const F = t.split(`
 `), e2 = u.split(`
 `), s2 = [];
-  for (let C2 = 0; C2 < Math.max(F.length, e2.length); C2++)
-    F[C2] !== e2[C2] && s2.push(C2);
+  for (let C2 = 0; C2 < Math.max(F.length, e2.length); C2++) F[C2] !== e2[C2] && s2.push(C2);
   return s2;
 }
 function hD(t) {
@@ -271,8 +255,7 @@ function WD({ input: t = import_node_process.stdin, output: u = import_node_proc
   const s2 = f.createInterface({ input: t, output: u, prompt: "", tabSize: 1 });
   f.emitKeypressEvents(t, s2), t.isTTY && t.setRawMode(true);
   const C2 = (D, { name: i }) => {
-    if (String(D) === "" && process.exit(0), !F)
-      return;
+    if (String(D) === "" && process.exit(0), !F) return;
     let n = i === "return" ? 0 : -1, E2 = i === "return" ? -1 : 0;
     f.moveCursor(u, n, E2, () => {
       f.clearLine(u, 1, () => {
@@ -307,18 +290,14 @@ var init_dist = __esm({
         return e2.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]/g) || [];
       }
       u.length = function(e2) {
-        for (var s2 = F(e2), C2 = 0, D = 0; D < s2.length; D++)
-          C2 = C2 + this.characterLength(s2[D]);
+        for (var s2 = F(e2), C2 = 0, D = 0; D < s2.length; D++) C2 = C2 + this.characterLength(s2[D]);
         return C2;
       }, u.slice = function(e2, s2, C2) {
         textLen = u.length(e2), s2 = s2 || 0, C2 = C2 || 1, s2 < 0 && (s2 = textLen + s2), C2 < 0 && (C2 = textLen + C2);
         for (var D = "", i = 0, n = F(e2), E2 = 0; E2 < n.length; E2++) {
           var h2 = n[E2], o2 = u.length(h2);
-          if (i >= s2 - (o2 == 2 ? 1 : 0))
-            if (i + o2 <= C2)
-              D += h2;
-            else
-              break;
+          if (i >= s2 - (o2 == 2 ? 1 : 0)) if (i + o2 <= C2) D += h2;
+          else break;
           i += o2;
         }
         return D;
@@ -366,13 +345,11 @@ var init_dist = __esm({
     rD = (t) => {
       const u = t.split(" ");
       let F = u.length;
-      for (; F > 0 && !(A(u[F - 1]) > 0); )
-        F--;
+      for (; F > 0 && !(A(u[F - 1]) > 0); ) F--;
       return F === u.length ? t : u.slice(0, F).join(" ") + u.slice(F).join("");
     };
     ED = (t, u, F = {}) => {
-      if (F.trim !== false && t.trim() === "")
-        return "";
+      if (F.trim !== false && t.trim() === "") return "";
       let e2 = "", s2, C2;
       const D = iD(t);
       let i = [""];
@@ -406,8 +383,7 @@ var init_dist = __esm({
           if (B2.code !== void 0) {
             const p = Number.parseFloat(B2.code);
             s2 = p === sD ? void 0 : p;
-          } else
-            B2.uri !== void 0 && (C2 = B2.uri.length === 0 ? void 0 : B2.uri);
+          } else B2.uri !== void 0 && (C2 = B2.uri.length === 0 ? void 0 : B2.uri);
         }
         const o2 = eD.codes.get(Number(s2));
         n[E2 + 1] === `
@@ -448,10 +424,8 @@ var init_dist = __esm({
       }
       emit(u, ...F) {
         const e2 = this.subscribers.get(u) ?? [], s2 = [];
-        for (const C2 of e2)
-          C2.cb(...F), C2.once && s2.push(() => e2.splice(e2.indexOf(C2), 1));
-        for (const C2 of s2)
-          C2();
+        for (const C2 of e2) C2.cb(...F), C2.once && s2.push(() => e2.splice(e2.indexOf(C2), 1));
+        for (const C2 of s2) C2();
       }
       unsubscribe() {
         this.subscribers.clear();
@@ -478,8 +452,7 @@ var init_dist = __esm({
       render() {
         const u = R(this._render(this) ?? "", process.stdout.columns, { hard: true });
         if (u !== this._prevFrame) {
-          if (this.state === "initial")
-            this.output.write(import_sisteransi.cursor.hide);
+          if (this.state === "initial") this.output.write(import_sisteransi.cursor.hide);
           else {
             const F = aD(this._prevFrame, u);
             if (this.restoreCursor(), F && (F == null ? void 0 : F.length) === 1) {
@@ -555,8 +528,7 @@ var init_dist = __esm({
         super(u), MD(this, "valueWithCursor", ""), this.on("finalize", () => {
           this.value || (this.value = u.defaultValue), this.valueWithCursor = this.value;
         }), this.on("value", () => {
-          if (this.cursor >= this.value.length)
-            this.valueWithCursor = `${this.value}${import_picocolors.default.inverse(import_picocolors.default.hidden("_"))}`;
+          if (this.cursor >= this.value.length) this.valueWithCursor = `${this.value}${import_picocolors.default.inverse(import_picocolors.default.hidden("_"))}`;
           else {
             const F = this.value.slice(0, this.cursor), e2 = this.value.slice(this.cursor);
             this.valueWithCursor = `${F}${import_picocolors.default.inverse(e2[0])}${e2.slice(1)}`;
@@ -1393,12 +1365,12 @@ var init_rename_import = __esm({
 });
 
 // packages/qwik/src/cli/index.ts
-var cli_exports = {};
-__export(cli_exports, {
+var index_exports = {};
+__export(index_exports, {
   runCli: () => runCli,
   updateApp: () => updateApp
 });
-module.exports = __toCommonJS(cli_exports);
+module.exports = __toCommonJS(index_exports);
 
 // node_modules/.pnpm/kleur@4.1.5/node_modules/kleur/colors.mjs
 var FORCE_COLOR;
@@ -1417,8 +1389,7 @@ function init(x3, y3) {
   let rgx = new RegExp(`\\x1b\\[${y3}m`, "g");
   let open = `\x1B[${x3}m`, close = `\x1B[${y3}m`;
   return function(txt) {
-    if (!$.enabled || txt == null)
-      return txt;
+    if (!$.enabled || txt == null) return txt;
     return open + (!!~("" + txt).indexOf(close) ? txt.replace(rgx, close + open) : txt) + close;
   };
 }
@@ -5565,7 +5536,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.13.0-dev+465483f");
+  console.log("1.13.0-dev+376aea1");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

@@ -29,7 +29,9 @@
 
   Caching Headers:
 
-  The bundles under build/ are named with their content hash and may therefore be cached indefinitely. Typically you should serve `build/**/*.js` with `Cache-Control: public, max-age=31536000, immutable`.
+  The files under build/ and assets/ are named with their content hash and may therefore be cached indefinitely. Typically you should serve `build/*` and `assets/*` with `Cache-Control: public, max-age=31536000, immutable`.
+
+  However, if you changed the rollup configuration for output filenames, you will have to adjust the caching configuration accordingly.
 
   ***
 
@@ -43,7 +45,7 @@
         // Enable debug logging for preload operations
         debug: true,
         // Maximum simultaneous preload links
-        maxBufferedPreloads: 5,
+        maxIdlePreloads: 5,
         // Minimum probability threshold for preloading
         preloadProbability: 0.25
         // ...and more, see the type JSDoc on hover
@@ -62,6 +64,8 @@
   This will add a basic service worker setup that you can customize for specific caching strategies, offline support, or other PWA features beyond just prefetching.
 
 ### Patch Changes
+
+- Fix linting errors which were previously being ignored across the monorepo. (by [@better-salmon](https://github.com/better-salmon) in [#7418](https://github.com/QwikDev/qwik/pull/7418))
 
 - 🐞🩹 now qwikloader is loaded only once in all cases (by [@wmertens](https://github.com/wmertens) in [#7506](https://github.com/QwikDev/qwik/pull/7506))
 
