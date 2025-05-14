@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+aa29938
+ * @builder.io/qwik/server 1.13.0-dev+376aea1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -110,7 +110,7 @@ var modulePreloadStr = "modulepreload";
 var preloadStr = "preload";
 var config = {
   $DEBUG$: false,
-  $maxBufferedPreloads$: 25,
+  $maxIdlePreloads$: 25,
   $invPreloadProbability$: 0.65
 };
 var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
@@ -243,7 +243,7 @@ var trigger = () => {
     const probability = 1 - inverseProbability;
     const allowedPreloads = graph ? (
       // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config.$maxBufferedPreloads$ * probability)
+      Math.max(1, config.$maxIdlePreloads$ * probability)
     ) : (
       // While the graph is not available, we limit to 2 preloads
       2
@@ -429,7 +429,7 @@ function includePreloader(base2, manifest, options, referencedBundles, nonce) {
   if (referencedBundles.length === 0 || options === false) {
     return null;
   }
-  const { ssrPreloads, ssrPreloadProbability, debug, maxBufferedPreloads, preloadProbability } = normalizePreLoaderOptions(typeof options === "boolean" ? void 0 : options);
+  const { ssrPreloads, ssrPreloadProbability, debug, maxIdlePreloads, preloadProbability } = normalizePreLoaderOptions(typeof options === "boolean" ? void 0 : options);
   let allowed = ssrPreloads;
   const nodes = [];
   if (import.meta.env.DEV) {
@@ -472,8 +472,8 @@ function includePreloader(base2, manifest, options, referencedBundles, nonce) {
     if (debug) {
       opts.push("d:1");
     }
-    if (maxBufferedPreloads) {
-      opts.push(`P:${maxBufferedPreloads}`);
+    if (maxIdlePreloads) {
+      opts.push(`P:${maxIdlePreloads}`);
     }
     if (preloadProbability) {
       opts.push(`Q:${preloadProbability}`);
@@ -504,7 +504,7 @@ var PreLoaderOptionsDefault = {
   ssrPreloads: 5,
   ssrPreloadProbability: 0.7,
   debug: false,
-  maxBufferedPreloads: 25,
+  maxIdlePreloads: 25,
   preloadProbability: 0.35
 };
 
@@ -546,7 +546,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+aa29938",
+  qwik: "1.13.0-dev+376aea1",
   qwikDom: "2.1.19"
 };
 

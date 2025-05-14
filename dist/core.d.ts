@@ -3854,7 +3854,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.13.0-dev+aa29938
+ * 1.13.0-dev+376aea1
  *
  * @public
  */
