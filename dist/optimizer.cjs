@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+915e7bb
+ * @builder.io/qwik/optimizer 1.13.0-dev+f7a4ed1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.13.0-dev+915e7bb"
+    qwik: "1.13.0-dev+f7a4ed1"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5917,6 +5917,7 @@ globalThis.qwikOptimizer = function(module) {
     let rootDir = null;
     let ssrOutDir = null;
     const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
+    const disableFontPreload = qwikViteOpts.disableFontPreload ?? false;
     const injections = [];
     const qwikPlugin = createQwikPlugin(qwikViteOpts.optimizerOptions);
     const bundleGraphAdders = new Set;
@@ -6193,7 +6194,7 @@ globalThis.qwikOptimizer = function(module) {
                   });
                 } else {
                   const selectedFont = FONTS.find((ext => fileName.endsWith(ext)));
-                  selectedFont && injections.unshift({
+                  selectedFont && !disableFontPreload && injections.unshift({
                     tag: "link",
                     location: "head",
                     attributes: {

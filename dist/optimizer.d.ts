@@ -508,6 +508,14 @@ declare interface QwikVitePluginCommonOptions {
      * to be stable between releases
      */
     experimental?: (keyof typeof ExperimentalFeatures)[];
+    /**
+     * Disables automatic preloading of font assets (WOFF/WOFF2/TTF) found in the build output. When
+     * enabled, the plugin will not add `<link rel="preload">` tags for font files in the document
+     * head.
+     *
+     * Disabling may impact Cumulative Layout Shift (CLS) metrics.
+     */
+    disableFontPreload?: boolean;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
