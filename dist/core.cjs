@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+788b871
+ * @builder.io/qwik 1.13.0-dev+915e7bb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.13.0-dev+788b871";
+    const version = "1.13.0-dev+915e7bb";
 
     /**
      * @internal
@@ -9898,7 +9898,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             // the file 'qwik-prefetch-service-worker.js' is not located in /build/
             resolvedOpts.path = baseUrl + resolvedOpts.path;
         }
-        let code = PREFETCH_CODE.replace('URL', resolvedOpts.path);
+        let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
         if (!build.isDev) {
             // consecutive spaces are indentation
             code = code.replaceAll(/\s\s+/gm, '');
@@ -9921,7 +9921,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             c.getRegistrations().then((registrations) => {
                 registrations.forEach((registration) => {
                     if (registration.active) {
-                        if (registration.active.scriptURL.endsWith('URL')) {
+                        if (registration.active.scriptURL.endsWith('_URL_')) {
                             registration.unregister().catch(console.error);
                         }
                     }
