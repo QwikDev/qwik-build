@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+b2ffcbd
+ * @builder.io/qwik/server 1.13.0-dev+788b871
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -230,7 +230,7 @@ var initPreloader = (serializedBundleGraph, opts) => {
     if ("debug" in opts) {
       config.$DEBUG$ = !!opts.debug;
     }
-    if ("preloadProbability" in opts) {
+    if (typeof opts.preloadProbability === "number") {
       config.$invPreloadProbability$ = 1 - opts.preloadProbability;
     }
   }
@@ -596,7 +596,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+b2ffcbd",
+  qwik: "1.13.0-dev+788b871",
   qwikDom: "2.1.19"
 };
 
