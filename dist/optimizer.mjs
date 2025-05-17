@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+8c10268
+ * @builder.io/qwik/optimizer 1.13.0-dev+f90e6a1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.13.0-dev+8c10268"
+  qwik: "1.13.0-dev+f90e6a1"
 };
 
 async function getSystem() {
@@ -1777,7 +1777,7 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
     if (modulePaths.length > 0) {
       bundle.origins = modulePaths;
-      modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) && (manifest.preloader = bundleFileName);
+      modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
     }
     manifest.bundles[bundleFileName] = bundle;
   }
@@ -2673,7 +2673,8 @@ function createQwikPlugin(optimizerOptions = {}) {
       injections: manifest.injections,
       bundleGraph: manifest.bundleGraph,
       mapping: manifest.mapping,
-      preloader: manifest.preloader
+      preloader: manifest.preloader,
+      core: manifest.core
     });
     return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(serverManifest)};\n`;
   }

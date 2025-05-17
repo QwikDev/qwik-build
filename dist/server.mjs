@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+8c10268
+ * @builder.io/qwik/server 1.13.0-dev+f90e6a1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -421,7 +421,9 @@ var expandBundles = (names, resolvedManifest) => {
     preload(name, probability);
     probability *= 0.95;
   }
-  return getQueue();
+  return getQueue().filter(
+    (name) => name !== resolvedManifest?.manifest.preloader && name !== resolvedManifest?.manifest.core
+  );
 };
 
 // packages/qwik/src/server/preload-impl.ts
@@ -466,7 +468,7 @@ function includePreloader(base2, manifest, options, referencedBundles, nonce) {
        * preloader which does feature detection and which will be available soon after inserting these
        * links.
        */
-      `${JSON.stringify(links)}.map((l,e)=>{e=document.createElement('link');e.rel='modulepreload';e.href=${JSON.stringify(base2)}+l;document.body.appendChild(e)});`
+      `${JSON.stringify(links)}.map((l,e)=>{e=document.createElement('link');e.rel='modulepreload';e.href=${JSON.stringify(base2)}+l;document.head.appendChild(e)});`
     ) : "";
     const opts = [];
     if (debug) {
@@ -481,7 +483,7 @@ function includePreloader(base2, manifest, options, referencedBundles, nonce) {
     const optsStr = opts.length ? `,{${opts.join(",")}}` : "";
     const script = (
       // First we wait for the onload event
-      `window.addEventListener('load',f=>{f=b=>{${insertLinks}b=fetch("${base2}q-bundle-graph-${manifestHash}.json");import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})};try{requestIdleCallback(f,{timeout:2000})}catch(e){setTimeout(f,200)}})`
+      `let b=fetch("${base2}q-bundle-graph-${manifestHash}.json");` + insertLinks + `window.addEventListener('load',f=>{f=_=>{import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})};try{requestIdleCallback(f,{timeout:2000})}catch(e){setTimeout(f,200)}})`
     );
     nodes.push(
       jsx("script", {
@@ -546,7 +548,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+8c10268",
+  qwik: "1.13.0-dev+f90e6a1",
   qwikDom: "2.1.19"
 };
 
@@ -675,6 +677,22 @@ async function renderToStream(rootNode, opts) {
         dangerouslySetInnerHTML: `window.qwikevents.push('click','input')`
       })
     );
+  }
+  const preloadChunk = resolvedManifest?.manifest?.preloader;
+  if (preloadChunk && opts.preloader !== false) {
+    const core = resolvedManifest?.manifest.core;
+    beforeContent.push(
+      jsx2("link", { rel: "modulepreload", href: `${buildBase}${preloadChunk}` }),
+      jsx2("link", {
+        rel: "preload",
+        href: `${buildBase}q-bundle-graph-${resolvedManifest?.manifest.manifestHash}.json`,
+        as: "fetch",
+        crossorigin: "anonymous"
+      })
+    );
+    if (core) {
+      beforeContent.push(jsx2("link", { rel: "modulepreload", href: `${buildBase}${core}` }));
+    }
   }
   const renderTimer = createTimer();
   const renderSymbols = [];

@@ -209,6 +209,8 @@ declare interface QwikManifest_2 {
     bundleGraph?: QwikBundleGraph;
     /** The preloader bundle fileName */
     preloader?: string;
+    /** The Qwik core bundle fileName */
+    core?: string;
     /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
     /** The version of the manifest */
