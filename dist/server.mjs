@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+f90e6a1
+ * @builder.io/qwik/server 1.13.0-dev+adf20ca
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -315,7 +315,7 @@ var adjustProbabilities = (bundle, adjustFactor, seen) => {
     for (const dep of bundle.$deps$) {
       const depBundle = getBundle(dep.$name$);
       const prevAdjust = dep.$factor$;
-      const newInverseProbability = 1 - dep.$probability$ * probability;
+      const newInverseProbability = dep.$probability$ !== 1 && adjustFactor < 0.1 ? 0.05 : 1 - dep.$probability$ * probability;
       const factor = newInverseProbability / prevAdjust;
       dep.$factor$ = factor;
       adjustProbabilities(depBundle, factor, seen);
@@ -340,7 +340,6 @@ var preload = (name, probability) => {
         inverseProbability = 1 - item / 10;
       } else {
         handleBundle(item, inverseProbability);
-        inverseProbability *= 1.005;
       }
     }
   } else {
@@ -351,7 +350,7 @@ var preload = (name, probability) => {
   }
 };
 
-// packages/qwik/src/server/prefetch-utils.ts
+// packages/qwik/src/server/preload-utils.ts
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];
   const addPrefetchResource = (prefetchResources2) => {
@@ -370,7 +369,7 @@ function flattenPrefetchResources(prefetchResources) {
   return urls;
 }
 
-// packages/qwik/src/server/prefetch-strategy.ts
+// packages/qwik/src/server/preload-strategy.ts
 import { getPlatform } from "@builder.io/qwik";
 var getBundles = (snapshotResult) => {
   const platform = getPlatform();
@@ -417,9 +416,9 @@ var expandBundles = (names, resolvedManifest) => {
   }
   resetQueue();
   let probability = 0.99;
-  for (const name of names) {
+  for (const name of names.slice(0, 15)) {
     preload(name, probability);
-    probability *= 0.95;
+    probability *= 0.85;
   }
   return getQueue().filter(
     (name) => name !== resolvedManifest?.manifest.preloader && name !== resolvedManifest?.manifest.core
@@ -503,8 +502,8 @@ function normalizePreLoaderOptions(input) {
   return { ...PreLoaderOptionsDefault, ...input };
 }
 var PreLoaderOptionsDefault = {
-  ssrPreloads: 5,
-  ssrPreloadProbability: 0.7,
+  ssrPreloads: 7,
+  ssrPreloadProbability: 0.5,
   debug: false,
   maxIdlePreloads: 25,
   preloadProbability: 0.35
@@ -548,7 +547,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+f90e6a1",
+  qwik: "1.13.0-dev+adf20ca",
   qwikDom: "2.1.19"
 };
 
