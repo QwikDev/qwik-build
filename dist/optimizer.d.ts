@@ -226,6 +226,8 @@ export declare interface QwikManifest {
     bundleGraph?: QwikBundleGraph;
     /** The preloader bundle fileName */
     preloader?: string;
+    /** The Qwik core bundle fileName */
+    core?: string;
     /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
     /** The version of the manifest */
@@ -508,6 +510,14 @@ declare interface QwikVitePluginCommonOptions {
      * to be stable between releases
      */
     experimental?: (keyof typeof ExperimentalFeatures)[];
+    /**
+     * Disables automatic preloading of font assets (WOFF/WOFF2/TTF) found in the build output. When
+     * enabled, the plugin will not add `<link rel="preload">` tags for font files in the document
+     * head.
+     *
+     * Disabling may impact Cumulative Layout Shift (CLS) metrics.
+     */
+    disableFontPreload?: boolean;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {

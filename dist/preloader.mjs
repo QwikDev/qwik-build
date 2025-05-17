@@ -87,14 +87,14 @@ const adjustProbabilities = (e, t, o) => {
   if (e.S) {
     o || (o = /* @__PURE__ */ new Set());
     o.add(e);
-    const t2 = 1 - e.u;
-    for (const n2 of e.S) {
-      const e2 = getBundle(n2.m);
-      const r = n2.q;
-      const l = 1 - n2.I * t2;
-      const a = l / r;
-      n2.q = a;
-      adjustProbabilities(e2, a, o);
+    const n2 = 1 - e.u;
+    for (const r of e.S) {
+      const e2 = getBundle(r.m);
+      const l = r.q;
+      const a = r.I !== 1 && t < 0.1 ? 0.05 : 1 - r.I * n2;
+      const s = a / l;
+      r.q = s;
+      adjustProbabilities(e2, s, o);
     }
   }
 };
@@ -108,10 +108,7 @@ const preload = (e, t) => {
   if (Array.isArray(e)) for (let t2 = e.length - 1; t2 >= 0; t2--) {
     const n = e[t2];
     if (typeof n === "number") o = 1 - n / 10;
-    else {
-      handleBundle(n, o);
-      o *= 1.005;
-    }
+    else handleBundle(n, o);
   }
   else handleBundle(e, o);
   if (isBrowser) trigger();

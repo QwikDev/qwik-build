@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+376aea1
+ * @builder.io/qwik 1.13.0-dev+adf20ca
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.13.0-dev+376aea1";
+const version = "1.13.0-dev+adf20ca";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -5955,8 +5955,8 @@ const PrefetchServiceWorker = opts => {
         ...opts
     };
     resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-    let code = PREFETCH_CODE.replace("URL", resolvedOpts.path);
-    isDev || (code = code.replaceAll(/\s+/gm, ""));
+    let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
+    isDev || (code = code.replaceAll(/\s\s+/gm, ""));
     const props = {
         dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),
         nonce: resolvedOpts.nonce
@@ -5967,7 +5967,7 @@ const PrefetchServiceWorker = opts => {
 const PREFETCH_CODE = /*#__PURE__*/ (c => {
     "getRegistrations" in c && c.getRegistrations().then((registrations => {
         registrations.forEach((registration => {
-            registration.active && registration.active.scriptURL.endsWith("URL") && registration.unregister().catch(console.error);
+            registration.active && registration.active.scriptURL.endsWith("_URL_") && registration.unregister().catch(console.error);
         }));
     }));
 }).toString();

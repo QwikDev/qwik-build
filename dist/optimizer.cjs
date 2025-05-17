@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+376aea1
+ * @builder.io/qwik/optimizer 1.13.0-dev+adf20ca
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.13.0-dev+376aea1"
+    qwik: "1.13.0-dev+adf20ca"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1764,7 +1764,7 @@ globalThis.qwikOptimizer = function(module) {
       const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
       if (modulePaths.length > 0) {
         bundle.origins = modulePaths;
-        modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) && (manifest.preloader = bundleFileName);
+        modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
       }
       manifest.bundles[bundleFileName] = bundle;
     }
@@ -2645,7 +2645,8 @@ globalThis.qwikOptimizer = function(module) {
         injections: manifest.injections,
         bundleGraph: manifest.bundleGraph,
         mapping: manifest.mapping,
-        preloader: manifest.preloader
+        preloader: manifest.preloader,
+        core: manifest.core
       });
       return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(serverManifest)};\n`;
     }
@@ -5400,14 +5401,14 @@ globalThis.qwikOptimizer = function(module) {
     if (e.S) {
       o || (o = new Set);
       o.add(e);
-      const t2 = 1 - e.u;
-      for (const n2 of e.S) {
-        const e2 = getBundle(n2.m);
-        const r = n2.q;
-        const l = 1 - n2.I * t2;
-        const a = l / r;
-        n2.q = a;
-        adjustProbabilities(e2, a, o);
+      const n2 = 1 - e.u;
+      for (const r of e.S) {
+        const e2 = getBundle(r.m);
+        const l = r.q;
+        const a = 1 !== r.I && t < .1 ? .05 : 1 - r.I * n2;
+        const s = a / l;
+        r.q = s;
+        adjustProbabilities(e2, s, o);
       }
     }
   };
@@ -5423,12 +5424,7 @@ globalThis.qwikOptimizer = function(module) {
     if (Array.isArray(e)) {
       for (let t2 = e.length - 1; t2 >= 0; t2--) {
         const n = e[t2];
-        if ("number" === typeof n) {
-          o = 1 - n / 10;
-        } else {
-          handleBundle(n, o);
-          o *= 1.005;
-        }
+        "number" === typeof n ? o = 1 - n / 10 : handleBundle(n, o);
       }
     } else {
       handleBundle(e, o);
@@ -5917,6 +5913,7 @@ globalThis.qwikOptimizer = function(module) {
     let rootDir = null;
     let ssrOutDir = null;
     const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
+    const disableFontPreload = qwikViteOpts.disableFontPreload ?? false;
     const injections = [];
     const qwikPlugin = createQwikPlugin(qwikViteOpts.optimizerOptions);
     const bundleGraphAdders = new Set;
@@ -6193,7 +6190,7 @@ globalThis.qwikOptimizer = function(module) {
                   });
                 } else {
                   const selectedFont = FONTS.find((ext => fileName.endsWith(ext)));
-                  selectedFont && injections.unshift({
+                  selectedFont && !disableFontPreload && injections.unshift({
                     tag: "link",
                     location: "head",
                     attributes: {

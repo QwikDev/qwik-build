@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+376aea1
+ * @builder.io/qwik 1.13.0-dev+adf20ca
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.13.0-dev+376aea1";
+const version = "1.13.0-dev+adf20ca";
 
 /**
  * @internal
@@ -9896,9 +9896,10 @@ const PrefetchServiceWorker = (opts) => {
         // the file 'qwik-prefetch-service-worker.js' is not located in /build/
         resolvedOpts.path = baseUrl + resolvedOpts.path;
     }
-    let code = PREFETCH_CODE.replace('URL', resolvedOpts.path);
+    let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
     if (!isDev) {
-        code = code.replaceAll(/\s+/gm, '');
+        // consecutive spaces are indentation
+        code = code.replaceAll(/\s\s+/gm, '');
     }
     const props = {
         dangerouslySetInnerHTML: [
@@ -9918,7 +9919,7 @@ const PREFETCH_CODE = /*#__PURE__*/ ((c // Service worker container
         c.getRegistrations().then((registrations) => {
             registrations.forEach((registration) => {
                 if (registration.active) {
-                    if (registration.active.scriptURL.endsWith('URL')) {
+                    if (registration.active.scriptURL.endsWith('_URL_')) {
                         registration.unregister().catch(console.error);
                     }
                 }

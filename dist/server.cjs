@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+376aea1
+ * @builder.io/qwik/server 1.13.0-dev+adf20ca
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -230,7 +230,7 @@ var initPreloader = (serializedBundleGraph, opts) => {
     if ("debug" in opts) {
       config.$DEBUG$ = !!opts.debug;
     }
-    if ("preloadProbability" in opts) {
+    if (typeof opts.preloadProbability === "number") {
       config.$invPreloadProbability$ = 1 - opts.preloadProbability;
     }
   }
@@ -363,7 +363,7 @@ var adjustProbabilities = (bundle, adjustFactor, seen) => {
     for (const dep of bundle.$deps$) {
       const depBundle = getBundle(dep.$name$);
       const prevAdjust = dep.$factor$;
-      const newInverseProbability = 1 - dep.$probability$ * probability;
+      const newInverseProbability = dep.$probability$ !== 1 && adjustFactor < 0.1 ? 0.05 : 1 - dep.$probability$ * probability;
       const factor = newInverseProbability / prevAdjust;
       dep.$factor$ = factor;
       adjustProbabilities(depBundle, factor, seen);
@@ -388,7 +388,6 @@ var preload = (name, probability) => {
         inverseProbability = 1 - item / 10;
       } else {
         handleBundle(item, inverseProbability);
-        inverseProbability *= 1.005;
       }
     }
   } else {
@@ -399,7 +398,7 @@ var preload = (name, probability) => {
   }
 };
 
-// packages/qwik/src/server/prefetch-utils.ts
+// packages/qwik/src/server/preload-utils.ts
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];
   const addPrefetchResource = (prefetchResources2) => {
@@ -418,7 +417,7 @@ function flattenPrefetchResources(prefetchResources) {
   return urls;
 }
 
-// packages/qwik/src/server/prefetch-strategy.ts
+// packages/qwik/src/server/preload-strategy.ts
 var import_qwik2 = require("@builder.io/qwik");
 var getBundles = (snapshotResult) => {
   var _a;
@@ -467,11 +466,13 @@ var expandBundles = (names, resolvedManifest) => {
   }
   resetQueue();
   let probability = 0.99;
-  for (const name of names) {
+  for (const name of names.slice(0, 15)) {
     preload(name, probability);
-    probability *= 0.95;
+    probability *= 0.85;
   }
-  return getQueue();
+  return getQueue().filter(
+    (name) => name !== (resolvedManifest == null ? void 0 : resolvedManifest.manifest.preloader) && name !== (resolvedManifest == null ? void 0 : resolvedManifest.manifest.core)
+  );
 };
 
 // packages/qwik/src/server/preload-impl.ts
@@ -516,7 +517,7 @@ function includePreloader(base2, manifest, options, referencedBundles, nonce) {
        * preloader which does feature detection and which will be available soon after inserting these
        * links.
        */
-      `${JSON.stringify(links)}.map((l,e)=>{e=document.createElement('link');e.rel='modulepreload';e.href=${JSON.stringify(base2)}+l;document.body.appendChild(e)});`
+      `${JSON.stringify(links)}.map((l,e)=>{e=document.createElement('link');e.rel='modulepreload';e.href=${JSON.stringify(base2)}+l;document.head.appendChild(e)});`
     ) : "";
     const opts = [];
     if (debug) {
@@ -531,7 +532,7 @@ function includePreloader(base2, manifest, options, referencedBundles, nonce) {
     const optsStr = opts.length ? `,{${opts.join(",")}}` : "";
     const script = (
       // First we wait for the onload event
-      `window.addEventListener('load',f=>{f=b=>{${insertLinks}b=fetch("${base2}q-bundle-graph-${manifestHash}.json");import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})};try{requestIdleCallback(f,{timeout:2000})}catch(e){setTimeout(f,200)}})`
+      `let b=fetch("${base2}q-bundle-graph-${manifestHash}.json");` + insertLinks + `window.addEventListener('load',f=>{f=_=>{import("${base2}${preloadChunk}").then(({l,p})=>{l(${JSON.stringify(base2)},b${optsStr});p(${JSON.stringify(referencedBundles)});})};try{requestIdleCallback(f,{timeout:2000})}catch(e){setTimeout(f,200)}})`
     );
     nodes.push(
       (0, import_qwik3.jsx)("script", {
@@ -551,8 +552,8 @@ function normalizePreLoaderOptions(input) {
   return { ...PreLoaderOptionsDefault, ...input };
 }
 var PreLoaderOptionsDefault = {
-  ssrPreloads: 5,
-  ssrPreloadProbability: 0.7,
+  ssrPreloads: 7,
+  ssrPreloadProbability: 0.5,
   debug: false,
   maxIdlePreloads: 25,
   preloadProbability: 0.35
@@ -596,7 +597,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+376aea1",
+  qwik: "1.13.0-dev+adf20ca",
   qwikDom: "2.1.19"
 };
 
@@ -604,7 +605,7 @@ var versions = {
 var import_qwik_client_manifest = require("@qwik-client-manifest");
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
@@ -727,6 +728,22 @@ async function renderToStream(rootNode, opts) {
       })
     );
   }
+  const preloadChunk = (_d = resolvedManifest == null ? void 0 : resolvedManifest.manifest) == null ? void 0 : _d.preloader;
+  if (preloadChunk && opts.preloader !== false) {
+    const core = resolvedManifest == null ? void 0 : resolvedManifest.manifest.core;
+    beforeContent.push(
+      (0, import_qwik4.jsx)("link", { rel: "modulepreload", href: `${buildBase}${preloadChunk}` }),
+      (0, import_qwik4.jsx)("link", {
+        rel: "preload",
+        href: `${buildBase}q-bundle-graph-${resolvedManifest == null ? void 0 : resolvedManifest.manifest.manifestHash}.json`,
+        as: "fetch",
+        crossorigin: "anonymous"
+      })
+    );
+    if (core) {
+      beforeContent.push((0, import_qwik4.jsx)("link", { rel: "modulepreload", href: `${buildBase}${core}` }));
+    }
+  }
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
@@ -739,7 +756,7 @@ async function renderToStream(rootNode, opts) {
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState, _dynamic, textNodes) => {
-      var _a2, _b2, _c2, _d, _e;
+      var _a2, _b2, _c2, _d2, _e;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       snapshotResult = await (0, import_qwik4._pauseFromContexts)(contexts, containerState, void 0, textNodes);
@@ -788,7 +805,7 @@ async function renderToStream(rootNode, opts) {
           (0, import_qwik4.jsx)("script", {
             id: "qwikloader",
             dangerouslySetInnerHTML: qwikLoaderScript,
-            nonce: (_d = opts.serverData) == null ? void 0 : _d.nonce
+            nonce: (_d2 = opts.serverData) == null ? void 0 : _d2.nonce
           })
         );
       }
