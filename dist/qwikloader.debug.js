@@ -80,7 +80,15 @@
         let importError;
         let error;
         const isSync = qrl.startsWith("#");
-        const eventData = { qBase, qManifest, qVersion, href, symbol, element, reqTime };
+        const eventData = {
+          qBase,
+          qManifest,
+          qVersion,
+          href,
+          symbol,
+          element,
+          reqTime
+        };
         if (isSync) {
           const hash = container.getAttribute("q:instance");
           handler = (doc["qFuncs_" + hash] || [])[Number.parseInt(symbol)];
@@ -89,6 +97,7 @@
             error = new Error("sym:" + symbol);
           }
         } else {
+          emitEvent("qsymbol", eventData);
           const uri = url.href.split("#")[0];
           try {
             const module = import(
@@ -107,7 +116,11 @@
           }
         }
         if (!handler) {
-          emitEvent("qerror", { importError, error, ...eventData });
+          emitEvent("qerror", {
+            importError,
+            error,
+            ...eventData
+          });
           console.error(error);
           break;
         }
@@ -115,7 +128,6 @@
         if (element.isConnected) {
           try {
             doc.__q_context__ = [element, ev, url];
-            isSync || emitEvent("qsymbol", { ...eventData });
             const results = handler(ev, element);
             if (isPromise(results)) {
               await results;
