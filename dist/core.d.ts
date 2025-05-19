@@ -2069,6 +2069,10 @@ export declare type QwikSymbolEvent = CustomEvent<{
     symbol: string;
     element: Element;
     reqTime: number;
+    qBase?: string;
+    qManifest?: string;
+    qVersion?: string;
+    href?: string;
 }>;
 
 /** @public @deprecated Use `TouchEvent` and use the second argument to the handler function for the current event target */
@@ -3854,7 +3858,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.13.0-dev+adf20ca
+ * 1.13.0-dev+b0b61a7
  *
  * @public
  */

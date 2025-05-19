@@ -5,6 +5,7 @@ const preloadStr = "preload";
 const config = { t: 0, o: 25, l: 0.65 };
 const rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
 const loadStart = Date.now();
+const isJSRegex = /\.[mc]?js$/;
 const BundleImportState_None = 0;
 const BundleImportState_Queued = 1;
 const BundleImportState_Preload = 2;
@@ -37,7 +38,7 @@ const trigger = () => {
       // While the graph is not available, we limit to 2 preloads
       2
     );
-    if (o === 1 || preloadCount < n) {
+    if (o >= 0.99 || preloadCount < n) {
       queue.shift();
       preloadOne(e);
     } else break;
@@ -53,11 +54,11 @@ const preloadOne = (e) => {
   if (e.i >= BundleImportState_Preload) return;
   preloadCount++;
   const t = Date.now();
-  e.p = t - e.B;
+  e.p = t - e.m;
   e.i = BundleImportState_Preload;
-  config.t && log(`<< load ${Math.round((1 - e.u) * 100)}% after ${`${e.p}ms`}`, e.m);
+  config.t && log(`<< load ${Math.round((1 - e.u) * 100)}% after ${`${e.p}ms`}`, e.B);
   const o = doc.createElement("link");
-  o.href = e.h;
+  o.href = new URL(`${base}${e.B}`, doc.baseURI).toString();
   o.rel = rel;
   o.as = "script";
   o.onload = o.onerror = () => {
@@ -65,7 +66,7 @@ const preloadOne = (e) => {
     const n = Date.now();
     e.$ = n - t;
     e.i = BundleImportState_Loaded;
-    config.t && log(`>> done after ${e.$}ms`, e.m);
+    config.t && log(`>> done after ${e.$}ms`, e.B);
     o.remove();
     trigger();
   };
@@ -74,36 +75,49 @@ const preloadOne = (e) => {
 const adjustProbabilities = (e, t, o) => {
   if (o == null ? void 0 : o.has(e)) return;
   const n = e.u;
-  e.u *= t;
+  e.u = t;
   if (n - e.u < 0.01) return;
-  if (e.i < BundleImportState_Preload && e.u < config.l) {
+  if (
+    // don't queue until we have initialized the preloader
+    base != null && e.i < BundleImportState_Preload && e.u < config.l
+  ) {
     if (e.i === BundleImportState_None) {
       e.i = BundleImportState_Queued;
       queue.push(e);
-      config.t && log(`queued ${Math.round((1 - e.u) * 100)}%`, e.m);
+      config.t && log(`queued ${Math.round((1 - e.u) * 100)}%`, e.B);
     }
     queueDirty = 1;
   }
-  if (e.S) {
+  if (e.h) {
     o || (o = /* @__PURE__ */ new Set());
     o.add(e);
-    const n2 = 1 - e.u;
-    for (const r of e.S) {
-      const e2 = getBundle(r.m);
-      const l = r.q;
-      const a = r.I !== 1 && t < 0.1 ? 0.05 : 1 - r.I * n2;
-      const s = a / l;
-      r.q = s;
-      adjustProbabilities(e2, s, o);
+    const t2 = 1 - e.u;
+    for (const n2 of e.h) {
+      const e2 = getBundle(n2.B);
+      if (e2.u === 0) continue;
+      let r;
+      if (n2.S > 0.5 && (t2 === 1 || t2 >= 0.99 && depsCount < 100)) {
+        depsCount++;
+        r = Math.min(0.01, 1 - n2.S);
+      } else {
+        const o2 = 1 - n2.S * t2;
+        const l = n2.q;
+        const s = o2 / l;
+        r = Math.max(0.02, e2.u * s);
+        n2.q = s;
+      }
+      adjustProbabilities(e2, r, o);
     }
   }
 };
 const handleBundle = (e, t) => {
   const o = getBundle(e);
-  if (o && o.u > t) adjustProbabilities(o, t / o.u);
+  if (o && o.u > t) adjustProbabilities(o, t);
 };
+let depsCount;
 const preload = (e, t) => {
-  if (base == null || !e.length) return;
+  if (!(e == null ? void 0 : e.length)) return;
+  depsCount = 0;
   let o = t ? 1 - t : 0.4;
   if (Array.isArray(e)) for (let t2 = e.length - 1; t2 >= 0; t2--) {
     const n = e[t2];
@@ -113,12 +127,16 @@ const preload = (e, t) => {
   else handleBundle(e, o);
   if (isBrowser) trigger();
 };
+if (isBrowser) document.addEventListener("qsymbol", (e) => {
+  const { symbol: t, href: o } = e.detail;
+  if (o) {
+    const e2 = t.slice(t.lastIndexOf("_") + 1);
+    preload(e2, 1);
+  }
+});
 let base;
 let graph;
-const makeBundle = (e, t) => {
-  const o = e.endsWith(".js") ? doc ? new URL(`${base}${e}`, doc.baseURI).toString() : e : null;
-  return { m: e, h: o, i: o ? BundleImportState_None : BundleImportState_Alias, S: t, u: 1, B: Date.now(), p: 0, $: 0 };
-};
+const makeBundle = (e, t) => ({ B: e, i: isJSRegex.test(e) ? BundleImportState_None : BundleImportState_Alias, h: t, u: 1, m: Date.now(), p: 0, $: 0 });
 const parseBundleGraph = (e) => {
   const t = /* @__PURE__ */ new Map();
   let o = 0;
@@ -126,10 +144,10 @@ const parseBundleGraph = (e) => {
     const n = e[o++];
     const r = [];
     let l;
-    let a = 1;
+    let s = 1;
     while (l = e[o], typeof l === "number") {
-      if (l < 0) a = -l / 10;
-      else r.push({ m: e[l], I: a, q: 1 });
+      if (l < 0) s = -l / 10;
+      else r.push({ B: e[l], S: s, q: 1 });
       o++;
     }
     t.set(n, r);
@@ -163,7 +181,7 @@ const loadBundleGraph = (e, t, o) => {
     const t2 = [];
     for (const [e3, o2] of graph.entries()) {
       const n = getBundle(e3);
-      n.S = o2;
+      n.h = o2;
       if (n.u < 1) {
         t2.push([n, n.u]);
         n.u = 1;

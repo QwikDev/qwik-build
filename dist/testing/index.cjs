@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.13.0-dev+adf20ca
+ * @builder.io/qwik/testing 1.13.0-dev+b0b61a7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22745,6 +22745,7 @@ var preloadStr = "preload";
 var config = { t: 0, o: 25, l: 0.65 };
 var rel = import_build2.isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
 var loadStart = Date.now();
+var isJSRegex = /\.[mc]?js$/;
 var BundleImportState_None = 0;
 var BundleImportState_Queued = 1;
 var BundleImportState_Preload = 2;
@@ -22777,7 +22778,7 @@ var trigger = () => {
       // While the graph is not available, we limit to 2 preloads
       2
     );
-    if (o === 1 || preloadCount < n) {
+    if (o >= 0.99 || preloadCount < n) {
       queue.shift();
       preloadOne(e);
     } else break;
@@ -22793,11 +22794,11 @@ var preloadOne = (e) => {
   if (e.i >= BundleImportState_Preload) return;
   preloadCount++;
   const t = Date.now();
-  e.p = t - e.B;
+  e.p = t - e.m;
   e.i = BundleImportState_Preload;
-  config.t && log(`<< load ${Math.round((1 - e.u) * 100)}% after ${`${e.p}ms`}`, e.m);
+  config.t && log(`<< load ${Math.round((1 - e.u) * 100)}% after ${`${e.p}ms`}`, e.B);
   const o = doc.createElement("link");
-  o.href = e.h;
+  o.href = new URL(`${base}${e.B}`, doc.baseURI).toString();
   o.rel = rel;
   o.as = "script";
   o.onload = o.onerror = () => {
@@ -22805,7 +22806,7 @@ var preloadOne = (e) => {
     const n = Date.now();
     e.$ = n - t;
     e.i = BundleImportState_Loaded;
-    config.t && log(`>> done after ${e.$}ms`, e.m);
+    config.t && log(`>> done after ${e.$}ms`, e.B);
     o.remove();
     trigger();
   };
@@ -22814,36 +22815,49 @@ var preloadOne = (e) => {
 var adjustProbabilities = (e, t, o) => {
   if (o == null ? void 0 : o.has(e)) return;
   const n = e.u;
-  e.u *= t;
+  e.u = t;
   if (n - e.u < 0.01) return;
-  if (e.i < BundleImportState_Preload && e.u < config.l) {
+  if (
+    // don't queue until we have initialized the preloader
+    base != null && e.i < BundleImportState_Preload && e.u < config.l
+  ) {
     if (e.i === BundleImportState_None) {
       e.i = BundleImportState_Queued;
       queue.push(e);
-      config.t && log(`queued ${Math.round((1 - e.u) * 100)}%`, e.m);
+      config.t && log(`queued ${Math.round((1 - e.u) * 100)}%`, e.B);
     }
     queueDirty = 1;
   }
-  if (e.S) {
+  if (e.h) {
     o || (o = /* @__PURE__ */ new Set());
     o.add(e);
-    const n2 = 1 - e.u;
-    for (const r of e.S) {
-      const e2 = getBundle(r.m);
-      const l = r.q;
-      const a = r.I !== 1 && t < 0.1 ? 0.05 : 1 - r.I * n2;
-      const s = a / l;
-      r.q = s;
-      adjustProbabilities(e2, s, o);
+    const t2 = 1 - e.u;
+    for (const n2 of e.h) {
+      const e2 = getBundle(n2.B);
+      if (e2.u === 0) continue;
+      let r;
+      if (n2.S > 0.5 && (t2 === 1 || t2 >= 0.99 && depsCount < 100)) {
+        depsCount++;
+        r = Math.min(0.01, 1 - n2.S);
+      } else {
+        const o2 = 1 - n2.S * t2;
+        const l = n2.q;
+        const s = o2 / l;
+        r = Math.max(0.02, e2.u * s);
+        n2.q = s;
+      }
+      adjustProbabilities(e2, r, o);
     }
   }
 };
 var handleBundle = (e, t) => {
   const o = getBundle(e);
-  if (o && o.u > t) adjustProbabilities(o, t / o.u);
+  if (o && o.u > t) adjustProbabilities(o, t);
 };
+var depsCount;
 var preload = (e, t) => {
-  if (base == null || !e.length) return;
+  if (!(e == null ? void 0 : e.length)) return;
+  depsCount = 0;
   let o = t ? 1 - t : 0.4;
   if (Array.isArray(e)) for (let t2 = e.length - 1; t2 >= 0; t2--) {
     const n = e[t2];
@@ -22853,12 +22867,16 @@ var preload = (e, t) => {
   else handleBundle(e, o);
   if (import_build2.isBrowser) trigger();
 };
+if (import_build2.isBrowser) document.addEventListener("qsymbol", (e) => {
+  const { symbol: t, href: o } = e.detail;
+  if (o) {
+    const e2 = t.slice(t.lastIndexOf("_") + 1);
+    preload(e2, 1);
+  }
+});
 var base;
 var graph;
-var makeBundle = (e, t) => {
-  const o = e.endsWith(".js") ? doc ? new URL(`${base}${e}`, doc.baseURI).toString() : e : null;
-  return { m: e, h: o, i: o ? BundleImportState_None : BundleImportState_Alias, S: t, u: 1, B: Date.now(), p: 0, $: 0 };
-};
+var makeBundle = (e, t) => ({ B: e, i: isJSRegex.test(e) ? BundleImportState_None : BundleImportState_Alias, h: t, u: 1, m: Date.now(), p: 0, $: 0 });
 var getBundle = (e) => {
   let t = bundles.get(e);
   if (!t) {
