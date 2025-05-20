@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.13.0-dev+b0b61a7
+ * @builder.io/qwik/server 1.13.0-dev+336a54d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -601,6 +601,11 @@ var includePreloader = (base2, resolvedManifest, options, referencedBundles, non
       (0, import_qwik3.jsx)("script", {
         type: "module",
         "q:type": "preload",
+        /**
+         * This async allows the preloader to be executed before the DOM is fully parsed even though
+         * it's at the bottom of the body
+         */
+        async: true,
         dangerouslySetInnerHTML: script,
         nonce
       })
@@ -678,7 +683,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.13.0-dev+b0b61a7",
+  qwik: "1.13.0-dev+336a54d",
   qwikDom: "2.1.19"
 };
 
