@@ -21,13 +21,13 @@
   - **Keep** your service worker code as is (either `<ServiceWorkerRegister/>` or `<PrefetchServiceWorker/>`).
   - **Configure** your server to provide long caching headers.
 
-  Service Worker:
+  **Service Worker:**
 
   This new implementation will use it to uninstall the current service worker to reduce the unnecessary duplication.
 
   The builtin service workers components are deprecated but still exist for backwards compatibility.
 
-  Caching Headers:
+  ⚠️ **IMPORTANT: Caching Headers:**
 
   The files under build/ and assets/ are named with their content hash and may therefore be cached indefinitely. Typically you should serve `build/*` and `assets/*` with `Cache-Control: public, max-age=31536000, immutable`.
 
@@ -54,6 +54,8 @@
     });
   }
   ```
+
+  #### Optional for legacy apps:
 
   For legacy apps that still need service worker functionality, you can add it back using:
 
