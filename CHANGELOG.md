@@ -65,7 +65,7 @@
 
 ### Patch Changes
 
-- Fix linting errors which were previously being ignored across the monorepo. (by [@better-salmon](https://github.com/better-salmon) in [#7418](https://github.com/QwikDev/qwik/pull/7418))
+- 🐞🩹 linting errors which were previously being ignored across the monorepo. (by [@better-salmon](https://github.com/better-salmon) in [#7418](https://github.com/QwikDev/qwik/pull/7418))
 
 - 🐞🩹 now qwikloader is loaded only once in all cases (by [@wmertens](https://github.com/wmertens) in [#7506](https://github.com/QwikDev/qwik/pull/7506))
 
