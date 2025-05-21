@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.14.0-dev+19ad014
+ * @builder.io/qwik/cli 1.14.0-dev+ca1944c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1558,7 +1558,7 @@ function limitLength(hint, maxLength = 50) {
 }
 function getPackageManager() {
   var _a;
-  return ((_a = (0, import_which_pm_runs.default)()) == null ? void 0 : _a.name) || "npm";
+  return ((_a = (0, import_which_pm_runs.default)()) == null ? void 0 : _a.name) || "pnpm";
 }
 function pmRunCmd() {
   const pm = getPackageManager();
@@ -5541,7 +5541,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.14.0-dev+19ad014");
+  console.log("1.14.0-dev+ca1944c");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
