@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+97aa67d
+ * @builder.io/qwik 1.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -8,6 +8,8 @@
 import { isServer, isBrowser, isDev } from "@builder.io/qwik/build";
 
 export { isBrowser, isDev, isServer } from "@builder.io/qwik/build";
+
+import { p } from "@builder.io/qwik/preloader";
 
 const implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $(first), ...rest);
@@ -59,7 +61,7 @@ const throwErrorAndStop = (message, ...optionalParams) => {
     throw createAndLogError(!1, message, ...optionalParams);
 };
 
-const logErrorAndStop = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
+const logErrorAndStop = (message, ...optionalParams) => createAndLogError(qDev, message, ...optionalParams);
 
 const _printed = /*#__PURE__*/ new Set;
 
@@ -579,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.13.0-dev+97aa67d";
+const version = "1.14.1";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -704,8 +706,7 @@ const unitlessNumbers = new Set([ "animationIterationCount", "aspectRatio", "bor
 const isUnitlessNumber = name => unitlessNumbers.has(name);
 
 const executeComponent = (rCtx, elCtx, attempt) => {
-    elCtx.$flags$ &= ~HOST_FLAG_DIRTY, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], 
-    elCtx.li.length = 0;
+    elCtx.$flags$ &= -2, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], elCtx.li.length = 0;
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
@@ -891,7 +892,7 @@ const _renderSSR = async (node, opts) => {
     const locale = opts.serverData?.locale;
     const containerAttributes = opts.containerAttributes;
     const qRender = containerAttributes["q:render"];
-    containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = version ?? "dev", 
+    containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.14.1", 
     containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
     containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
     containerAttributes["q:instance"] = hash();
@@ -1054,7 +1055,7 @@ maybeThen(executeComponent(rCtx, elCtx), (res => {
         if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
             const placeholderCtx = createMockQContext(1);
             const listeners = placeholderCtx.li;
-            listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
+            listeners.push(...elCtx.li), elCtx.$flags$ &= -3, placeholderCtx.$id$ = getNextIndex(rCtx);
             const attributes = {
                 type: "placeholder",
                 hidden: "",
@@ -1162,7 +1163,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 classStr = classStr ? `${extra} ${classStr}` : extra;
             }
             hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (listeners.push(...hostCtx.li), 
-            hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
+            hostCtx.$flags$ &= -3);
         }
         if (isHead && (flags |= 1), tagName in invisibleElements && (flags |= 16), tagName in textOnlyElements && (flags |= 8), 
         classStr && (openingElement += ' class="' + escapeHtml(classStr) + '"'), listeners.length > 0) {
@@ -2333,7 +2334,7 @@ const runSubscriber = async (task, containerState, rCtx) => (assertEqual(!!(task
 isResourceTask(task) ? runResource(task, containerState, rCtx) : isComputedTask(task) ? runComputed(task, containerState, rCtx) : runTask(task, containerState, rCtx));
 
 const runResource = (task, containerState, rCtx, waitOn) => {
-    task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+    task.$flags$ &= -17, cleanupTask(task);
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, task.$el$, void 0, "qTask");
     const {$subsManager$: subsManager} = containerState;
     iCtx.$renderCtx$ = rCtx;
@@ -2389,7 +2390,7 @@ const runResource = (task, containerState, rCtx, waitOn) => {
 };
 
 const runTask = (task, containerState, rCtx) => {
-    task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+    task.$flags$ &= -17, cleanupTask(task);
     const hostElement = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qTask");
     iCtx.$renderCtx$ = rCtx;
@@ -2423,7 +2424,7 @@ const runTask = (task, containerState, rCtx) => {
 };
 
 const runComputed = (task, containerState, rCtx) => {
-    assertSignal(task.$state$), task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+    assertSignal(task.$state$), task.$flags$ &= -17, cleanupTask(task);
     const hostElement = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qComputed");
     iCtx.$subscriber$ = [ 0, task ], iCtx.$renderCtx$ = rCtx;
@@ -2434,8 +2435,7 @@ const runComputed = (task, containerState, rCtx) => {
     const ok = returnValue => {
         untrack((() => {
             const signal = task.$state$;
-            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue = returnValue, 
-            signal[QObjectManagerSymbol].$notifySubs$();
+            signal[QObjectSignalFlags] &= -3, signal.untrackedValue = returnValue, signal[QObjectManagerSymbol].$notifySubs$();
         }));
     };
     const fail = reason => {
@@ -3157,7 +3157,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
         if (2 & vnodeFlags) {
             return;
         }
-        isSvg && "foreignObject" === tag && (flags &= ~IS_SVG);
+        isSvg && "foreignObject" === tag && (flags &= -2);
         if (void 0 !== props[dangerouslySetInnerHTML]) {
             return void 0;
         }
@@ -3213,7 +3213,7 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         const slotRctx = pushRenderContext(rCtx);
         const slotEl = slotCtx.$element$;
         slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotEl;
-        let newFlags = flags & ~IS_SVG;
+        let newFlags = -2 & flags;
         slotEl.isSvg && (newFlags |= IS_SVG);
         const index = staticCtx.$addSlots$.findIndex((slot => slot[0] === slotEl));
         return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, newFlags);
@@ -3294,7 +3294,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
     const staticCtx = rCtx.$static$;
     const containerState = staticCtx.$containerState$;
     isVirtual ? elm = newVirtualElement(doc, isSvg) : "head" === tag ? (elm = doc.head, 
-    flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= ~IS_HEAD), 2 & vnode.$flags$ && (flags |= 4), 
+    flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= -3), 2 & vnode.$flags$ && (flags |= 4), 
     vnode.$elm$ = elm;
     const elCtx = createContext(elm);
     if (rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
@@ -3331,7 +3331,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
                     const slotRctx = pushRenderContext(rCtx);
                     const slotEl = slotCtx.$element$;
                     slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotEl;
-                    let newFlags = flags & ~IS_SVG;
+                    let newFlags = -2 & flags;
                     slotEl.isSvg && (newFlags |= IS_SVG);
                     for (const node of newVnode.$children$) {
                         const nodeElm = createElm(slotRctx, node, newFlags, p);
@@ -3361,12 +3361,12 @@ const createElm = (rCtx, vnode, flags, promises) => {
             const p = vnode.$immutableProps$ ? Object.fromEntries(Object.entries(props).filter((([k]) => !(k in vnode.$immutableProps$)))) : props;
             vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, p, isSvg, !1);
         }
-        if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG), currentComponent) {
+        if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2), currentComponent) {
             const scopedIds = currentComponent.$scopeIds$;
             scopedIds && scopedIds.forEach((styleId => {
                 elm.classList.add(styleId);
             })), currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (elCtx.li.push(...currentComponent.li), 
-            currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
+            currentComponent.$flags$ &= -3);
         }
         for (const listener of elCtx.li) {
             addQwikEvent(staticCtx, elm, listener[0]);
@@ -3374,7 +3374,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         if (void 0 !== props[dangerouslySetInnerHTML]) {
             return elm;
         }
-        isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG);
+        isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2);
     }
     let children = vnode.$children$;
     if (0 === children.length) {
@@ -4594,10 +4594,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset =
         }
         chunk = chunkOrFn;
     }
-    return announcedQRL.has(symbol) || (announcedQRL.add(symbol), emitEvent("qprefetch", {
-        symbols: [ getSymbolHash(symbol) ],
-        bundles: chunk && [ chunk ]
-    })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+    return announcedQRL.has(symbol) || announcedQRL.add(symbol), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
 };
 
 const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
@@ -5496,6 +5493,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             const qFuncs = getQFuncs(_containerEl.ownerDocument, hash);
             return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
         }
+        isBrowser && chunk && p(chunk, 1);
         const start = now();
         const ctx = tryGetInvokeContext();
         if (null !== symbolFn) {
@@ -5505,7 +5503,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
         }
         return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, ctx?.$element$, start)), (err => {
-            throw console.error(`qrl ${symbol} failed to load`, err), symbolRef = null, err;
+            console.error(`qrl ${symbol} failed to load`, err), symbolRef = null;
         })), symbolRef;
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
@@ -5541,7 +5539,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         dev: null,
         resolved: void 0
     }), symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved)))), 
-    qrl;
+    isBrowser && resolvedSymbol && p(resolvedSymbol, .8), qrl;
 };
 
 const getSymbolHash = symbolName => {
@@ -5665,7 +5663,7 @@ const renderRoot = async (rCtx, parent, jsxOutput) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", version ?? "dev"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "1.14.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
@@ -5951,54 +5949,29 @@ const PrefetchServiceWorker = opts => {
             dangerouslySetInnerHTML: "\x3c!-- PrefetchServiceWorker is disabled in dev mode. --\x3e"
         }, 0, "prefetch-service-worker");
     }
-    const serverData = useServerData("containerAttributes", {});
     const baseUrl = import.meta.env.BASE_URL || "/";
     const resolvedOpts = {
-        base: serverData["q:base"],
-        manifestHash: serverData["q:manifest-hash"],
-        scope: "/",
-        verbose: !1,
         path: "qwik-prefetch-service-worker.js",
         ...opts
     };
     resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-    let code = PREFETCH_CODE.replace("URL", resolvedOpts.path).replace("SCOPE", resolvedOpts.scope);
-    isDev || (code = code.replaceAll(/\s+/gm, ""));
+    let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
+    isDev || (code = code.replaceAll(/\s\s+/gm, ""));
     const props = {
-        dangerouslySetInnerHTML: [ "(" + code + ")(", [ JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join(""),
+        dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),
         nonce: resolvedOpts.nonce
     };
     return _jsxC("script", props, 0, "prefetch-service-worker");
 };
 
-const PREFETCH_CODE = /*#__PURE__*/ ((b, h, c, q, v) => {
-    c.register("URL", {
-        scope: "SCOPE"
-    }).then(((sw, onReady) => {
-        onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
-    })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
+const PREFETCH_CODE = /*#__PURE__*/ (c => {
+    "getRegistrations" in c && c.getRegistrations().then((registrations => {
+        registrations.forEach((registration => {
+            registration.active && registration.active.scriptURL.endsWith("_URL_") && registration.unregister().catch(console.error);
+        }));
+    }));
 }).toString();
 
-const PrefetchGraph = (opts = {}) => {
-    if (isDev && !import.meta.env.TEST) {
-        return _jsxC("script", {
-            dangerouslySetInnerHTML: "\x3c!-- PrefetchGraph is disabled in dev mode. --\x3e"
-        }, 0, "prefetch-graph");
-    }
-    const serverData = useServerData("containerAttributes", {});
-    const resolvedOpts = {
-        base: serverData["q:base"],
-        manifestHash: serverData["q:manifest-hash"],
-        scope: "/",
-        verbose: !1,
-        path: "qwik-prefetch-service-worker.js",
-        ...opts
-    };
-    const args = JSON.stringify([ "graph-url", resolvedOpts.base, `q-bundle-graph-${resolvedOpts.manifestHash}.json` ]);
-    return _jsxC("script", {
-        dangerouslySetInnerHTML: `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`,
-        nonce: opts.nonce
-    }, 0, "prefetch-graph");
-};
+const PrefetchGraph = () => null;
 
 export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, unwrapProxy as unwrapStore, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

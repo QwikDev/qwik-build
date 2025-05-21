@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.13.0-dev+97aa67d
+ * @builder.io/qwik/testing 1.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -59,8 +59,7 @@ var require_Event = __commonJS({
       this._immediatePropagationStopped = false;
       this._initialized = true;
       this._dispatching = false;
-      if (type)
-        this.type = type;
+      if (type) this.type = type;
       if (dictionary) {
         for (var p in dictionary) {
           this[p] = dictionary[p];
@@ -82,15 +81,13 @@ var require_Event = __commonJS({
       },
       preventDefault: {
         value: function preventDefault() {
-          if (this.cancelable)
-            this.defaultPrevented = true;
+          if (this.cancelable) this.defaultPrevented = true;
         }
       },
       initEvent: {
         value: function initEvent(type, bubbles, cancelable) {
           this._initialized = true;
-          if (this._dispatching)
-            return;
+          if (this._dispatching) return;
           this._propagationStopped = false;
           this._immediatePropagationStopped = false;
           this.defaultPrevented = false;
@@ -482,28 +479,21 @@ var require_EventTarget = __commonJS({
       // tree as well.  Then, in dispatch event, the capturing phase can
       // abort if it sees any node with a zero count.
       addEventListener: function addEventListener(type, listener, capture) {
-        if (!listener)
-          return;
-        if (capture === void 0)
-          capture = false;
-        if (!this._listeners)
-          this._listeners = /* @__PURE__ */ Object.create(null);
-        if (!this._listeners[type])
-          this._listeners[type] = [];
+        if (!listener) return;
+        if (capture === void 0) capture = false;
+        if (!this._listeners) this._listeners = /* @__PURE__ */ Object.create(null);
+        if (!this._listeners[type]) this._listeners[type] = [];
         var list = this._listeners[type];
         for (var i = 0, n = list.length; i < n; i++) {
           var l = list[i];
-          if (l.listener === listener && l.capture === capture)
-            return;
+          if (l.listener === listener && l.capture === capture) return;
         }
         var obj = { listener, capture };
-        if (typeof listener === "function")
-          obj.f = listener;
+        if (typeof listener === "function") obj.f = listener;
         list.push(obj);
       },
       removeEventListener: function removeEventListener(type, listener, capture) {
-        if (capture === void 0)
-          capture = false;
+        if (capture === void 0) capture = false;
         if (this._listeners) {
           var list = this._listeners[type];
           if (list) {
@@ -543,8 +533,7 @@ var require_EventTarget = __commonJS({
       // http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html#event-handlers
       //
       _dispatchEvent: function _dispatchEvent(event, trusted) {
-        if (typeof trusted !== "boolean")
-          trusted = false;
+        if (typeof trusted !== "boolean") trusted = false;
         function invoke2(target, event2) {
           var type = event2.type, phase = event2.eventPhase;
           event2.currentTarget = target;
@@ -567,19 +556,18 @@ var require_EventTarget = __commonJS({
                   event2.preventDefault();
                 break;
               case "beforeunload":
+              // XXX: eventually we need a special case here
+              /* falls through */
               default:
-                if (rv === false)
-                  event2.preventDefault();
+                if (rv === false) event2.preventDefault();
                 break;
             }
           }
           var list = target._listeners && target._listeners[type];
-          if (!list)
-            return;
+          if (!list) return;
           list = list.slice();
           for (var i2 = 0, n2 = list.length; i2 < n2; i2++) {
-            if (event2._immediatePropagationStopped)
-              return;
+            if (event2._immediatePropagationStopped) return;
             var l = list[i2];
             if (phase === Event.CAPTURING_PHASE && !l.capture || phase === Event.BUBBLING_PHASE && l.capture)
               continue;
@@ -593,19 +581,16 @@ var require_EventTarget = __commonJS({
             }
           }
         }
-        if (!event._initialized || event._dispatching)
-          utils.InvalidStateError();
+        if (!event._initialized || event._dispatching) utils.InvalidStateError();
         event.isTrusted = trusted;
         event._dispatching = true;
         event.target = this;
         var ancestors = [];
-        for (var n = this.parentNode; n; n = n.parentNode)
-          ancestors.push(n);
+        for (var n = this.parentNode; n; n = n.parentNode) ancestors.push(n);
         event.eventPhase = Event.CAPTURING_PHASE;
         for (var i = ancestors.length - 1; i >= 0; i--) {
           invoke2(ancestors[i], event);
-          if (event._propagationStopped)
-            break;
+          if (event._propagationStopped) break;
         }
         if (!event._propagationStopped) {
           event.eventPhase = Event.AT_TARGET;
@@ -615,8 +600,7 @@ var require_EventTarget = __commonJS({
           event.eventPhase = Event.BUBBLING_PHASE;
           for (var ii = 0, nn = ancestors.length; ii < nn; ii++) {
             invoke2(ancestors[ii], event);
-            if (event._propagationStopped)
-              break;
+            if (event._propagationStopped) break;
           }
         }
         event._dispatching = false;
@@ -636,8 +620,7 @@ var require_EventTarget = __commonJS({
               this._armed = null;
               break;
             case "mouseup":
-              if (this._isClick(event))
-                this._doClick(event);
+              if (this._isClick(event)) this._doClick(event);
               this._armed = null;
               break;
           }
@@ -655,12 +638,10 @@ var require_EventTarget = __commonJS({
       // Note that this method is similar to the HTMLElement.click() method
       // The event argument must be the trusted mouseup event
       _doClick: function(event) {
-        if (this._click_in_progress)
-          return;
+        if (this._click_in_progress) return;
         this._click_in_progress = true;
         var activated = this;
-        while (activated && !activated._post_click_activation_steps)
-          activated = activated.parentNode;
+        while (activated && !activated._post_click_activation_steps) activated = activated.parentNode;
         if (activated && activated._pre_click_activation_steps) {
           activated._pre_click_activation_steps();
         }
@@ -685,11 +666,9 @@ var require_EventTarget = __commonJS({
         var result = this._dispatchEvent(click, true);
         if (activated) {
           if (result) {
-            if (activated._post_click_activation_steps)
-              activated._post_click_activation_steps(click);
+            if (activated._post_click_activation_steps) activated._post_click_activation_steps(click);
           } else {
-            if (activated._cancelled_activation_steps)
-              activated._cancelled_activation_steps();
+            if (activated._cancelled_activation_steps) activated._cancelled_activation_steps();
           }
         }
       },
@@ -707,8 +686,7 @@ var require_EventTarget = __commonJS({
       // of event dispatch.
       //
       _setEventHandler: function _setEventHandler(type, handler) {
-        if (!this._handlers)
-          this._handlers = /* @__PURE__ */ Object.create(null);
+        if (!this._handlers) this._handlers = /* @__PURE__ */ Object.create(null);
         this._handlers[type] = handler;
       },
       _getEventHandler: function _getEventHandler(type) {
@@ -856,17 +834,12 @@ var require_NodeUtils = __commonJS({
     }
     function attrname(a) {
       var ns = a.namespaceURI;
-      if (!ns)
-        return a.localName;
-      if (ns === NAMESPACE.XML)
-        return "xml:" + a.localName;
-      if (ns === NAMESPACE.XLINK)
-        return "xlink:" + a.localName;
+      if (!ns) return a.localName;
+      if (ns === NAMESPACE.XML) return "xml:" + a.localName;
+      if (ns === NAMESPACE.XLINK) return "xlink:" + a.localName;
       if (ns === NAMESPACE.XMLNS) {
-        if (a.localName === "xmlns")
-          return "xmlns";
-        else
-          return "xmlns:" + a.localName;
+        if (a.localName === "xmlns") return "xmlns";
+        else return "xmlns:" + a.localName;
       }
       return a.name;
     }
@@ -881,25 +854,23 @@ var require_NodeUtils = __commonJS({
           for (var j = 0, k = kid._numattrs; j < k; j++) {
             var a = kid._attr(j);
             s += " " + attrname(a);
-            if (a.value !== void 0)
-              s += '="' + escapeAttr(a.value) + '"';
+            if (a.value !== void 0) s += '="' + escapeAttr(a.value) + '"';
           }
           s += ">";
           if (!(html && emptyElements[tagname])) {
             var ss = kid.serialize();
-            if (html && extraNewLine[tagname] && ss.charAt(0) === "\n")
-              s += "\n";
+            if (html && extraNewLine[tagname] && ss.charAt(0) === "\n") s += "\n";
             s += ss;
             s += "</" + tagname + ">";
           }
           break;
         case 3:
+        //TEXT_NODE
         case 4:
           var parenttag;
           if (parent.nodeType === 1 && parent.namespaceURI === NAMESPACE.HTML)
             parenttag = parent.tagName;
-          else
-            parenttag = "";
+          else parenttag = "";
           if (hasRawContent[parenttag] || parenttag === "NOSCRIPT" && parent.ownerDocument._scripting_enabled) {
             s += kid.data;
           } else {
@@ -997,20 +968,16 @@ var require_Node = __commonJS({
       previousSibling: {
         get: function() {
           var parent = this.parentNode;
-          if (!parent)
-            return null;
-          if (this === parent.firstChild)
-            return null;
+          if (!parent) return null;
+          if (this === parent.firstChild) return null;
           return this._previousSibling;
         }
       },
       nextSibling: {
         get: function() {
           var parent = this.parentNode, next = this._nextSibling;
-          if (!parent)
-            return null;
-          if (next === parent.firstChild)
-            return null;
+          if (!parent) return null;
+          if (next === parent.firstChild) return null;
           return next;
         }
       },
@@ -1026,8 +993,7 @@ var require_Node = __commonJS({
         value: function(type) {
           var sum = 0;
           for (var kid = this.firstChild; kid !== null; kid = kid.nextSibling) {
-            if (kid.nodeType === type)
-              sum++;
+            if (kid.nodeType === type) sum++;
           }
           return sum;
         }
@@ -1035,8 +1001,7 @@ var require_Node = __commonJS({
       _ensureInsertValid: {
         value: function _ensureInsertValid(node, child, isPreinsert) {
           var parent = this, i, kid;
-          if (!node.nodeType)
-            throw new TypeError("not a node");
+          if (!node.nodeType) throw new TypeError("not a node");
           switch (parent.nodeType) {
             case DOCUMENT_NODE:
             case DOCUMENT_FRAGMENT_NODE:
@@ -1045,11 +1010,9 @@ var require_Node = __commonJS({
             default:
               utils.HierarchyRequestError();
           }
-          if (node.isAncestor(parent))
-            utils.HierarchyRequestError();
+          if (node.isAncestor(parent)) utils.HierarchyRequestError();
           if (child !== null || !isPreinsert) {
-            if (child.parentNode !== parent)
-              utils.NotFoundError();
+            if (child.parentNode !== parent) utils.NotFoundError();
           }
           switch (node.nodeType) {
             case DOCUMENT_FRAGMENT_NODE:
@@ -1068,8 +1031,7 @@ var require_Node = __commonJS({
                 utils.HierarchyRequestError();
                 break;
               case DOCUMENT_FRAGMENT_NODE:
-                if (node._countChildrenOfType(TEXT_NODE) > 0)
-                  utils.HierarchyRequestError();
+                if (node._countChildrenOfType(TEXT_NODE) > 0) utils.HierarchyRequestError();
                 switch (node._countChildrenOfType(ELEMENT_NODE)) {
                   case 0:
                     break;
@@ -1078,14 +1040,12 @@ var require_Node = __commonJS({
                       if (isPreinsert && child.nodeType === DOCUMENT_TYPE_NODE)
                         utils.HierarchyRequestError();
                       for (kid = child.nextSibling; kid !== null; kid = kid.nextSibling) {
-                        if (kid.nodeType === DOCUMENT_TYPE_NODE)
-                          utils.HierarchyRequestError();
+                        if (kid.nodeType === DOCUMENT_TYPE_NODE) utils.HierarchyRequestError();
                       }
                     }
                     i = parent._countChildrenOfType(ELEMENT_NODE);
                     if (isPreinsert) {
-                      if (i > 0)
-                        utils.HierarchyRequestError();
+                      if (i > 0) utils.HierarchyRequestError();
                     } else {
                       if (i > 1 || i === 1 && child.nodeType !== ELEMENT_NODE)
                         utils.HierarchyRequestError();
@@ -1100,14 +1060,12 @@ var require_Node = __commonJS({
                   if (isPreinsert && child.nodeType === DOCUMENT_TYPE_NODE)
                     utils.HierarchyRequestError();
                   for (kid = child.nextSibling; kid !== null; kid = kid.nextSibling) {
-                    if (kid.nodeType === DOCUMENT_TYPE_NODE)
-                      utils.HierarchyRequestError();
+                    if (kid.nodeType === DOCUMENT_TYPE_NODE) utils.HierarchyRequestError();
                   }
                 }
                 i = parent._countChildrenOfType(ELEMENT_NODE);
                 if (isPreinsert) {
-                  if (i > 0)
-                    utils.HierarchyRequestError();
+                  if (i > 0) utils.HierarchyRequestError();
                 } else {
                   if (i > 1 || i === 1 && child.nodeType !== ELEMENT_NODE)
                     utils.HierarchyRequestError();
@@ -1115,20 +1073,16 @@ var require_Node = __commonJS({
                 break;
               case DOCUMENT_TYPE_NODE:
                 if (child === null) {
-                  if (parent._countChildrenOfType(ELEMENT_NODE))
-                    utils.HierarchyRequestError();
+                  if (parent._countChildrenOfType(ELEMENT_NODE)) utils.HierarchyRequestError();
                 } else {
                   for (kid = parent.firstChild; kid !== null; kid = kid.nextSibling) {
-                    if (kid === child)
-                      break;
-                    if (kid.nodeType === ELEMENT_NODE)
-                      utils.HierarchyRequestError();
+                    if (kid === child) break;
+                    if (kid.nodeType === ELEMENT_NODE) utils.HierarchyRequestError();
                   }
                 }
                 i = parent._countChildrenOfType(DOCUMENT_TYPE_NODE);
                 if (isPreinsert) {
-                  if (i > 0)
-                    utils.HierarchyRequestError();
+                  if (i > 0) utils.HierarchyRequestError();
                 } else {
                   if (i > 1 || i === 1 && child.nodeType !== DOCUMENT_TYPE_NODE)
                     utils.HierarchyRequestError();
@@ -1136,8 +1090,7 @@ var require_Node = __commonJS({
                 break;
             }
           } else {
-            if (node.nodeType === DOCUMENT_TYPE_NODE)
-              utils.HierarchyRequestError();
+            if (node.nodeType === DOCUMENT_TYPE_NODE) utils.HierarchyRequestError();
           }
         }
       },
@@ -1167,10 +1120,8 @@ var require_Node = __commonJS({
       removeChild: {
         value: function removeChild(child) {
           var parent = this;
-          if (!child.nodeType)
-            throw new TypeError("not a node");
-          if (child.parentNode !== parent)
-            utils.NotFoundError();
+          if (!child.nodeType) throw new TypeError("not a node");
+          if (child.parentNode !== parent) utils.NotFoundError();
           child.remove();
           return child;
         }
@@ -1201,15 +1152,12 @@ var require_Node = __commonJS({
       },
       compareDocumentPosition: {
         value: function compareDocumentPosition(that) {
-          if (this === that)
-            return 0;
+          if (this === that) return 0;
           if (this.doc !== that.doc || this.rooted !== that.rooted)
             return DOCUMENT_POSITION_DISCONNECTED + DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC;
           var these = [], those = [];
-          for (var n = this; n !== null; n = n.parentNode)
-            these.push(n);
-          for (n = that; n !== null; n = n.parentNode)
-            those.push(n);
+          for (var n = this; n !== null; n = n.parentNode) these.push(n);
+          for (n = that; n !== null; n = n.parentNode) those.push(n);
           these.reverse();
           those.reverse();
           if (these[0] !== those[0])
@@ -1217,16 +1165,13 @@ var require_Node = __commonJS({
           n = Math.min(these.length, those.length);
           for (var i = 1; i < n; i++) {
             if (these[i] !== those[i]) {
-              if (these[i].index < those[i].index)
-                return DOCUMENT_POSITION_FOLLOWING;
-              else
-                return DOCUMENT_POSITION_PRECEDING;
+              if (these[i].index < those[i].index) return DOCUMENT_POSITION_FOLLOWING;
+              else return DOCUMENT_POSITION_PRECEDING;
             }
           }
           if (these.length < those.length)
             return DOCUMENT_POSITION_FOLLOWING + DOCUMENT_POSITION_CONTAINED_BY;
-          else
-            return DOCUMENT_POSITION_PRECEDING + DOCUMENT_POSITION_CONTAINS;
+          else return DOCUMENT_POSITION_PRECEDING + DOCUMENT_POSITION_CONTAINS;
         }
       },
       isSameNode: {
@@ -1239,15 +1184,11 @@ var require_Node = __commonJS({
       // defined by subclasses
       isEqualNode: {
         value: function isEqualNode(node) {
-          if (!node)
-            return false;
-          if (node.nodeType !== this.nodeType)
-            return false;
-          if (!this.isEqual(node))
-            return false;
+          if (!node) return false;
+          if (node.nodeType !== this.nodeType) return false;
+          if (!this.isEqual(node)) return false;
           for (var c1 = this.firstChild, c2 = node.firstChild; c1 && c2; c1 = c1.nextSibling, c2 = c2.nextSibling) {
-            if (!c1.isEqualNode(c2))
-              return false;
+            if (!c1.isEqualNode(c2)) return false;
           }
           return c1 === null && c2 === null;
         }
@@ -1268,8 +1209,7 @@ var require_Node = __commonJS({
       lookupPrefix: {
         value: function lookupPrefix(ns) {
           var e;
-          if (ns === "" || ns === null || ns === void 0)
-            return null;
+          if (ns === "" || ns === null || ns === void 0) return null;
           switch (this.nodeType) {
             case ELEMENT_NODE:
               return this._lookupNamespacePrefix(ns, this);
@@ -1331,8 +1271,7 @@ var require_Node = __commonJS({
       index: {
         get: function() {
           var parent = this.parentNode;
-          if (this === parent.firstChild)
-            return 0;
+          if (this === parent.firstChild) return 0;
           var kids = parent.childNodes;
           if (this._index === void 0 || kids[this._index] !== this) {
             for (var i = 0; i < kids.length; i++) {
@@ -1347,13 +1286,10 @@ var require_Node = __commonJS({
       // Note that nodes are considered to be ancestors of themselves
       isAncestor: {
         value: function(that) {
-          if (this.doc !== that.doc)
-            return false;
-          if (this.rooted !== that.rooted)
-            return false;
+          if (this.doc !== that.doc) return false;
+          if (this.rooted !== that.rooted) return false;
           for (var e = that; e; e = e.parentNode) {
-            if (e === this)
-              return true;
+            if (e === this) return true;
           }
           return false;
         }
@@ -1390,8 +1326,7 @@ var require_Node = __commonJS({
             }
           }
           if (isReplace) {
-            if (before.rooted)
-              before.doc.mutateRemove(before);
+            if (before.rooted) before.doc.mutateRemove(before);
             before.parentNode = null;
           }
           var n = before;
@@ -1633,8 +1568,7 @@ var require_NodeList_es5 = __commonJS({
       return this[i] || null;
     }
     function NodeList(a) {
-      if (!a)
-        a = [];
+      if (!a) a = [];
       a.item = item;
       return a;
     }
@@ -1730,8 +1664,7 @@ var require_ContainerNode = __commonJS({
           while (next !== null) {
             kid = next;
             next = kid.nextSibling;
-            if (root)
-              root.mutateRemove(kid);
+            if (root) root.mutateRemove(kid);
             kid.parentNode = null;
           }
           if (this._childNodes) {
@@ -1772,26 +1705,18 @@ var require_xmlnames = __commonJS({
     var surrogatename = new RegExp("^[" + namestartchars + "][" + namechars + "]*$");
     var surrogateqname = new RegExp("^(" + ncname + "|" + ncname + ":" + ncname + ")$");
     function isValidName(s) {
-      if (simplename.test(s))
-        return true;
-      if (name.test(s))
-        return true;
-      if (!hassurrogates.test(s))
-        return false;
-      if (!surrogatename.test(s))
-        return false;
+      if (simplename.test(s)) return true;
+      if (name.test(s)) return true;
+      if (!hassurrogates.test(s)) return false;
+      if (!surrogatename.test(s)) return false;
       var chars = s.match(surrogatechars), pairs = s.match(surrogatepairs);
       return pairs !== null && 2 * pairs.length === chars.length;
     }
     function isValidQName(s) {
-      if (simpleqname.test(s))
-        return true;
-      if (qname.test(s))
-        return true;
-      if (!hassurrogates.test(s))
-        return false;
-      if (!surrogateqname.test(s))
-        return false;
+      if (simpleqname.test(s)) return true;
+      if (qname.test(s)) return true;
+      if (!hassurrogates.test(s)) return false;
+      if (!surrogateqname.test(s)) return false;
       var chars = s.match(surrogatechars), pairs = s.match(surrogatepairs);
       return pairs !== null && 2 * pairs.length === chars.length;
     }
@@ -1820,13 +1745,10 @@ var require_attributes = __commonJS({
         return {
           get: function() {
             var v = this._getattr(attr.name);
-            if (v === null)
-              return missingValueDefault;
+            if (v === null) return missingValueDefault;
             v = valid[v.toLowerCase()];
-            if (v !== void 0)
-              return v;
-            if (invalidValueDefault !== null)
-              return invalidValueDefault;
+            if (v !== void 0) return v;
+            if (invalidValueDefault !== null) return invalidValueDefault;
             return v;
           },
           set: function(v) {
@@ -1883,16 +1805,12 @@ var require_attributes = __commonJS({
       var unsigned_fallback = a.type === "limited unsigned long with fallback";
       var min = a.min, max = a.max, setmin = a.setmin;
       if (min === void 0) {
-        if (unsigned_long)
-          min = 0;
-        if (signed_long)
-          min = -2147483648;
-        if (unsigned_fallback)
-          min = 1;
+        if (unsigned_long) min = 0;
+        if (signed_long) min = -2147483648;
+        if (unsigned_fallback) min = 1;
       }
       if (max === void 0) {
-        if (unsigned_long || signed_long || unsigned_fallback)
-          max = 2147483647;
+        if (unsigned_long || signed_long || unsigned_fallback) max = 2147483647;
       }
       return {
         get: function() {
@@ -1955,8 +1873,7 @@ var require_FilteredElementList = __commonJS({
       length: {
         get: function() {
           this.checkcache();
-          if (!this.done)
-            this.traverse();
+          if (!this.done) this.traverse();
           return this.cache.length;
         }
       },
@@ -1988,14 +1905,12 @@ var require_FilteredElementList = __commonJS({
       // traverse until we've found all items.
       traverse: {
         value: function(n) {
-          if (n !== void 0)
-            n++;
+          if (n !== void 0) n++;
           var elt;
           while ((elt = this.next()) !== null) {
             this[this.cache.length] = elt;
             this.cache.push(elt);
-            if (n && this.cache.length === n)
-              return;
+            if (n && this.cache.length === n) return;
           }
           this.done = true;
         }
@@ -2005,10 +1920,8 @@ var require_FilteredElementList = __commonJS({
         value: function() {
           var start = this.cache.length === 0 ? this.root : this.cache[this.cache.length - 1];
           var elt;
-          if (start.nodeType === Node.DOCUMENT_NODE)
-            elt = start.documentElement;
-          else
-            elt = start.nextElement(this.root);
+          if (start.nodeType === Node.DOCUMENT_NODE) elt = start.documentElement;
+          else elt = start.nextElement(this.root);
           while (elt) {
             if (this.filter(elt)) {
               return elt;
@@ -2224,26 +2137,22 @@ var require_select = __commonJS({
       return compareDocumentPosition(a, b) & 2 ? 1 : -1;
     };
     var next = function(el) {
-      while ((el = el.nextSibling) && el.nodeType !== 1)
-        ;
+      while ((el = el.nextSibling) && el.nodeType !== 1) ;
       return el;
     };
     var prev = function(el) {
-      while ((el = el.previousSibling) && el.nodeType !== 1)
-        ;
+      while ((el = el.previousSibling) && el.nodeType !== 1) ;
       return el;
     };
     var child = function(el) {
       if (el = el.firstChild) {
-        while (el.nodeType !== 1 && (el = el.nextSibling))
-          ;
+        while (el.nodeType !== 1 && (el = el.nextSibling)) ;
       }
       return el;
     };
     var lastChild = function(el) {
       if (el = el.lastChild) {
-        while (el.nodeType !== 1 && (el = el.previousSibling))
-          ;
+        while (el.nodeType !== 1 && (el = el.previousSibling)) ;
       }
       return el;
     };
@@ -2255,8 +2164,7 @@ var require_select = __commonJS({
       return nodeType === 1 || nodeType === 9;
     };
     var unquote = function(str) {
-      if (!str)
-        return str;
+      if (!str) return str;
       var ch = str[0];
       if (ch === '"' || ch === "'") {
         if (str[str.length - 1] === ch) {
@@ -2304,8 +2212,7 @@ var require_select = __commonJS({
       return function(obj, item) {
         var i = this.length;
         while (i--) {
-          if (this[i] === item)
-            return i;
+          if (this[i] === item) return i;
         }
         return -1;
       };
@@ -2340,17 +2247,15 @@ var require_select = __commonJS({
     var nth = function(param_, test, last) {
       var param = parseNth(param_), group = param.group, offset = param.offset, find2 = !last ? child : lastChild, advance = !last ? next : prev;
       return function(el) {
-        if (!parentIsElement(el))
-          return;
-        var rel = find2(el.parentNode), pos = 0;
-        while (rel) {
-          if (test(rel, el))
-            pos++;
-          if (rel === el) {
+        if (!parentIsElement(el)) return;
+        var rel2 = find2(el.parentNode), pos = 0;
+        while (rel2) {
+          if (test(rel2, el)) pos++;
+          if (rel2 === el) {
             pos -= offset;
             return group && pos ? pos % group === 0 && pos < 0 === group < 0 : !pos;
           }
-          rel = advance(rel);
+          rel2 = advance(rel2);
         }
       };
     };
@@ -2358,8 +2263,7 @@ var require_select = __commonJS({
       "*": function() {
         if (false) {
           return function(el) {
-            if (el.nodeType === 1)
-              return true;
+            if (el.nodeType === 1) return true;
           };
         }
         return function() {
@@ -2393,6 +2297,7 @@ var require_select = __commonJS({
             case "title":
               attr = el.getAttribute("title") || null;
               break;
+            // careful with attributes with special getter functions
             case "id":
             case "lang":
             case "dir":
@@ -2404,6 +2309,7 @@ var require_select = __commonJS({
                 attr = el.getAttribute(key);
                 break;
               }
+            /* falls through */
             default:
               if (el.hasAttribute && !el.hasAttribute(key)) {
                 break;
@@ -2411,8 +2317,7 @@ var require_select = __commonJS({
               attr = el[key] != null ? el[key] : el.getAttribute && el.getAttribute(key);
               break;
           }
-          if (attr == null)
-            return;
+          if (attr == null) return;
           attr = attr + "";
           if (i) {
             attr = attr.toLowerCase();
@@ -2455,22 +2360,18 @@ var require_select = __commonJS({
         };
       },
       ":first-of-type": function(el) {
-        if (!parentIsElement(el))
-          return;
+        if (!parentIsElement(el)) return;
         var type = el.nodeName;
         while (el = prev(el)) {
-          if (el.nodeName === type)
-            return;
+          if (el.nodeName === type) return;
         }
         return true;
       },
       ":last-of-type": function(el) {
-        if (!parentIsElement(el))
-          return;
+        if (!parentIsElement(el)) return;
         var type = el.nodeName;
         while (el = next(el)) {
-          if (el.nodeName === type)
-            return;
+          if (el.nodeName === type) return;
         }
         return true;
       },
@@ -2480,8 +2381,8 @@ var require_select = __commonJS({
       ":nth-of-type": function(param, last) {
         return nth(
           param,
-          function(rel, el) {
-            return rel.nodeName === el.nodeName;
+          function(rel2, el) {
+            return rel2.nodeName === el.nodeName;
           },
           last
         );
@@ -2528,8 +2429,7 @@ var require_select = __commonJS({
       ":lang": function(param) {
         return function(el) {
           while (el) {
-            if (el.lang)
-              return el.lang.indexOf(param) === 0;
+            if (el.lang) return el.lang.indexOf(param) === 0;
             el = el.parentNode;
           }
         };
@@ -2537,8 +2437,7 @@ var require_select = __commonJS({
       ":dir": function(param) {
         return function(el) {
           while (el) {
-            if (el.dir)
-              return el.dir === param;
+            if (el.dir) return el.dir === param;
             el = el.parentNode;
           }
         };
@@ -2559,8 +2458,7 @@ var require_select = __commonJS({
         }
         var param = +el + 1;
         return function(el2) {
-          if (!el2.href)
-            return;
+          if (!el2.href) return;
           var url = window2.location + "", href = el2 + "";
           return truncateUrl(url, param) === truncateUrl(href, param);
         };
@@ -2587,8 +2485,7 @@ var require_select = __commonJS({
         return !el.required;
       },
       ":read-only": function(el) {
-        if (el.readOnly)
-          return true;
+        if (el.readOnly) return true;
         var attr = el.getAttribute("contenteditable"), prop = el.contentEditable, name = el.nodeName.toLowerCase();
         name = name !== "input" && name !== "textarea";
         return (name || el.disabled) && attr == null && prop !== "true";
@@ -2656,18 +2553,15 @@ var require_select = __commonJS({
         var i, s, f, l;
         for (s = 0; true; s = i + 1) {
           i = attr.indexOf(val, s);
-          if (i === -1)
-            return false;
+          if (i === -1) return false;
           f = attr[i - 1];
           l = attr[i + val.length];
-          if ((!f || f === " ") && (!l || l === " "))
-            return true;
+          if ((!f || f === " ") && (!l || l === " ")) return true;
         }
       },
       "|=": function(attr, val) {
         var i = attr.indexOf(val), l;
-        if (i !== 0)
-          return;
+        if (i !== 0) return;
         l = attr[i + val.length];
         return l === "-" || !l;
       },
@@ -2687,8 +2581,7 @@ var require_select = __commonJS({
       " ": function(test) {
         return function(el) {
           while (el = el.parentNode) {
-            if (test(el))
-              return el;
+            if (test(el)) return el;
           }
         };
       },
@@ -2709,8 +2602,7 @@ var require_select = __commonJS({
       "~": function(test) {
         return function(el) {
           while (el = prev(el)) {
-            if (test(el))
-              return el;
+            if (test(el)) return el;
           }
         };
       },
@@ -2722,7 +2614,7 @@ var require_select = __commonJS({
       ref: function(test, name) {
         var node;
         function ref(el) {
-          var doc = el.ownerDocument, nodes = doc.getElementsByTagName("*"), i = nodes.length;
+          var doc2 = el.ownerDocument, nodes = doc2.getElementsByTagName("*"), i = nodes.length;
           while (i--) {
             node = nodes[i];
             if (ref.test(el)) {
@@ -2733,11 +2625,9 @@ var require_select = __commonJS({
           node = null;
         }
         ref.combinator = function(el) {
-          if (!node || !node.getAttribute)
-            return;
+          if (!node || !node.getAttribute) return;
           var attr = node.getAttribute(name) || "";
-          if (attr[0] === "#")
-            attr = attr.substring(1);
+          if (attr[0] === "#") attr = attr.substring(1);
           if (attr === el.id && test(node)) {
             return node;
           }
@@ -2864,14 +2754,11 @@ var require_select = __commonJS({
     };
     var makeSimple = function(func) {
       var l = func.length, i;
-      if (l < 2)
-        return func[0];
+      if (l < 2) return func[0];
       return function(el) {
-        if (!el)
-          return;
+        if (!el) return;
         for (i = 0; i < l; i++) {
-          if (!func[i](el))
-            return;
+          if (!func[i](el)) return;
         }
         return true;
       };
@@ -2885,8 +2772,7 @@ var require_select = __commonJS({
       return function(el) {
         var i = func.length;
         while (i--) {
-          if (!(el = func[i](el)))
-            return;
+          if (!(el = func[i](el))) return;
         }
         return true;
       };
@@ -2915,21 +2801,18 @@ var require_select = __commonJS({
         test = compile(test.sel);
         tests.push(test);
       }
-      if (tests.length < 2)
-        return test;
+      if (tests.length < 2) return test;
       return function(el) {
         var l = tests.length, i = 0;
         for (; i < l; i++) {
-          if (tests[i](el))
-            return true;
+          if (tests[i](el)) return true;
         }
       };
     };
     var find = function(sel, node) {
       var results = [], test = compile(sel), scope = node.getElementsByTagName(test.qname), i = 0, el;
       while (el = scope[i++]) {
-        if (test(el))
-          results.push(el);
+        if (test(el)) results.push(el);
       }
       if (test.sel) {
         while (test.sel) {
@@ -3039,8 +2922,7 @@ var require_ChildNode = __commonJS({
       // Remove this node from its parent
       remove: {
         value: function remove() {
-          if (this.parentNode === null)
-            return;
+          if (this.parentNode === null) return;
           if (this.doc) {
             this.doc._preremoveNodeIterators(this);
             if (this.rooted) {
@@ -3056,8 +2938,7 @@ var require_ChildNode = __commonJS({
       _remove: {
         value: function _remove() {
           var parent = this.parentNode;
-          if (parent === null)
-            return;
+          if (parent === null) return;
           if (parent._childNodes) {
             parent._childNodes.splice(this.index, 1);
           } else if (parent._firstChild === this) {
@@ -3106,8 +2987,7 @@ var require_NonDocumentTypeChildNode = __commonJS({
         get: function() {
           if (this.parentNode) {
             for (var kid = this.nextSibling; kid !== null; kid = kid.nextSibling) {
-              if (kid.nodeType === Node.ELEMENT_NODE)
-                return kid;
+              if (kid.nodeType === Node.ELEMENT_NODE) return kid;
             }
           }
           return null;
@@ -3117,8 +2997,7 @@ var require_NonDocumentTypeChildNode = __commonJS({
         get: function() {
           if (this.parentNode) {
             for (var kid = this.previousSibling; kid !== null; kid = kid.previousSibling) {
-              if (kid.nodeType === Node.ELEMENT_NODE)
-                return kid;
+              if (kid.nodeType === Node.ELEMENT_NODE) return kid;
             }
           }
           return null;
@@ -3198,10 +3077,10 @@ var require_Element = __commonJS({
     var NonDocumentTypeChildNode = require_NonDocumentTypeChildNode();
     var NamedNodeMap = require_NamedNodeMap();
     var uppercaseCache = /* @__PURE__ */ Object.create(null);
-    function Element(doc, localName, namespaceURI, prefix) {
+    function Element(doc2, localName, namespaceURI, prefix) {
       ContainerNode.call(this);
       this.nodeType = Node.ELEMENT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this.localName = localName;
       this.namespaceURI = namespaceURI;
       this.prefix = prefix;
@@ -3214,8 +3093,7 @@ var require_Element = __commonJS({
       if (node.nodeType === Node.TEXT_NODE) {
         a.push(node._data);
       } else {
-        for (var i = 0, n = node.childNodes.length; i < n; i++)
-          recursiveGetText(node.childNodes[i], a);
+        for (var i = 0, n = node.childNodes.length; i < n; i++) recursiveGetText(node.childNodes[i], a);
       }
     }
     Element.prototype = Object.create(ContainerNode.prototype, {
@@ -3313,6 +3191,7 @@ var require_Element = __commonJS({
           switch (position) {
             case "beforebegin":
               first = true;
+            /* falls through */
             case "afterend":
               var parent = this.parentNode;
               if (parent === null) {
@@ -3321,6 +3200,7 @@ var require_Element = __commonJS({
               return parent.insertBefore(node, first ? this : this.nextSibling);
             case "afterbegin":
               first = true;
+            /* falls through */
             case "beforeend":
               return this.insertBefore(node, first ? this.firstChild : null);
             default:
@@ -3394,8 +3274,7 @@ var require_Element = __commonJS({
       firstElementChild: {
         get: function() {
           for (var kid = this.firstChild; kid !== null; kid = kid.nextSibling) {
-            if (kid.nodeType === Node.ELEMENT_NODE)
-              return kid;
+            if (kid.nodeType === Node.ELEMENT_NODE) return kid;
           }
           return null;
         }
@@ -3403,8 +3282,7 @@ var require_Element = __commonJS({
       lastElementChild: {
         get: function() {
           for (var kid = this.lastChild; kid !== null; kid = kid.previousSibling) {
-            if (kid.nodeType === Node.ELEMENT_NODE)
-              return kid;
+            if (kid.nodeType === Node.ELEMENT_NODE) return kid;
           }
           return null;
         }
@@ -3422,20 +3300,16 @@ var require_Element = __commonJS({
       // lazy traversals of the tree.
       nextElement: {
         value: function(root) {
-          if (!root)
-            root = this.ownerDocument.documentElement;
+          if (!root) root = this.ownerDocument.documentElement;
           var next = this.firstElementChild;
           if (!next) {
-            if (this === root)
-              return null;
+            if (this === root) return null;
             next = this.nextElementSibling;
           }
-          if (next)
-            return next;
+          if (next) return next;
           for (var parent = this.parentElement; parent && parent !== root; parent = parent.parentElement) {
             next = parent.nextElementSibling;
-            if (next)
-              return next;
+            if (next) return next;
           }
           return null;
         }
@@ -3447,16 +3321,13 @@ var require_Element = __commonJS({
       getElementsByTagName: {
         value: function getElementsByTagName(lname) {
           var filter;
-          if (!lname)
-            return new NodeList();
+          if (!lname) return new NodeList();
           if (lname === "*")
             filter = function() {
               return true;
             };
-          else if (this.isHTML)
-            filter = htmlLocalNameElementFilter(lname);
-          else
-            filter = localNameElementFilter(lname);
+          else if (this.isHTML) filter = htmlLocalNameElementFilter(lname);
+          else filter = localNameElementFilter(lname);
           return new FilteredElementList(this, filter);
         }
       },
@@ -3467,12 +3338,9 @@ var require_Element = __commonJS({
             filter = function() {
               return true;
             };
-          else if (ns === "*")
-            filter = localNameElementFilter(lname);
-          else if (lname === "*")
-            filter = namespaceElementFilter(ns);
-          else
-            filter = namespaceLocalNameElementFilter(ns, lname);
+          else if (ns === "*") filter = localNameElementFilter(lname);
+          else if (lname === "*") filter = namespaceElementFilter(ns);
+          else filter = namespaceLocalNameElementFilter(ns, lname);
           return new FilteredElementList(this, filter);
         }
       },
@@ -3522,10 +3390,8 @@ var require_Element = __commonJS({
             return false;
           for (var i = 0, n = this._numattrs; i < n; i++) {
             var a = this._attr(i);
-            if (!that.hasAttributeNS(a.namespaceURI, a.localName))
-              return false;
-            if (that.getAttributeNS(a.namespaceURI, a.localName) !== a.value)
-              return false;
+            if (!that.hasAttributeNS(a.namespaceURI, a.localName)) return false;
+            if (that.getAttributeNS(a.namespaceURI, a.localName) !== a.value) return false;
           }
           return true;
         }
@@ -3555,8 +3421,7 @@ var require_Element = __commonJS({
           if (prefix === "" || prefix === void 0) {
             prefix = null;
           }
-          if (this.namespaceURI !== null && this.prefix === prefix)
-            return this.namespaceURI;
+          if (this.namespaceURI !== null && this.prefix === prefix) return this.namespaceURI;
           for (var i = 0, n = this._numattrs; i < n; i++) {
             var a = this._attr(i);
             if (a.namespaceURI === NAMESPACE.XMLNS) {
@@ -3664,11 +3529,9 @@ var require_Element = __commonJS({
       getAttributeNode: {
         value: function getAttributeNode(qname) {
           qname = String(qname);
-          if (/[A-Z]/.test(qname) && this.isHTML)
-            qname = utils.toASCIILowerCase(qname);
+          if (/[A-Z]/.test(qname) && this.isHTML) qname = utils.toASCIILowerCase(qname);
           var attr = this._attrsByQName[qname];
-          if (!attr)
-            return null;
+          if (!attr) return null;
           if (Array.isArray(attr))
             attr = attr[0];
           return attr;
@@ -3685,8 +3548,7 @@ var require_Element = __commonJS({
       hasAttribute: {
         value: function hasAttribute(qname) {
           qname = String(qname);
-          if (/[A-Z]/.test(qname) && this.isHTML)
-            qname = utils.toASCIILowerCase(qname);
+          if (/[A-Z]/.test(qname) && this.isHTML) qname = utils.toASCIILowerCase(qname);
           return this._attrsByQName[qname] !== void 0;
         }
       },
@@ -3706,10 +3568,8 @@ var require_Element = __commonJS({
       toggleAttribute: {
         value: function toggleAttribute(qname, force) {
           qname = String(qname);
-          if (!xml.isValidName(qname))
-            utils.InvalidCharacterError();
-          if (/[A-Z]/.test(qname) && this.isHTML)
-            qname = utils.toASCIILowerCase(qname);
+          if (!xml.isValidName(qname)) utils.InvalidCharacterError();
+          if (/[A-Z]/.test(qname) && this.isHTML) qname = utils.toASCIILowerCase(qname);
           var a = this._attrsByQName[qname];
           if (a === void 0) {
             if (force === void 0 || force === true) {
@@ -3735,24 +3595,19 @@ var require_Element = __commonJS({
             attr = this._newattr(qname);
             isnew = true;
           } else {
-            if (Array.isArray(attr))
-              attr = attr[0];
+            if (Array.isArray(attr)) attr = attr[0];
           }
           attr.value = value;
-          if (this._attributes)
-            this._attributes[qname] = attr;
-          if (isnew && this._newattrhook)
-            this._newattrhook(qname, value);
+          if (this._attributes) this._attributes[qname] = attr;
+          if (isnew && this._newattrhook) this._newattrhook(qname, value);
         }
       },
       // Check for errors, and then set the attribute
       setAttribute: {
         value: function setAttribute2(qname, value) {
           qname = String(qname);
-          if (!xml.isValidName(qname))
-            utils.InvalidCharacterError();
-          if (/[A-Z]/.test(qname) && this.isHTML)
-            qname = utils.toASCIILowerCase(qname);
+          if (!xml.isValidName(qname)) utils.InvalidCharacterError();
+          if (/[A-Z]/.test(qname) && this.isHTML) qname = utils.toASCIILowerCase(qname);
           this._setAttribute(qname, String(value));
         }
       },
@@ -3767,8 +3622,7 @@ var require_Element = __commonJS({
             prefix = qname.substring(0, pos);
             lname = qname.substring(pos + 1);
           }
-          if (ns === "" || ns === void 0)
-            ns = null;
+          if (ns === "" || ns === void 0) ns = null;
           var key = (ns === null ? "" : ns) + "|" + lname;
           var attr = this._attrsByLName[key];
           var isnew;
@@ -3789,8 +3643,7 @@ var require_Element = __commonJS({
             }
           }
           attr.value = value;
-          if (isnew && this._newattrhook)
-            this._newattrhook(qname, value);
+          if (isnew && this._newattrhook) this._newattrhook(qname, value);
         }
       },
       // Do error checking then call _setAttributeNS
@@ -3798,8 +3651,7 @@ var require_Element = __commonJS({
         value: function setAttributeNS(ns, qname, value) {
           ns = ns === null || ns === void 0 || ns === "" ? null : String(ns);
           qname = String(qname);
-          if (!xml.isValidQName(qname))
-            utils.InvalidCharacterError();
+          if (!xml.isValidQName(qname)) utils.InvalidCharacterError();
           var pos = qname.indexOf(":");
           var prefix = pos < 0 ? null : qname.substring(0, pos);
           if (prefix !== null && ns === null || prefix === "xml" && ns !== NAMESPACE.XML || (qname === "xmlns" || prefix === "xmlns") && ns !== NAMESPACE.XMLNS || ns === NAMESPACE.XMLNS && !(qname === "xmlns" || prefix === "xmlns"))
@@ -3852,19 +3704,16 @@ var require_Element = __commonJS({
           }
           this._attrKeys.push(key);
           this._addQName(attr);
-          if (this._newattrhook)
-            this._newattrhook(attr.name, attr.value);
+          if (this._newattrhook) this._newattrhook(attr.name, attr.value);
           return oldAttr || null;
         }
       },
       removeAttribute: {
         value: function removeAttribute(qname) {
           qname = String(qname);
-          if (/[A-Z]/.test(qname) && this.isHTML)
-            qname = utils.toASCIILowerCase(qname);
+          if (/[A-Z]/.test(qname) && this.isHTML) qname = utils.toASCIILowerCase(qname);
           var attr = this._attrsByQName[qname];
-          if (!attr)
-            return;
+          if (!attr) return;
           if (Array.isArray(attr)) {
             if (attr.length > 2) {
               attr = attr.shift();
@@ -3889,8 +3738,7 @@ var require_Element = __commonJS({
           if (onchange) {
             onchange.call(attr, this, attr.localName, attr.value, null);
           }
-          if (this.rooted)
-            this.ownerDocument.mutateRemoveAttr(attr);
+          if (this.rooted) this.ownerDocument.mutateRemoveAttr(attr);
         }
       },
       removeAttributeNS: {
@@ -3899,8 +3747,7 @@ var require_Element = __commonJS({
           lname = String(lname);
           var key = ns + "|" + lname;
           var attr = this._attrsByLName[key];
-          if (!attr)
-            return;
+          if (!attr) return;
           this._attrsByLName[key] = void 0;
           var i = this._attrKeys.indexOf(key);
           if (this._attributes) {
@@ -3913,8 +3760,7 @@ var require_Element = __commonJS({
           if (onchange) {
             onchange.call(attr, this, attr.localName, attr.value, null);
           }
-          if (this.rooted)
-            this.ownerDocument.mutateRemoveAttr(attr);
+          if (this.rooted) this.ownerDocument.mutateRemoveAttr(attr);
         }
       },
       removeAttributeNode: {
@@ -3955,10 +3801,8 @@ var require_Element = __commonJS({
             isnew = true;
           }
           attr.value = String(value);
-          if (this._attributes)
-            this._attributes[qname] = attr;
-          if (isnew && this._newattrhook)
-            this._newattrhook(qname, value);
+          if (this._attributes) this._attributes[qname] = attr;
+          if (isnew && this._newattrhook) this._newattrhook(qname, value);
         }
       },
       // Create a new Attr object, insert it, and return it.
@@ -3990,8 +3834,7 @@ var require_Element = __commonJS({
           } else {
             this._attrsByQName[qname] = [existing, attr];
           }
-          if (this._attributes)
-            this._attributes[qname] = attr;
+          if (this._attributes) this._attributes[qname] = attr;
         }
       },
       // Remove a qname->Attr mapping to the _attrsByQName object, taking into
@@ -4149,14 +3992,11 @@ var require_Element = __commonJS({
         set: function(value) {
           var oldval = this.data;
           value = value === void 0 ? "" : value + "";
-          if (value === oldval)
-            return;
+          if (value === oldval) return;
           this.data = value;
           if (this.ownerElement) {
-            if (this.onchange)
-              this.onchange(this.ownerElement, this.localName, oldval, value);
-            if (this.ownerElement.rooted)
-              this.ownerElement.ownerDocument.mutateAttr(this, oldval);
+            if (this.onchange) this.onchange(this.ownerElement, this.localName, oldval, value);
+            if (this.ownerElement.rooted) this.ownerElement.ownerDocument.mutateAttr(this, oldval);
           }
         }
       },
@@ -4229,8 +4069,7 @@ var require_Element = __commonJS({
         var i = 0, n = this.length, self2 = this;
         return {
           next: function() {
-            if (i < n)
-              return { value: self2.item(i++) };
+            if (i < n) return { value: self2.item(i++) };
             return { done: true };
           }
         };
@@ -4284,8 +4123,7 @@ var require_Element = __commonJS({
                 this[this.childrenByNumber.length] = c;
                 this.childrenByNumber.push(c);
                 var id = c.getAttribute("id");
-                if (id && !this.childrenByName[id])
-                  this.childrenByName[id] = c;
+                if (id && !this.childrenByName[id]) this.childrenByName[id] = c;
                 var name = c.getAttribute("name");
                 if (name && this.element.namespaceURI === NAMESPACE.HTML && namedElts.test(this.element.localName) && !this.childrenByName[name])
                   this.childrenByName[id] = c;
@@ -4302,8 +4140,7 @@ var require_Element = __commonJS({
     }
     function htmlLocalNameElementFilter(lname) {
       var lclname = utils.toASCIILowerCase(lname);
-      if (lclname === lname)
-        return localNameElementFilter(lname);
+      if (lclname === lname) return localNameElementFilter(lname);
       return function(e) {
         return e.isHTML ? e.localName === lclname : e.localName === lname;
       };
@@ -4359,22 +4196,19 @@ var require_Leaf = __commonJS({
       lastChild: { value: null },
       insertBefore: {
         value: function(node, child) {
-          if (!node.nodeType)
-            throw new TypeError("not a node");
+          if (!node.nodeType) throw new TypeError("not a node");
           HierarchyRequestError();
         }
       },
       replaceChild: {
         value: function(node, child) {
-          if (!node.nodeType)
-            throw new TypeError("not a node");
+          if (!node.nodeType) throw new TypeError("not a node");
           HierarchyRequestError();
         }
       },
       removeChild: {
         value: function(node) {
-          if (!node.nodeType)
-            throw new TypeError("not a node");
+          if (!node.nodeType) throw new TypeError("not a node");
           NotFoundError();
         }
       },
@@ -4384,8 +4218,7 @@ var require_Leaf = __commonJS({
       },
       childNodes: {
         get: function() {
-          if (!this._childNodes)
-            this._childNodes = new NodeList();
+          if (!this._childNodes) this._childNodes = new NodeList();
           return this._childNodes;
         }
       }
@@ -4492,10 +4325,8 @@ var require_CharacterData = __commonJS({
           offset = offset >>> 0;
           count = count >>> 0;
           data = String(data);
-          if (offset > len || offset < 0)
-            utils.IndexSizeError();
-          if (offset + count > len)
-            count = len - offset;
+          if (offset > len || offset < 0) utils.IndexSizeError();
+          if (offset + count > len) count = len - offset;
           var prefix = curtext.substring(0, offset), suffix = curtext.substring(offset + count);
           this.data = prefix + data + suffix;
         }
@@ -4527,10 +4358,10 @@ var require_Text = __commonJS({
     var utils = require_utils();
     var Node = require_Node();
     var CharacterData = require_CharacterData();
-    function Text(doc, data) {
+    function Text(doc2, data) {
       CharacterData.call(this);
       this.nodeType = Node.TEXT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this._data = utils.escapeText(data);
       this._index = void 0;
     }
@@ -4544,13 +4375,10 @@ var require_Text = __commonJS({
         } else {
           v = String(v);
         }
-        if (v === this._data)
-          return;
+        if (v === this._data) return;
         this._data = utils.escapeText(v);
-        if (this.rooted)
-          this.ownerDocument.mutateValue(this);
-        if (this.parentNode && this.parentNode._textchangehook)
-          this.parentNode._textchangehook(this);
+        if (this.rooted) this.ownerDocument.mutateValue(this);
+        if (this.parentNode && this.parentNode._textchangehook) this.parentNode._textchangehook(this);
       }
     };
     Text.prototype = Object.create(CharacterData.prototype, {
@@ -4568,13 +4396,11 @@ var require_Text = __commonJS({
       },
       splitText: {
         value: function splitText(offset) {
-          if (offset > this._data.length || offset < 0)
-            utils.IndexSizeError();
+          if (offset > this._data.length || offset < 0) utils.IndexSizeError();
           var newdata = this._data.substring(offset), newnode = this.ownerDocument.createTextNode(newdata);
           this.data = this.data.substring(0, offset);
           var parent = this.parentNode;
-          if (parent !== null)
-            parent.insertBefore(newnode, this.nextSibling);
+          if (parent !== null) parent.insertBefore(newnode, this.nextSibling);
           return newnode;
         }
       },
@@ -4610,10 +4436,10 @@ var require_Comment = __commonJS({
     var Node = require_Node();
     var utils = require_utils();
     var CharacterData = require_CharacterData();
-    function Comment(doc, data) {
+    function Comment(doc2, data) {
       CharacterData.call(this);
       this.nodeType = Node.COMMENT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this._data = utils.escapeText(data);
     }
     var nodeValue = {
@@ -4627,8 +4453,7 @@ var require_Comment = __commonJS({
           v = String(v);
         }
         this._data = utils.escapeText(v);
-        if (this.rooted)
-          this.ownerDocument.mutateValue(this);
+        if (this.rooted) this.ownerDocument.mutateValue(this);
       }
     };
     Comment.prototype = Object.create(CharacterData.prototype, {
@@ -4662,10 +4487,10 @@ var require_DocumentFragment = __commonJS({
     var Element = require_Element();
     var select = require_select();
     var utils = require_utils();
-    function DocumentFragment(doc) {
+    function DocumentFragment(doc2) {
       ContainerNode.call(this);
       this.nodeType = Node.DOCUMENT_FRAGMENT_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
     }
     DocumentFragment.prototype = Object.create(ContainerNode.prototype, {
       nodeName: { value: "#document-fragment" },
@@ -4733,10 +4558,10 @@ var require_ProcessingInstruction = __commonJS({
     var Node = require_Node();
     var CharacterData = require_CharacterData();
     var utils = require_utils();
-    function ProcessingInstruction(doc, target, data) {
+    function ProcessingInstruction(doc2, target, data) {
       CharacterData.call(this);
       this.nodeType = Node.PROCESSING_INSTRUCTION_NODE;
-      this.ownerDocument = doc;
+      this.ownerDocument = doc2;
       this.target = target;
       this._data = data;
     }
@@ -4751,8 +4576,7 @@ var require_ProcessingInstruction = __commonJS({
           v = String(v);
         }
         this._data = utils.escapeText(v);
-        if (this.rooted)
-          this.ownerDocument.mutateValue(this);
+        if (this.rooted) this.ownerDocument.mutateValue(this);
       }
     };
     ProcessingInstruction.prototype = Object.create(CharacterData.prototype, {
@@ -5153,30 +4977,29 @@ var require_TreeWalker = __commonJS({
           var node, result, firstChild, nextSibling;
           node = this._currentNode;
           result = NodeFilter.FILTER_ACCEPT;
-          CHILDREN:
-            while (true) {
-              for (firstChild = node.firstChild; firstChild; firstChild = node.firstChild) {
-                node = firstChild;
-                result = this._internalFilter(node);
-                if (result === NodeFilter.FILTER_ACCEPT) {
-                  this._currentNode = node;
-                  return node;
-                } else if (result === NodeFilter.FILTER_REJECT) {
-                  break;
-                }
+          CHILDREN: while (true) {
+            for (firstChild = node.firstChild; firstChild; firstChild = node.firstChild) {
+              node = firstChild;
+              result = this._internalFilter(node);
+              if (result === NodeFilter.FILTER_ACCEPT) {
+                this._currentNode = node;
+                return node;
+              } else if (result === NodeFilter.FILTER_REJECT) {
+                break;
               }
-              for (nextSibling = NodeTraversal.nextSkippingChildren(node, this.root); nextSibling; nextSibling = NodeTraversal.nextSkippingChildren(node, this.root)) {
-                node = nextSibling;
-                result = this._internalFilter(node);
-                if (result === NodeFilter.FILTER_ACCEPT) {
-                  this._currentNode = node;
-                  return node;
-                } else if (result === NodeFilter.FILTER_SKIP) {
-                  continue CHILDREN;
-                }
-              }
-              return null;
             }
+            for (nextSibling = NodeTraversal.nextSkippingChildren(node, this.root); nextSibling; nextSibling = NodeTraversal.nextSkippingChildren(node, this.root)) {
+              node = nextSibling;
+              result = this._internalFilter(node);
+              if (result === NodeFilter.FILTER_ACCEPT) {
+                this._currentNode = node;
+                return node;
+              } else if (result === NodeFilter.FILTER_SKIP) {
+                continue CHILDREN;
+              }
+            }
+            return null;
+          }
         }
       },
       /** For compatibility with web-platform-tests. */
@@ -5389,13 +5212,11 @@ var require_URL = __commonJS({
     "use strict";
     module2.exports = URL2;
     function URL2(url) {
-      if (!url)
-        return Object.create(URL2.prototype);
+      if (!url) return Object.create(URL2.prototype);
       this.url = url.replace(/^[ \t\n\r\f]+|[ \t\n\r\f]+$/g, "");
       var match = URL2.pattern.exec(this.url);
       if (match) {
-        if (match[2])
-          this.scheme = match[2];
+        if (match[2]) this.scheme = match[2];
         if (match[4]) {
           var userinfo = match[4].match(URL2.userinfoPattern);
           if (userinfo) {
@@ -5411,12 +5232,9 @@ var require_URL = __commonJS({
             this.host = match[4];
           }
         }
-        if (match[5])
-          this.path = match[5];
-        if (match[6])
-          this.query = match[7];
-        if (match[8])
-          this.fragment = match[9];
+        if (match[5]) this.path = match[5];
+        if (match[6]) this.query = match[7];
+        if (match[8]) this.fragment = match[9];
       }
     }
     URL2.pattern = /^(([^:\/?#]+):)?(\/\/([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?$/;
@@ -5426,10 +5244,8 @@ var require_URL = __commonJS({
     URL2.hierarchyPattern = /^[^:\/?#]+:\//;
     URL2.percentEncode = function percentEncode(s) {
       var c = s.charCodeAt(0);
-      if (c < 256)
-        return "%" + c.toString(16);
-      else
-        throw Error("can't percent-encode codepoints > 255 yet");
+      if (c < 256) return "%" + c.toString(16);
+      else throw Error("can't percent-encode codepoints > 255 yet");
     };
     URL2.prototype = {
       constructor: URL2,
@@ -5445,8 +5261,7 @@ var require_URL = __commonJS({
       },
       toString: function() {
         var s = "";
-        if (this.scheme !== void 0)
-          s += this.scheme + ":";
+        if (this.scheme !== void 0) s += this.scheme + ":";
         if (this.isAbsolute()) {
           s += "//";
           if (this.username || this.password) {
@@ -5460,20 +5275,16 @@ var require_URL = __commonJS({
             s += this.host;
           }
         }
-        if (this.port !== void 0)
-          s += ":" + this.port;
-        if (this.path !== void 0)
-          s += this.path;
-        if (this.query !== void 0)
-          s += "?" + this.query;
-        if (this.fragment !== void 0)
-          s += "#" + this.fragment;
+        if (this.port !== void 0) s += ":" + this.port;
+        if (this.path !== void 0) s += this.path;
+        if (this.query !== void 0) s += "?" + this.query;
+        if (this.fragment !== void 0) s += "#" + this.fragment;
         return s;
       },
       // See: http://tools.ietf.org/html/rfc3986#section-5.2
       // and https://url.spec.whatwg.org/#constructors
       resolve: function(relative) {
-        var base = this;
+        var base2 = this;
         var r = new URL2(relative);
         var t = new URL2();
         if (r.scheme !== void 0) {
@@ -5485,7 +5296,7 @@ var require_URL = __commonJS({
           t.path = remove_dot_segments(r.path);
           t.query = r.query;
         } else {
-          t.scheme = base.scheme;
+          t.scheme = base2.scheme;
           if (r.host !== void 0) {
             t.username = r.username;
             t.password = r.password;
@@ -5494,21 +5305,19 @@ var require_URL = __commonJS({
             t.path = remove_dot_segments(r.path);
             t.query = r.query;
           } else {
-            t.username = base.username;
-            t.password = base.password;
-            t.host = base.host;
-            t.port = base.port;
+            t.username = base2.username;
+            t.password = base2.password;
+            t.host = base2.host;
+            t.port = base2.port;
             if (!r.path) {
-              t.path = base.path;
-              if (r.query !== void 0)
-                t.query = r.query;
-              else
-                t.query = base.query;
+              t.path = base2.path;
+              if (r.query !== void 0) t.query = r.query;
+              else t.query = base2.query;
             } else {
               if (r.path.charAt(0) === "/") {
                 t.path = remove_dot_segments(r.path);
               } else {
-                t.path = merge(base.path, r.path);
+                t.path = merge(base2.path, r.path);
                 t.path = remove_dot_segments(t.path);
               }
               t.query = r.query;
@@ -5518,17 +5327,13 @@ var require_URL = __commonJS({
         t.fragment = r.fragment;
         return t.toString();
         function merge(basepath, refpath) {
-          if (base.host !== void 0 && !base.path)
-            return "/" + refpath;
+          if (base2.host !== void 0 && !base2.path) return "/" + refpath;
           var lastslash = basepath.lastIndexOf("/");
-          if (lastslash === -1)
-            return refpath;
-          else
-            return basepath.substring(0, lastslash + 1) + refpath;
+          if (lastslash === -1) return refpath;
+          else return basepath.substring(0, lastslash + 1) + refpath;
         }
         function remove_dot_segments(path) {
-          if (!path)
-            return path;
+          if (!path) return path;
           var output = "";
           while (path.length > 0) {
             if (path === "." || path === "..") {
@@ -8683,6 +8488,12 @@ var require_cssparser = __commonJS({
           c = reader.read();
           while (c) {
             switch (c) {
+              /*
+               * Potential tokens:
+               * - COMMENT
+               * - SLASH
+               * - CHAR
+               */
               case "/":
                 if (reader.peek() === "*") {
                   token = this.commentToken(c, startLine, startCol);
@@ -8690,6 +8501,15 @@ var require_cssparser = __commonJS({
                   token = this.charToken(c, startLine, startCol);
                 }
                 break;
+              /*
+               * Potential tokens:
+               * - DASHMATCH
+               * - INCLUDES
+               * - PREFIXMATCH
+               * - SUFFIXMATCH
+               * - SUBSTRINGMATCH
+               * - CHAR
+               */
               case "|":
               case "~":
               case "^":
@@ -8701,10 +8521,20 @@ var require_cssparser = __commonJS({
                   token = this.charToken(c, startLine, startCol);
                 }
                 break;
+              /*
+               * Potential tokens:
+               * - STRING
+               * - INVALID
+               */
               case '"':
               case "'":
                 token = this.stringToken(c, startLine, startCol);
                 break;
+              /*
+               * Potential tokens:
+               * - HASH
+               * - CHAR
+               */
               case "#":
                 if (isNameChar(reader.peek())) {
                   token = this.hashToken(c, startLine, startCol);
@@ -8712,6 +8542,13 @@ var require_cssparser = __commonJS({
                   token = this.charToken(c, startLine, startCol);
                 }
                 break;
+              /*
+               * Potential tokens:
+               * - DOT
+               * - NUMBER
+               * - DIMENSION
+               * - PERCENTAGE
+               */
               case ".":
                 if (isDigit(reader.peek())) {
                   token = this.numberToken(c, startLine, startCol);
@@ -8719,6 +8556,14 @@ var require_cssparser = __commonJS({
                   token = this.charToken(c, startLine, startCol);
                 }
                 break;
+              /*
+               * Potential tokens:
+               * - CDC
+               * - MINUS
+               * - NUMBER
+               * - DIMENSION
+               * - PERCENTAGE
+               */
               case "-":
                 if (reader.peek() === "-") {
                   token = this.htmlCommentEndToken(c, startLine, startCol);
@@ -8728,24 +8573,49 @@ var require_cssparser = __commonJS({
                   token = this.charToken(c, startLine, startCol);
                 }
                 break;
+              /*
+               * Potential tokens:
+               * - IMPORTANT_SYM
+               * - CHAR
+               */
               case "!":
                 token = this.importantToken(c, startLine, startCol);
                 break;
+              /*
+               * Any at-keyword or CHAR
+               */
               case "@":
                 token = this.atRuleToken(c, startLine, startCol);
                 break;
+              /*
+               * Potential tokens:
+               * - NOT
+               * - CHAR
+               */
               case ":":
                 token = this.notToken(c, startLine, startCol);
                 break;
+              /*
+               * Potential tokens:
+               * - CDO
+               * - CHAR
+               */
               case "<":
                 token = this.htmlCommentStartToken(c, startLine, startCol);
                 break;
+              /*
+               * Potential tokens:
+               * - UNICODE_RANGE
+               * - URL
+               * - CHAR
+               */
               case "U":
               case "u":
                 if (reader.peek() === "+") {
                   token = this.unicodeRangeToken(c, startLine, startCol);
                   break;
                 }
+              /* falls through */
               default:
                 if (isDigit(c)) {
                   token = this.numberToken(c, startLine, startCol);
@@ -9981,11 +9851,9 @@ var require_CSSStyleDeclaration = __commonJS({
       var parser = new parserlib.css.Parser();
       var result = { property: /* @__PURE__ */ Object.create(null), priority: /* @__PURE__ */ Object.create(null) };
       parser.addListener("property", function(e) {
-        if (e.invalid)
-          return;
+        if (e.invalid) return;
         result.property[e.property.text] = e.value.text;
-        if (e.important)
-          result.priority[e.property.text] = "important";
+        if (e.important) result.priority[e.property.text] = "important";
       });
       s = ("" + s).replace(/^;/, "");
       parser.parseStyleAttribute(s);
@@ -10016,8 +9884,7 @@ var require_CSSStyleDeclaration = __commonJS({
           var styles = this._parsed;
           var s = "";
           for (var name in styles.property) {
-            if (s)
-              s += " ";
+            if (s) s += " ";
             s += name + ": " + styles.property[name];
             if (styles.priority[name]) {
               s += " !" + styles.priority[name];
@@ -10039,15 +9906,13 @@ var require_CSSStyleDeclaration = __commonJS({
       },
       length: {
         get: function() {
-          if (!this._names)
-            this._names = Object.getOwnPropertyNames(this._parsed.property);
+          if (!this._names) this._names = Object.getOwnPropertyNames(this._parsed.property);
           return this._names.length;
         }
       },
       item: {
         value: function(n) {
-          if (!this._names)
-            this._names = Object.getOwnPropertyNames(this._parsed.property);
+          if (!this._names) this._names = Object.getOwnPropertyNames(this._parsed.property);
           return this._names[n];
         }
       },
@@ -10093,8 +9958,7 @@ var require_CSSStyleDeclaration = __commonJS({
               delete styles.priority[property];
             }
           } else {
-            if (value.indexOf(";") !== -1)
-              return;
+            if (value.indexOf(";") !== -1) return;
             var newprops = parseStyles(property + ":" + value);
             if (Object.getOwnPropertyNames(newprops.property).length === 0) {
               return;
@@ -10731,8 +10595,7 @@ var require_CSSStyleDeclaration = __commonJS({
       zIndex: "z-index",
       zoom: "zoom"
     };
-    for (prop in cssProperties)
-      defineStyleProperty(prop);
+    for (prop in cssProperties) defineStyleProperty(prop);
     var prop;
     function defineStyleProperty(jsname) {
       var cssname = cssProperties[jsname];
@@ -10775,10 +10638,8 @@ var require_URLUtils = __commonJS({
       protocol: {
         get: function() {
           var url = this._url;
-          if (url && url.scheme)
-            return url.scheme + ":";
-          else
-            return ":";
+          if (url && url.scheme) return url.scheme + ":";
+          else return ":";
         },
         set: function(v) {
           var output = this.href;
@@ -10799,8 +10660,7 @@ var require_URLUtils = __commonJS({
           var url = this._url;
           if (url.isAbsolute() && url.isAuthorityBased())
             return url.host + (url.port ? ":" + url.port : "");
-          else
-            return "";
+          else return "";
         },
         set: function(v) {
           var output = this.href;
@@ -10819,10 +10679,8 @@ var require_URLUtils = __commonJS({
       hostname: {
         get: function() {
           var url = this._url;
-          if (url.isAbsolute() && url.isAuthorityBased())
-            return url.host;
-          else
-            return "";
+          if (url.isAbsolute() && url.isAuthorityBased()) return url.host;
+          else return "";
         },
         set: function(v) {
           var output = this.href;
@@ -10841,10 +10699,8 @@ var require_URLUtils = __commonJS({
       port: {
         get: function() {
           var url = this._url;
-          if (url.isAbsolute() && url.isAuthorityBased() && url.port !== void 0)
-            return url.port;
-          else
-            return "";
+          if (url.isAbsolute() && url.isAuthorityBased() && url.port !== void 0) return url.port;
+          else return "";
         },
         set: function(v) {
           var output = this.href;
@@ -10853,8 +10709,7 @@ var require_URLUtils = __commonJS({
             v = "" + v;
             v = v.replace(/[^0-9].*$/, "");
             v = v.replace(/^0+/, "");
-            if (v.length === 0)
-              v = "0";
+            if (v.length === 0) v = "0";
             if (parseInt(v, 10) <= 65535) {
               url.port = v;
               output = url.toString();
@@ -10866,17 +10721,14 @@ var require_URLUtils = __commonJS({
       pathname: {
         get: function() {
           var url = this._url;
-          if (url.isAbsolute() && url.isHierarchical())
-            return url.path;
-          else
-            return "";
+          if (url.isAbsolute() && url.isHierarchical()) return url.path;
+          else return "";
         },
         set: function(v) {
           var output = this.href;
           var url = new URL2(output);
           if (url.isAbsolute() && url.isHierarchical()) {
-            if (v.charAt(0) !== "/")
-              v = "/" + v;
+            if (v.charAt(0) !== "/") v = "/" + v;
             v = v.replace(/[^-+\._~!$&'()*,;:=@\/a-zA-Z0-9]/g, URL2.percentEncode);
             url.path = v;
             output = url.toString();
@@ -10889,15 +10741,13 @@ var require_URLUtils = __commonJS({
           var url = this._url;
           if (url.isAbsolute() && url.isHierarchical() && url.query !== void 0)
             return "?" + url.query;
-          else
-            return "";
+          else return "";
         },
         set: function(v) {
           var output = this.href;
           var url = new URL2(output);
           if (url.isAbsolute() && url.isHierarchical()) {
-            if (v.charAt(0) === "?")
-              v = v.substring(1);
+            if (v.charAt(0) === "?") v = v.substring(1);
             v = v.replace(/[^-+\._~!$&'()*,;:=@\/?a-zA-Z0-9]/g, URL2.percentEncode);
             url.query = v;
             output = url.toString();
@@ -10917,8 +10767,7 @@ var require_URLUtils = __commonJS({
         set: function(v) {
           var output = this.href;
           var url = new URL2(output);
-          if (v.charAt(0) === "#")
-            v = v.substring(1);
+          if (v.charAt(0) === "#") v = v.substring(1);
           v = v.replace(/[^-+\._~!$&'()*,;:=@\/?a-zA-Z0-9]/g, URL2.percentEncode);
           url.fragment = v;
           output = url.toString();
@@ -11027,10 +10876,8 @@ var require_defineElement = __commonJS({
         if (spec.attributes) {
           for (var n in spec.attributes) {
             var attr = spec.attributes[n];
-            if (typeof attr !== "object" || Array.isArray(attr))
-              attr = { type: attr };
-            if (!attr.name)
-              attr.name = n.toLowerCase();
+            if (typeof attr !== "object" || Array.isArray(attr)) attr = { type: attr };
+            if (!attr.name) attr.name = n.toLowerCase();
             props[n] = attributes.property(attr);
           }
         }
@@ -11059,9 +10906,9 @@ var require_defineElement = __commonJS({
       };
     };
     function EventHandlerChangeHandler(elt, name, oldval, newval) {
-      var doc = elt.ownerDocument || /* @__PURE__ */ Object.create(null);
+      var doc2 = elt.ownerDocument || /* @__PURE__ */ Object.create(null);
       var form = elt.form || /* @__PURE__ */ Object.create(null);
-      elt[name] = new EventHandlerBuilder(newval, doc, form, elt).build();
+      elt[name] = new EventHandlerBuilder(newval, doc2, form, elt).build();
     }
     function addEventHandlers(c, eventHandlerTypes) {
       var p = c.prototype;
@@ -11092,9 +10939,9 @@ var require_htmlelts = __commonJS({
     var defineElement = require_defineElement();
     var htmlElements = exports2.elements = {};
     var htmlNameToImpl = /* @__PURE__ */ Object.create(null);
-    exports2.createElement = function(doc, localName, prefix) {
+    exports2.createElement = function(doc2, localName, prefix) {
       var impl = htmlNameToImpl[localName] || HTMLUnknownElement;
-      return new impl(doc, localName, prefix);
+      return new impl(doc2, localName, prefix);
     };
     function define(spec) {
       return defineElement(spec, HTMLElement, htmlElements, htmlNameToImpl);
@@ -11158,15 +11005,15 @@ var require_htmlelts = __commonJS({
       TEXTAREA: true,
       COMMAND: true
     };
-    var HTMLFormElement = function(doc, localName, prefix) {
-      HTMLElement.call(this, doc, localName, prefix);
+    var HTMLFormElement = function(doc2, localName, prefix) {
+      HTMLElement.call(this, doc2, localName, prefix);
       this._form = null;
     };
     var HTMLElement = exports2.HTMLElement = define({
       superclass: Element,
       name: "HTMLElement",
-      ctor: function HTMLElement2(doc, localName, prefix) {
-        Element.call(this, doc, localName, utils.NAMESPACE.HTML, prefix);
+      ctor: function HTMLElement2(doc2, localName, prefix) {
+        Element.call(this, doc2, localName, utils.NAMESPACE.HTML, prefix);
       },
       props: {
         dangerouslySetInnerHTML: {
@@ -11185,15 +11032,13 @@ var require_htmlelts = __commonJS({
             );
             parser.parse(v === null ? "" : String(v), true);
             var target = this instanceof htmlNameToImpl.template ? this.content : this;
-            while (target.hasChildNodes())
-              target.removeChild(target.firstChild);
+            while (target.hasChildNodes()) target.removeChild(target.firstChild);
             target.appendChild(parser._asDocumentFragment());
           }
         },
         style: {
           get: function() {
-            if (!this._style)
-              this._style = new CSSStyleDeclaration(this);
+            if (!this._style) this._style = new CSSStyleDeclaration(this);
             return this._style;
           },
           set: function(v) {
@@ -11212,12 +11057,10 @@ var require_htmlelts = __commonJS({
         } },
         click: {
           value: function() {
-            if (this._click_in_progress)
-              return;
+            if (this._click_in_progress) return;
             this._click_in_progress = true;
             try {
-              if (this._pre_click_activation_steps)
-                this._pre_click_activation_steps();
+              if (this._pre_click_activation_steps) this._pre_click_activation_steps();
               var event = this.ownerDocument.createEvent("MouseEvent");
               event.initMouseEvent(
                 "click",
@@ -11241,11 +11084,9 @@ var require_htmlelts = __commonJS({
               );
               var success = this.dispatchEvent(event);
               if (success) {
-                if (this._post_click_activation_steps)
-                  this._post_click_activation_steps(event);
+                if (this._post_click_activation_steps) this._post_click_activation_steps(event);
               } else {
-                if (this._cancelled_activation_steps)
-                  this._cancelled_activation_steps();
+                if (this._cancelled_activation_steps) this._cancelled_activation_steps();
               }
             } finally {
               this._click_in_progress = false;
@@ -11263,10 +11104,8 @@ var require_htmlelts = __commonJS({
         tabIndex: {
           type: "long",
           default: function() {
-            if (this.tagName in focusableElements || this.contentEditable)
-              return 0;
-            else
-              return -1;
+            if (this.tagName in focusableElements || this.contentEditable) return 0;
+            else return -1;
           }
         }
       },
@@ -11330,8 +11169,8 @@ var require_htmlelts = __commonJS({
     });
     var HTMLUnknownElement = define({
       name: "HTMLUnknownElement",
-      ctor: function HTMLUnknownElement2(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLUnknownElement2(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     var formAssociatedProps = {
@@ -11345,8 +11184,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "a",
       name: "HTMLAnchorElement",
-      ctor: function HTMLAnchorElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLAnchorElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         _post_click_activation_steps: {
@@ -11379,8 +11218,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "area",
       name: "HTMLAreaElement",
-      ctor: function HTMLAreaElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLAreaElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         alt: String,
@@ -11404,8 +11243,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "br",
       name: "HTMLBRElement",
-      ctor: function HTMLBRElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLBRElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11415,8 +11254,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "base",
       name: "HTMLBaseElement",
-      ctor: function HTMLBaseElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLBaseElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         target: String
@@ -11425,8 +11264,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "body",
       name: "HTMLBodyElement",
-      ctor: function HTMLBodyElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLBodyElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       // Certain event handler attributes on a <body> tag actually set
       // handlers for the window rather than just that element.  Define
@@ -11469,8 +11308,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "button",
       name: "HTMLButtonElement",
-      ctor: function HTMLButtonElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLButtonElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11492,8 +11331,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "dl",
       name: "HTMLDListElement",
-      ctor: function HTMLDListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11503,8 +11342,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "data",
       name: "HTMLDataElement",
-      ctor: function HTMLDataElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDataElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         value: String
@@ -11513,15 +11352,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "datalist",
       name: "HTMLDataListElement",
-      ctor: function HTMLDataListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDataListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "details",
       name: "HTMLDetailsElement",
-      ctor: function HTMLDetailsElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDetailsElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         open: Boolean
@@ -11530,8 +11369,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "div",
       name: "HTMLDivElement",
-      ctor: function HTMLDivElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDivElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11541,8 +11380,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "embed",
       name: "HTMLEmbedElement",
-      ctor: function HTMLEmbedElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLEmbedElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -11557,8 +11396,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "fieldset",
       name: "HTMLFieldSetElement",
-      ctor: function HTMLFieldSetElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFieldSetElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11569,8 +11408,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "form",
       name: "HTMLFormElement",
-      ctor: function HTMLFormElement2(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFormElement2(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         action: String,
@@ -11597,8 +11436,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "hr",
       name: "HTMLHRElement",
-      ctor: function HTMLHRElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHRElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11612,15 +11451,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "head",
       name: "HTMLHeadElement",
-      ctor: function HTMLHeadElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHeadElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tags: ["h1", "h2", "h3", "h4", "h5", "h6"],
       name: "HTMLHeadingElement",
-      ctor: function HTMLHeadingElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHeadingElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11630,8 +11469,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "html",
       name: "HTMLHtmlElement",
-      ctor: function HTMLHtmlElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLHtmlElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11641,8 +11480,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "iframe",
       name: "HTMLIFrameElement",
-      ctor: function HTMLIFrameElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLIFrameElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -11668,8 +11507,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "img",
       name: "HTMLImageElement",
-      ctor: function HTMLImageElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLImageElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         alt: String,
@@ -11694,8 +11533,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "input",
       name: "HTMLInputElement",
-      ctor: function HTMLInputElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLInputElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: formAssociatedProps.form,
@@ -11801,8 +11640,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "keygen",
       name: "HTMLKeygenElement",
-      ctor: function HTMLKeygenElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLKeygenElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11816,8 +11655,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "li",
       name: "HTMLLIElement",
-      ctor: function HTMLLIElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLIElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         value: { type: "long", default: 0 },
@@ -11828,8 +11667,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "label",
       name: "HTMLLabelElement",
-      ctor: function HTMLLabelElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLabelElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11839,8 +11678,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "legend",
       name: "HTMLLegendElement",
-      ctor: function HTMLLegendElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLegendElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -11850,8 +11689,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "link",
       name: "HTMLLinkElement",
-      ctor: function HTMLLinkElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLLinkElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // XXX Reflect DOMSettableTokenList sizes also DOMTokenList relList
@@ -11873,8 +11712,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "map",
       name: "HTMLMapElement",
-      ctor: function HTMLMapElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMapElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         name: String
@@ -11883,8 +11722,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "menu",
       name: "HTMLMenuElement",
-      ctor: function HTMLMenuElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMenuElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // XXX: not quite right, default should be popup if parent element is
@@ -11898,8 +11737,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "meta",
       name: "HTMLMetaElement",
-      ctor: function HTMLMetaElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMetaElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         name: String,
@@ -11912,16 +11751,16 @@ var require_htmlelts = __commonJS({
     define({
       tag: "meter",
       name: "HTMLMeterElement",
-      ctor: function HTMLMeterElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMeterElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps
     });
     define({
       tags: ["ins", "del"],
       name: "HTMLModElement",
-      ctor: function HTMLModElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLModElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         cite: URL2,
@@ -11931,8 +11770,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "ol",
       name: "HTMLOListElement",
-      ctor: function HTMLOListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         // Utility function (see the start attribute default value). Returns
@@ -11941,8 +11780,7 @@ var require_htmlelts = __commonJS({
           get: function() {
             var items = 0;
             this.childNodes.forEach(function(n) {
-              if (n.nodeType === Node.ELEMENT_NODE && n.tagName === "LI")
-                items++;
+              if (n.nodeType === Node.ELEMENT_NODE && n.tagName === "LI") items++;
             });
             return items;
           }
@@ -11954,10 +11792,8 @@ var require_htmlelts = __commonJS({
         start: {
           type: "long",
           default: function() {
-            if (this.reversed)
-              return this._numitems;
-            else
-              return 1;
+            if (this.reversed) return this._numitems;
+            else return 1;
           }
         },
         // Obsolete
@@ -11967,8 +11803,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "object",
       name: "HTMLObjectElement",
-      ctor: function HTMLObjectElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLObjectElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -11995,8 +11831,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "optgroup",
       name: "HTMLOptGroupElement",
-      ctor: function HTMLOptGroupElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOptGroupElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         disabled: Boolean,
@@ -12006,16 +11842,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "option",
       name: "HTMLOptionElement",
-      ctor: function HTMLOptionElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOptionElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: {
           get: function() {
             var p = this.parentNode;
             while (p && p.nodeType === Node.ELEMENT_NODE) {
-              if (p.localName === "select")
-                return p.form;
+              if (p.localName === "select") return p.form;
               p = p.parentNode;
             }
           }
@@ -12047,8 +11882,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "output",
       name: "HTMLOutputElement",
-      ctor: function HTMLOutputElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLOutputElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -12059,8 +11894,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "p",
       name: "HTMLParagraphElement",
-      ctor: function HTMLParagraphElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLParagraphElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -12070,8 +11905,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "param",
       name: "HTMLParamElement",
-      ctor: function HTMLParamElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLParamElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         name: String,
@@ -12089,8 +11924,8 @@ var require_htmlelts = __commonJS({
         "xmp"
       ],
       name: "HTMLPreElement",
-      ctor: function HTMLPreElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLPreElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -12100,8 +11935,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "progress",
       name: "HTMLProgressElement",
-      ctor: function HTMLProgressElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLProgressElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: formAssociatedProps,
       attributes: {
@@ -12111,8 +11946,8 @@ var require_htmlelts = __commonJS({
     define({
       tags: ["q", "blockquote"],
       name: "HTMLQuoteElement",
-      ctor: function HTMLQuoteElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLQuoteElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         cite: URL2
@@ -12121,8 +11956,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "script",
       name: "HTMLScriptElement",
-      ctor: function HTMLScriptElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLScriptElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         text: {
@@ -12130,8 +11965,7 @@ var require_htmlelts = __commonJS({
             var s = "";
             for (var i = 0, n = this.childNodes.length; i < n; i++) {
               var child = this.childNodes[i];
-              if (child.nodeType === Node.TEXT_NODE)
-                s += child._data;
+              if (child.nodeType === Node.TEXT_NODE) s += child._data;
             }
             return s;
           },
@@ -12157,8 +11991,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "select",
       name: "HTMLSelectElement",
-      ctor: function HTMLSelectElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSelectElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: formAssociatedProps.form,
@@ -12182,8 +12016,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "source",
       name: "HTMLSourceElement",
-      ctor: function HTMLSourceElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSourceElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -12194,15 +12028,15 @@ var require_htmlelts = __commonJS({
     define({
       tag: "span",
       name: "HTMLSpanElement",
-      ctor: function HTMLSpanElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSpanElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "style",
       name: "HTMLStyleElement",
-      ctor: function HTMLStyleElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLStyleElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         media: String,
@@ -12213,8 +12047,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "caption",
       name: "HTMLTableCaptionElement",
-      ctor: function HTMLTableCaptionElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableCaptionElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         // Obsolete
@@ -12223,8 +12057,8 @@ var require_htmlelts = __commonJS({
     });
     define({
       name: "HTMLTableCellElement",
-      ctor: function HTMLTableCellElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableCellElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         colSpan: { type: "unsigned long", default: 1 },
@@ -12247,8 +12081,8 @@ var require_htmlelts = __commonJS({
     define({
       tags: ["col", "colgroup"],
       name: "HTMLTableColElement",
-      ctor: function HTMLTableColElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableColElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         span: { type: "limited unsigned long with fallback", default: 1, min: 1 },
@@ -12263,8 +12097,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "table",
       name: "HTMLTableElement",
-      ctor: function HTMLTableElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         rows: {
@@ -12289,9 +12123,9 @@ var require_htmlelts = __commonJS({
     define({
       tag: "template",
       name: "HTMLTemplateElement",
-      ctor: function HTMLTemplateElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
-        this._contentFragment = doc._templateDoc.createDocumentFragment();
+      ctor: function HTMLTemplateElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
+        this._contentFragment = doc2._templateDoc.createDocumentFragment();
       },
       props: {
         content: {
@@ -12309,8 +12143,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "tr",
       name: "HTMLTableRowElement",
-      ctor: function HTMLTableRowElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableRowElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         cells: {
@@ -12331,8 +12165,8 @@ var require_htmlelts = __commonJS({
     define({
       tags: ["thead", "tfoot", "tbody"],
       name: "HTMLTableSectionElement",
-      ctor: function HTMLTableSectionElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableSectionElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         rows: {
@@ -12352,8 +12186,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "textarea",
       name: "HTMLTextAreaElement",
-      ctor: function HTMLTextAreaElement(doc, localName, prefix) {
-        HTMLFormElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTextAreaElement(doc2, localName, prefix) {
+        HTMLFormElement.call(this, doc2, localName, prefix);
       },
       props: {
         form: formAssociatedProps.form,
@@ -12421,8 +12255,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "time",
       name: "HTMLTimeElement",
-      ctor: function HTMLTimeElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTimeElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         dateTime: String,
@@ -12432,8 +12266,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "title",
       name: "HTMLTitleElement",
-      ctor: function HTMLTitleElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTitleElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         text: {
@@ -12446,8 +12280,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "ul",
       name: "HTMLUListElement",
-      ctor: function HTMLUListElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLUListElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         type: String,
@@ -12457,8 +12291,8 @@ var require_htmlelts = __commonJS({
     });
     define({
       name: "HTMLMediaElement",
-      ctor: function HTMLMediaElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMediaElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -12475,16 +12309,16 @@ var require_htmlelts = __commonJS({
       tag: "audio",
       superclass: htmlElements.HTMLMediaElement,
       name: "HTMLAudioElement",
-      ctor: function HTMLAudioElement(doc, localName, prefix) {
-        htmlElements.HTMLMediaElement.call(this, doc, localName, prefix);
+      ctor: function HTMLAudioElement(doc2, localName, prefix) {
+        htmlElements.HTMLMediaElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "video",
       superclass: htmlElements.HTMLMediaElement,
       name: "HTMLVideoElement",
-      ctor: function HTMLVideoElement(doc, localName, prefix) {
-        htmlElements.HTMLMediaElement.call(this, doc, localName, prefix);
+      ctor: function HTMLVideoElement(doc2, localName, prefix) {
+        htmlElements.HTMLMediaElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         poster: URL2,
@@ -12496,37 +12330,37 @@ var require_htmlelts = __commonJS({
       tag: "td",
       superclass: htmlElements.HTMLTableCellElement,
       name: "HTMLTableDataCellElement",
-      ctor: function HTMLTableDataCellElement(doc, localName, prefix) {
-        htmlElements.HTMLTableCellElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableDataCellElement(doc2, localName, prefix) {
+        htmlElements.HTMLTableCellElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "th",
       superclass: htmlElements.HTMLTableCellElement,
       name: "HTMLTableHeaderCellElement",
-      ctor: function HTMLTableHeaderCellElement(doc, localName, prefix) {
-        htmlElements.HTMLTableCellElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTableHeaderCellElement(doc2, localName, prefix) {
+        htmlElements.HTMLTableCellElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "frameset",
       name: "HTMLFrameSetElement",
-      ctor: function HTMLFrameSetElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFrameSetElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "frame",
       name: "HTMLFrameElement",
-      ctor: function HTMLFrameElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFrameElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       }
     });
     define({
       tag: "canvas",
       name: "HTMLCanvasElement",
-      ctor: function HTMLCanvasElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLCanvasElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         getContext: { value: utils.nyi },
@@ -12544,8 +12378,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "dialog",
       name: "HTMLDialogElement",
-      ctor: function HTMLDialogElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDialogElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         show: { value: utils.nyi },
@@ -12560,8 +12394,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "menuitem",
       name: "HTMLMenuItemElement",
-      ctor: function HTMLMenuItemElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLMenuItemElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       props: {
         // The menuitem's label
@@ -12601,8 +12435,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "source",
       name: "HTMLSourceElement",
-      ctor: function HTMLSourceElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLSourceElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         srcset: String,
@@ -12615,8 +12449,8 @@ var require_htmlelts = __commonJS({
     define({
       tag: "track",
       name: "HTMLTrackElement",
-      ctor: function HTMLTrackElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLTrackElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         src: URL2,
@@ -12658,8 +12492,8 @@ var require_htmlelts = __commonJS({
       // obsolete
       tag: "font",
       name: "HTMLFontElement",
-      ctor: function HTMLFontElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLFontElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         color: { type: String, treatNullAsEmptyString: true },
@@ -12671,8 +12505,8 @@ var require_htmlelts = __commonJS({
       // obsolete
       tag: "dir",
       name: "HTMLDirectoryElement",
-      ctor: function HTMLDirectoryElement(doc, localName, prefix) {
-        HTMLElement.call(this, doc, localName, prefix);
+      ctor: function HTMLDirectoryElement(doc2, localName, prefix) {
+        HTMLElement.call(this, doc2, localName, prefix);
       },
       attributes: {
         compact: Boolean
@@ -12746,9 +12580,9 @@ var require_svg = __commonJS({
     var CSSStyleDeclaration = require_CSSStyleDeclaration();
     var svgElements = exports2.elements = {};
     var svgNameToImpl = /* @__PURE__ */ Object.create(null);
-    exports2.createElement = function(doc, localName, prefix) {
+    exports2.createElement = function(doc2, localName, prefix) {
       var impl = svgNameToImpl[localName] || SVGElement;
-      return new impl(doc, localName, prefix);
+      return new impl(doc2, localName, prefix);
     };
     function define(spec) {
       return defineElement(spec, SVGElement, svgElements, svgNameToImpl);
@@ -12756,14 +12590,13 @@ var require_svg = __commonJS({
     var SVGElement = define({
       superclass: Element,
       name: "SVGElement",
-      ctor: function SVGElement2(doc, localName, prefix) {
-        Element.call(this, doc, localName, utils.NAMESPACE.SVG, prefix);
+      ctor: function SVGElement2(doc2, localName, prefix) {
+        Element.call(this, doc2, localName, utils.NAMESPACE.SVG, prefix);
       },
       props: {
         style: {
           get: function() {
-            if (!this._style)
-              this._style = new CSSStyleDeclaration(this);
+            if (!this._style) this._style = new CSSStyleDeclaration(this);
             return this._style;
           }
         }
@@ -12771,8 +12604,8 @@ var require_svg = __commonJS({
     });
     define({
       name: "SVGSVGElement",
-      ctor: function SVGSVGElement(doc, localName, prefix) {
-        SVGElement.call(this, doc, localName, prefix);
+      ctor: function SVGSVGElement(doc2, localName, prefix) {
+        SVGElement.call(this, doc2, localName, prefix);
       },
       tag: "svg",
       props: {
@@ -13011,8 +12844,7 @@ var require_Document = __commonJS({
       _dispatchRendererEvent: {
         value: function(targetNid, type, details) {
           var target = this._nodes[targetNid];
-          if (!target)
-            return;
+          if (!target) return;
           target._dispatchEvent(new Event(type, details), true);
         }
       },
@@ -13053,16 +12885,14 @@ var require_Document = __commonJS({
       },
       createProcessingInstruction: {
         value: function(target, data) {
-          if (!xml.isValidName(target) || data.indexOf("?>") !== -1)
-            utils.InvalidCharacterError();
+          if (!xml.isValidName(target) || data.indexOf("?>") !== -1) utils.InvalidCharacterError();
           return new ProcessingInstruction(this, target, data);
         }
       },
       createAttribute: {
         value: function(localName) {
           localName = String(localName);
-          if (!xml.isValidName(localName))
-            utils.InvalidCharacterError();
+          if (!xml.isValidName(localName)) utils.InvalidCharacterError();
           if (this.isHTML) {
             localName = utils.toASCIILowerCase(localName);
           }
@@ -13080,11 +12910,9 @@ var require_Document = __commonJS({
       createElement: {
         value: function(localName) {
           localName = String(localName);
-          if (!xml.isValidName(localName))
-            utils.InvalidCharacterError();
+          if (!xml.isValidName(localName)) utils.InvalidCharacterError();
           if (this.isHTML) {
-            if (/[A-Z]/.test(localName))
-              localName = utils.toASCIILowerCase(localName);
+            if (/[A-Z]/.test(localName)) localName = utils.toASCIILowerCase(localName);
             return html.createElement(this, localName, null);
           } else if (this.contentType === "application/xhtml+xml") {
             return html.createElement(this, localName, null);
@@ -13188,10 +13016,8 @@ var require_Document = __commonJS({
         value: function _updateDocTypeElement() {
           this.doctype = this.documentElement = null;
           for (var kid = this.firstChild; kid !== null; kid = kid.nextSibling) {
-            if (kid.nodeType === Node.DOCUMENT_TYPE_NODE)
-              this.doctype = kid;
-            else if (kid.nodeType === Node.ELEMENT_NODE)
-              this.documentElement = kid;
+            if (kid.nodeType === Node.DOCUMENT_TYPE_NODE) this.doctype = kid;
+            else if (kid.nodeType === Node.ELEMENT_NODE) this.documentElement = kid;
           }
         }
       },
@@ -13219,8 +13045,7 @@ var require_Document = __commonJS({
       getElementById: {
         value: function(id) {
           var n = this.byId[id];
-          if (!n)
-            return null;
+          if (!n) return null;
           if (n instanceof MultiId) {
             return n.getFirst();
           }
@@ -13239,15 +13064,12 @@ var require_Document = __commonJS({
       getElementsByClassName: { value: Element.prototype.getElementsByClassName },
       adoptNode: {
         value: function adoptNode(node) {
-          if (node.nodeType === Node.DOCUMENT_NODE)
-            utils.NotSupportedError();
+          if (node.nodeType === Node.DOCUMENT_NODE) utils.NotSupportedError();
           if (node.nodeType === Node.ATTRIBUTE_NODE) {
             return node;
           }
-          if (node.parentNode)
-            node.parentNode.removeChild(node);
-          if (node.ownerDocument !== this)
-            recursivelySetOwner(node, this);
+          if (node.parentNode) node.parentNode.removeChild(node);
+          if (node.ownerDocument !== this) recursivelySetOwner(node, this);
           return node;
         }
       },
@@ -13417,10 +13239,8 @@ var require_Document = __commonJS({
       },
       write: {
         value: function(args) {
-          if (!this.isHTML)
-            utils.InvalidStateError();
-          if (!this._parser)
-            return;
+          if (!this.isHTML) utils.InvalidStateError();
+          if (!this._parser) return;
           if (!this._parser) {
           }
           var s = arguments.join("");
@@ -13595,11 +13415,10 @@ var require_Document = __commonJS({
       _documentBaseURL: {
         get: function() {
           var url = this._address;
-          if (url === "about:blank")
-            url = "/";
-          var base = this.querySelector("base[href]");
-          if (base) {
-            return new URL2(url).resolve(base.getAttribute("href"));
+          if (url === "about:blank") url = "/";
+          var base2 = this.querySelector("base[href]");
+          if (base2) {
+            return new URL2(url).resolve(base2.getAttribute("href"));
           }
           return url;
         }
@@ -13706,17 +13525,14 @@ var require_Document = __commonJS({
       n.ownerDocument._nodes[n._nid] = n;
       if (n.nodeType === Node.ELEMENT_NODE) {
         var id = n.getAttribute("id");
-        if (id)
-          n.ownerDocument.addId(id, n);
-        if (n._roothook)
-          n._roothook();
+        if (id) n.ownerDocument.addId(id, n);
+        if (n._roothook) n._roothook();
       }
     }
     function uproot(n) {
       if (n.nodeType === Node.ELEMENT_NODE) {
         var id = n.getAttribute("id");
-        if (id)
-          n.ownerDocument.delId(id, n);
+        if (id) n.ownerDocument.delId(id, n);
       }
       n.ownerDocument._nodes[n._nid] = void 0;
       n._nid = void 0;
@@ -13724,14 +13540,12 @@ var require_Document = __commonJS({
     function recursivelyRoot(node) {
       root(node);
       if (node.nodeType === Node.ELEMENT_NODE) {
-        for (var kid = node.firstChild; kid !== null; kid = kid.nextSibling)
-          recursivelyRoot(kid);
+        for (var kid = node.firstChild; kid !== null; kid = kid.nextSibling) recursivelyRoot(kid);
       }
     }
     function recursivelyUproot(node) {
       uproot(node);
-      for (var kid = node.firstChild; kid !== null; kid = kid.nextSibling)
-        recursivelyUproot(kid);
+      for (var kid = node.firstChild; kid !== null; kid = kid.nextSibling) recursivelyUproot(kid);
     }
     function recursivelySetOwner(node, owner) {
       node.ownerDocument = owner;
@@ -16542,22 +16356,17 @@ var require_HTMLParser = __commonJS({
       return isA(n, mathmlTextIntegrationPointSet);
     }
     function isHTMLIntegrationPoint(n) {
-      if (isA(n, htmlIntegrationPointSet))
-        return true;
+      if (isA(n, htmlIntegrationPointSet)) return true;
       if (n.namespaceURI === NAMESPACE.MATHML && n.localName === "annotation-xml") {
         var encoding = n.getAttribute("encoding");
-        if (encoding)
-          encoding = encoding.toLowerCase();
-        if (encoding === "text/html" || encoding === "application/xhtml+xml")
-          return true;
+        if (encoding) encoding = encoding.toLowerCase();
+        if (encoding === "text/html" || encoding === "application/xhtml+xml") return true;
       }
       return false;
     }
     function adjustSVGTagName(name) {
-      if (name in svgTagNameAdjustments)
-        return svgTagNameAdjustments[name];
-      else
-        return name;
+      if (name in svgTagNameAdjustments) return svgTagNameAdjustments[name];
+      else return name;
     }
     function adjustSVGAttributes(attrs) {
       for (var i = 0, n = attrs.length; i < n; i++) {
@@ -16584,8 +16393,7 @@ var require_HTMLParser = __commonJS({
     function transferAttributes(attrs, elt) {
       for (var i = 0, n = attrs.length; i < n; i++) {
         var name = attrs[i][0], value = attrs[i][1];
-        if (elt.hasAttribute(name))
-          continue;
+        if (elt.hasAttribute(name)) continue;
         elt._setAttribute(name, value);
       }
     }
@@ -16604,41 +16412,35 @@ var require_HTMLParser = __commonJS({
     HTMLParser.ElementStack.prototype.popTag = function(tag) {
       for (var i = this.elements.length - 1; i > 0; i--) {
         var e = this.elements[i];
-        if (isA(e, tag))
-          break;
+        if (isA(e, tag)) break;
       }
       this.elements.length = i;
       this.top = this.elements[i - 1];
     };
     HTMLParser.ElementStack.prototype.popElementType = function(type) {
       for (var i = this.elements.length - 1; i > 0; i--) {
-        if (this.elements[i] instanceof type)
-          break;
+        if (this.elements[i] instanceof type) break;
       }
       this.elements.length = i;
       this.top = this.elements[i - 1];
     };
     HTMLParser.ElementStack.prototype.popElement = function(e) {
       for (var i = this.elements.length - 1; i > 0; i--) {
-        if (this.elements[i] === e)
-          break;
+        if (this.elements[i] === e) break;
       }
       this.elements.length = i;
       this.top = this.elements[i - 1];
     };
     HTMLParser.ElementStack.prototype.removeElement = function(e) {
-      if (this.top === e)
-        this.pop();
+      if (this.top === e) this.pop();
       else {
         var idx = this.elements.lastIndexOf(e);
-        if (idx !== -1)
-          this.elements.splice(idx, 1);
+        if (idx !== -1) this.elements.splice(idx, 1);
       }
     };
     HTMLParser.ElementStack.prototype.clearToContext = function(set) {
       for (var i = this.elements.length - 1; i > 0; i--) {
-        if (isA(this.elements[i], set))
-          break;
+        if (isA(this.elements[i], set)) break;
       }
       this.elements.length = i + 1;
       this.top = this.elements[i];
@@ -16649,30 +16451,24 @@ var require_HTMLParser = __commonJS({
     HTMLParser.ElementStack.prototype.inSpecificScope = function(tag, set) {
       for (var i = this.elements.length - 1; i >= 0; i--) {
         var elt = this.elements[i];
-        if (isA(elt, tag))
-          return true;
-        if (isA(elt, set))
-          return false;
+        if (isA(elt, tag)) return true;
+        if (isA(elt, set)) return false;
       }
       return false;
     };
     HTMLParser.ElementStack.prototype.elementInSpecificScope = function(target, set) {
       for (var i = this.elements.length - 1; i >= 0; i--) {
         var elt = this.elements[i];
-        if (elt === target)
-          return true;
-        if (isA(elt, set))
-          return false;
+        if (elt === target) return true;
+        if (isA(elt, set)) return false;
       }
       return false;
     };
     HTMLParser.ElementStack.prototype.elementTypeInSpecificScope = function(target, set) {
       for (var i = this.elements.length - 1; i >= 0; i--) {
         var elt = this.elements[i];
-        if (elt instanceof target)
-          return true;
-        if (isA(elt, set))
-          return false;
+        if (elt instanceof target) return true;
+        if (isA(elt, set)) return false;
       }
       return false;
     };
@@ -16697,13 +16493,10 @@ var require_HTMLParser = __commonJS({
     HTMLParser.ElementStack.prototype.inSelectScope = function(tag) {
       for (var i = this.elements.length - 1; i >= 0; i--) {
         var elt = this.elements[i];
-        if (elt.namespaceURI !== NAMESPACE.HTML)
-          return false;
+        if (elt.namespaceURI !== NAMESPACE.HTML) return false;
         var localname = elt.localName;
-        if (localname === tag)
-          return true;
-        if (localname !== "optgroup" && localname !== "option")
-          return false;
+        if (localname === tag) return true;
+        if (localname !== "optgroup" && localname !== "option") return false;
       }
       return false;
     };
@@ -16711,10 +16504,8 @@ var require_HTMLParser = __commonJS({
       var endTagSet = thorough ? thoroughImpliedEndTagsSet : impliedEndTagsSet;
       for (var i = this.elements.length - 1; i >= 0; i--) {
         var e = this.elements[i];
-        if (butnot && isA(e, butnot))
-          break;
-        if (!isA(this.elements[i], endTagSet))
-          break;
+        if (butnot && isA(e, butnot)) break;
+        if (!isA(this.elements[i], endTagSet)) break;
       }
       this.elements.length = i + 1;
       this.top = this.elements[i];
@@ -16731,8 +16522,7 @@ var require_HTMLParser = __commonJS({
     HTMLParser.ActiveFormattingElements.prototype.push = function(elt, attrs) {
       var count = 0;
       for (var i = this.list.length - 1; i >= 0; i--) {
-        if (this.list[i] === this.MARKER)
-          break;
+        if (this.list[i] === this.MARKER) break;
         if (equal2(elt, this.list[i], this.attrs[i])) {
           count++;
           if (count === 3) {
@@ -16749,38 +16539,30 @@ var require_HTMLParser = __commonJS({
       }
       this.attrs.push(attrcopy);
       function equal2(newelt, oldelt, oldattrs) {
-        if (newelt.localName !== oldelt.localName)
-          return false;
-        if (newelt._numattrs !== oldattrs.length)
-          return false;
+        if (newelt.localName !== oldelt.localName) return false;
+        if (newelt._numattrs !== oldattrs.length) return false;
         for (var i2 = 0, n = oldattrs.length; i2 < n; i2++) {
           var oldname = oldattrs[i2][0];
           var oldval = oldattrs[i2][1];
-          if (!newelt.hasAttribute(oldname))
-            return false;
-          if (newelt.getAttribute(oldname) !== oldval)
-            return false;
+          if (!newelt.hasAttribute(oldname)) return false;
+          if (newelt.getAttribute(oldname) !== oldval) return false;
         }
         return true;
       }
     };
     HTMLParser.ActiveFormattingElements.prototype.clearToMarker = function() {
       for (var i = this.list.length - 1; i >= 0; i--) {
-        if (this.list[i] === this.MARKER)
-          break;
+        if (this.list[i] === this.MARKER) break;
       }
-      if (i < 0)
-        i = 0;
+      if (i < 0) i = 0;
       this.list.length = i;
       this.attrs.length = i;
     };
     HTMLParser.ActiveFormattingElements.prototype.findElementByTag = function(tag) {
       for (var i = this.list.length - 1; i >= 0; i--) {
         var elt = this.list[i];
-        if (elt === this.MARKER)
-          break;
-        if (elt.localName === tag)
-          return elt;
+        if (elt === this.MARKER) break;
+        if (elt.localName === tag) return elt;
       }
       return null;
     };
@@ -16845,8 +16627,7 @@ var require_HTMLParser = __commonJS({
       if (fragmentContext) {
         scripting_enabled = fragmentContext.ownerDocument._scripting_enabled;
       }
-      if (options2 && options2.scripting_enabled === false)
-        scripting_enabled = false;
+      if (options2 && options2.scripting_enabled === false) scripting_enabled = false;
       var frameset_ok = true;
       var force_quirks = false;
       var pending_table_text;
@@ -16856,13 +16637,13 @@ var require_HTMLParser = __commonJS({
       var ignore_linefeed = false;
       var htmlparser = {
         document: function() {
-          return doc;
+          return doc2;
         },
         // Convenience function for internal use. Can only be called once,
         // as it removes the nodes from `doc` to add them to fragment.
         _asDocumentFragment: function() {
-          var frag = doc.createDocumentFragment();
-          var root2 = doc.firstChild;
+          var frag = doc2.createDocumentFragment();
+          var root2 = doc2.firstChild;
           while (root2.hasChildNodes()) {
             frag.appendChild(root2.firstChild);
           }
@@ -16903,8 +16684,7 @@ var require_HTMLParser = __commonJS({
             nextchar = 0;
             if (first_batch) {
               first_batch = false;
-              if (chars.charCodeAt(0) === 65279)
-                nextchar = 1;
+              if (chars.charCodeAt(0) === 65279) nextchar = 1;
             }
             reentrant_invocations++;
             moreToDo = scanChars(shouldPauseFunc);
@@ -16933,14 +16713,12 @@ var require_HTMLParser = __commonJS({
           return moreToDo;
         }
       };
-      var doc = new Document(true, address);
-      doc._parser = htmlparser;
-      doc._scripting_enabled = scripting_enabled;
+      var doc2 = new Document(true, address);
+      doc2._parser = htmlparser;
+      doc2._scripting_enabled = scripting_enabled;
       if (fragmentContext) {
-        if (fragmentContext.ownerDocument._quirks)
-          doc._quirks = true;
-        if (fragmentContext.ownerDocument._limitedQuirks)
-          doc._limitedQuirks = true;
+        if (fragmentContext.ownerDocument._quirks) doc2._quirks = true;
+        if (fragmentContext.ownerDocument._limitedQuirks) doc2._limitedQuirks = true;
         if (fragmentContext.namespaceURI === NAMESPACE.HTML) {
           switch (fragmentContext.localName) {
             case "title":
@@ -16957,12 +16735,11 @@ var require_HTMLParser = __commonJS({
               tokenizer = plaintext_state;
               break;
             case "noscript":
-              if (scripting_enabled)
-                tokenizer = plaintext_state;
+              if (scripting_enabled) tokenizer = plaintext_state;
           }
         }
-        var root = doc.createElement("html");
-        doc._appendChild(root);
+        var root = doc2.createElement("html");
+        doc2._appendChild(root);
         stack.push(root);
         if (fragmentContext instanceof impl.HTMLTemplateElement) {
           templateInsertionModes.push(in_template_mode);
@@ -16994,8 +16771,7 @@ var require_HTMLParser = __commonJS({
               switch (codepoint) {
                 case 13:
                   if (nextchar < numchars) {
-                    if (chars.charCodeAt(nextchar) === 10)
-                      nextchar++;
+                    if (chars.charCodeAt(nextchar) === 10) nextchar++;
                   } else {
                     scanner_skip_newline = true;
                   }
@@ -17006,6 +16782,7 @@ var require_HTMLParser = __commonJS({
                     tokenizer(EOF);
                     break;
                   }
+                /* falls through */
                 default:
                   tokenizer(codepoint);
                   break;
@@ -17026,8 +16803,7 @@ var require_HTMLParser = __commonJS({
                 if (input_complete) {
                   s = needsString ? chars.substring(nextchar, numchars) : null;
                   eof = true;
-                  if (codepoint === 65535 && nextchar === numchars - 1)
-                    codepoint = EOF;
+                  if (codepoint === 65535 && nextchar === numchars - 1) codepoint = EOF;
                 } else {
                   return true;
                 }
@@ -17042,11 +16818,9 @@ var require_HTMLParser = __commonJS({
                 s = chars.substring(nextchar, pos + pattern.length);
                 eof = false;
               } else {
-                if (!input_complete)
-                  return true;
+                if (!input_complete) return true;
                 s = chars.substring(nextchar, numchars);
-                if (codepoint === 65535 && nextchar === numchars - 1)
-                  codepoint = EOF;
+                if (codepoint === 65535 && nextchar === numchars - 1) codepoint = EOF;
                 eof = true;
               }
               tokenizer(codepoint, s, eof);
@@ -17057,8 +16831,7 @@ var require_HTMLParser = __commonJS({
       }
       function addAttribute(name, value) {
         for (var i = 0; i < attributes.length; i++) {
-          if (attributes[i][0] === name)
-            return;
+          if (attributes[i][0] === name) return;
         }
         if (value !== void 0) {
           attributes.push([name, value]);
@@ -17069,11 +16842,9 @@ var require_HTMLParser = __commonJS({
       function handleSimpleAttribute() {
         SIMPLEATTR.lastIndex = nextchar - 1;
         var matched = SIMPLEATTR.exec(chars);
-        if (!matched)
-          throw new Error("should never happen");
+        if (!matched) throw new Error("should never happen");
         var name = matched[1];
-        if (!name)
-          return false;
+        if (!name) return false;
         var value = matched[2];
         var len = value.length;
         switch (value[0]) {
@@ -17090,8 +16861,7 @@ var require_HTMLParser = __commonJS({
             break;
         }
         for (var i = 0; i < attributes.length; i++) {
-          if (attributes[i][0] === name)
-            return true;
+          if (attributes[i][0] === name) return true;
         }
         attributes.push([name, value]);
         return true;
@@ -17144,10 +16914,8 @@ var require_HTMLParser = __commonJS({
           textrun.length = 0;
           if (ignore_linefeed) {
             ignore_linefeed = false;
-            if (s[0] === "\n")
-              s = s.substring(1);
-            if (s.length === 0)
-              return;
+            if (s[0] === "\n") s = s.substring(1);
+            if (s.length === 0) return;
           }
           insertToken(TEXT, s);
           textIncludesNUL = false;
@@ -17172,27 +16940,22 @@ var require_HTMLParser = __commonJS({
       function emitCharsWhile(pattern) {
         pattern.lastIndex = nextchar - 1;
         var match = pattern.exec(chars)[0];
-        if (!match)
-          return false;
+        if (!match) return false;
         emitCharString(match);
         nextchar += match.length - 1;
         return true;
       }
       function emitCharString(s) {
-        if (textrun.length > 0)
-          flushText();
+        if (textrun.length > 0) flushText();
         if (ignore_linefeed) {
           ignore_linefeed = false;
-          if (s[0] === "\n")
-            s = s.substring(1);
-          if (s.length === 0)
-            return;
+          if (s[0] === "\n") s = s.substring(1);
+          if (s.length === 0) return;
         }
         insertToken(TEXT, s);
       }
       function emitTag() {
-        if (is_end_tag)
-          insertToken(ENDTAG, tagnamebuf);
+        if (is_end_tag) insertToken(ENDTAG, tagnamebuf);
         else {
           var tagname = tagnamebuf;
           tagnamebuf = "";
@@ -17206,11 +16969,9 @@ var require_HTMLParser = __commonJS({
         }
         SIMPLETAG.lastIndex = nextchar;
         var matched = SIMPLETAG.exec(chars);
-        if (!matched)
-          throw new Error("should never happen");
+        if (!matched) throw new Error("should never happen");
         var tagname = matched[2];
-        if (!tagname)
-          return false;
+        if (!tagname) return false;
         var endtag = matched[1];
         if (endtag) {
           nextchar += tagname.length + 2;
@@ -17223,8 +16984,7 @@ var require_HTMLParser = __commonJS({
         return true;
       }
       function emitSelfClosingTag() {
-        if (is_end_tag)
-          insertToken(ENDTAG, tagnamebuf, null, true);
+        if (is_end_tag) insertToken(ENDTAG, tagnamebuf, null, true);
         else {
           insertToken(TAG, tagnamebuf, attributes, true);
         }
@@ -17240,7 +17000,7 @@ var require_HTMLParser = __commonJS({
       function emitEOF() {
         flushText();
         parser(EOF);
-        doc.modclock = 1;
+        doc2.modclock = 1;
       }
       var insertToken = htmlparser.insertToken = function insertToken2(t, value, arg3, arg4) {
         flushText();
@@ -17264,8 +17024,8 @@ var require_HTMLParser = __commonJS({
       function insertComment(data) {
         var parent = stack.top;
         if (foster_parent_mode && isA(parent, tablesectionrowSet)) {
-          fosterParent(function(doc2) {
-            return doc2.createComment(data);
+          fosterParent(function(doc3) {
+            return doc3.createComment(data);
           });
         } else {
           if (parent instanceof impl.HTMLTemplateElement) {
@@ -17277,8 +17037,8 @@ var require_HTMLParser = __commonJS({
       function insertText(s) {
         var parent = stack.top;
         if (foster_parent_mode && isA(parent, tablesectionrowSet)) {
-          fosterParent(function(doc2) {
-            return doc2.createTextNode(s);
+          fosterParent(function(doc3) {
+            return doc3.createTextNode(s);
           });
         } else {
           if (parent instanceof impl.HTMLTemplateElement) {
@@ -17292,8 +17052,8 @@ var require_HTMLParser = __commonJS({
           }
         }
       }
-      function createHTMLElt(doc2, name, attrs) {
-        var elt = html.createElement(doc2, name, null);
+      function createHTMLElt(doc3, name, attrs) {
+        var elt = html.createElement(doc3, name, null);
         if (attrs) {
           for (var i = 0, n = attrs.length; i < n; i++) {
             elt._setAttribute(attrs[i][0], attrs[i][1]);
@@ -17303,8 +17063,8 @@ var require_HTMLParser = __commonJS({
       }
       var foster_parent_mode = false;
       function insertHTMLElement(name, attrs) {
-        var elt = insertElement(function(doc2) {
-          return createHTMLElt(doc2, name, attrs);
+        var elt = insertElement(function(doc3) {
+          return createHTMLElt(doc3, name, attrs);
         });
         if (isA(elt, formassociatedSet)) {
           elt._form = form_element_pointer;
@@ -17326,13 +17086,12 @@ var require_HTMLParser = __commonJS({
         return elt;
       }
       function insertForeignElement(name, attrs, ns) {
-        return insertElement(function(doc2) {
-          var elt = doc2._createElementNS(name, ns, null);
+        return insertElement(function(doc3) {
+          var elt = doc3._createElementNS(name, ns, null);
           if (attrs) {
             for (var i = 0, n = attrs.length; i < n; i++) {
               var attr = attrs[i];
-              if (attr.length === 2)
-                elt._setAttribute(attr[0], attr[1]);
+              if (attr.length === 2) elt._setAttribute(attr[0], attr[1]);
               else {
                 elt._setAttributeNS(attr[2], attr[0], attr[1]);
               }
@@ -17363,27 +17122,22 @@ var require_HTMLParser = __commonJS({
             parent = stack.elements[lastTable - 1];
           }
         }
-        if (!parent)
-          parent = stack.elements[0];
+        if (!parent) parent = stack.elements[0];
         if (parent instanceof impl.HTMLTemplateElement) {
           parent = parent.content;
         }
         elt = eltFunc(parent.ownerDocument);
         if (elt.nodeType === Node.TEXT_NODE) {
           var prev;
-          if (before)
-            prev = before.previousSibling;
-          else
-            prev = parent.lastChild;
+          if (before) prev = before.previousSibling;
+          else prev = parent.lastChild;
           if (prev && prev.nodeType === Node.TEXT_NODE) {
             prev.appendData(elt.data);
             return elt;
           }
         }
-        if (before)
-          parent.insertBefore(elt, before);
-        else
-          parent._appendChild(elt);
+        if (before) parent.insertBefore(elt, before);
+        else parent._appendChild(elt);
         return elt;
       }
       function resetInsertionMode() {
@@ -17475,30 +17229,25 @@ var require_HTMLParser = __commonJS({
         originalInsertionMode = parser;
         parser = text_mode;
       }
-      function afeclone(doc2, i) {
+      function afeclone(doc3, i) {
         return {
-          elt: createHTMLElt(doc2, afe.list[i].localName, afe.attrs[i]),
+          elt: createHTMLElt(doc3, afe.list[i].localName, afe.attrs[i]),
           attrs: afe.attrs[i]
         };
       }
       function afereconstruct() {
-        if (afe.list.length === 0)
-          return;
+        if (afe.list.length === 0) return;
         var entry = afe.list[afe.list.length - 1];
-        if (entry === afe.MARKER)
-          return;
-        if (stack.elements.lastIndexOf(entry) !== -1)
-          return;
+        if (entry === afe.MARKER) return;
+        if (stack.elements.lastIndexOf(entry) !== -1) return;
         for (var i = afe.list.length - 2; i >= 0; i--) {
           entry = afe.list[i];
-          if (entry === afe.MARKER)
-            break;
-          if (stack.elements.lastIndexOf(entry) !== -1)
-            break;
+          if (entry === afe.MARKER) break;
+          if (stack.elements.lastIndexOf(entry) !== -1) break;
         }
         for (i = i + 1; i < afe.list.length; i++) {
-          var newelt = insertElement(function(doc2) {
-            return afeclone(doc2, i).elt;
+          var newelt = insertElement(function(doc3) {
+            return afeclone(doc3, i).elt;
           });
           afe.list[i] = newelt;
         }
@@ -17547,8 +17296,7 @@ var require_HTMLParser = __commonJS({
             while (true) {
               inner++;
               node = stack.elements[--nodeindex];
-              if (node === fmtelt)
-                break;
+              if (node === fmtelt) break;
               nodeafeindex = afe.indexOf(node);
               if (inner > 3 && nodeafeindex !== -1) {
                 afe.remove(node);
@@ -17598,10 +17346,10 @@ var require_HTMLParser = __commonJS({
         return;
       }
       function stopParsing() {
-        delete doc._parser;
+        delete doc2._parser;
         stack.elements.length = 0;
-        if (doc.defaultView) {
-          doc.defaultView.dispatchEvent(new impl.Event("load", {}));
+        if (doc2.defaultView) {
+          doc2.defaultView.dispatchEvent(new impl.Event("load", {}));
         }
       }
       function reconsume(c, new_state) {
@@ -17706,6 +17454,7 @@ var require_HTMLParser = __commonJS({
             tokenizer = end_tag_open_state;
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -17732,6 +17481,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -17772,6 +17522,7 @@ var require_HTMLParser = __commonJS({
       function end_tag_open_state(c) {
         switch (c) {
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -17798,6 +17549,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -17842,8 +17594,11 @@ var require_HTMLParser = __commonJS({
       function tag_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = before_attribute_name_state;
             break;
@@ -17855,6 +17610,7 @@ var require_HTMLParser = __commonJS({
             emitTag();
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -17908,6 +17664,7 @@ var require_HTMLParser = __commonJS({
       function rcdata_end_tag_open_state(c) {
         switch (c) {
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -17934,6 +17691,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -17972,8 +17730,11 @@ var require_HTMLParser = __commonJS({
       function rcdata_end_tag_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             if (appropriateEndTag(tagnamebuf)) {
               tokenizer = before_attribute_name_state;
@@ -17994,6 +17755,7 @@ var require_HTMLParser = __commonJS({
             }
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18023,6 +17785,7 @@ var require_HTMLParser = __commonJS({
             tempbuf.push(c);
             return;
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18071,6 +17834,7 @@ var require_HTMLParser = __commonJS({
       function rawtext_end_tag_open_state(c) {
         switch (c) {
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18097,6 +17861,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18135,8 +17900,11 @@ var require_HTMLParser = __commonJS({
       function rawtext_end_tag_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             if (appropriateEndTag(tagnamebuf)) {
               tokenizer = before_attribute_name_state;
@@ -18157,6 +17925,7 @@ var require_HTMLParser = __commonJS({
             }
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18186,6 +17955,7 @@ var require_HTMLParser = __commonJS({
             tempbuf.push(c);
             return;
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18242,6 +18012,7 @@ var require_HTMLParser = __commonJS({
       function script_data_end_tag_open_state(c) {
         switch (c) {
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18268,6 +18039,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18306,8 +18078,11 @@ var require_HTMLParser = __commonJS({
       function script_data_end_tag_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             if (appropriateEndTag(tagnamebuf)) {
               tokenizer = before_attribute_name_state;
@@ -18328,6 +18103,7 @@ var require_HTMLParser = __commonJS({
             }
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18357,6 +18133,7 @@ var require_HTMLParser = __commonJS({
             tempbuf.push(c);
             return;
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18483,6 +18260,7 @@ var require_HTMLParser = __commonJS({
             tokenizer = script_data_escaped_end_tag_open_state;
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18509,6 +18287,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18547,6 +18326,7 @@ var require_HTMLParser = __commonJS({
       function script_data_escaped_end_tag_open_state(c) {
         switch (c) {
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18573,6 +18353,7 @@ var require_HTMLParser = __commonJS({
           case 89:
           case 90:
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18611,8 +18392,11 @@ var require_HTMLParser = __commonJS({
       function script_data_escaped_end_tag_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             if (appropriateEndTag(tagnamebuf)) {
               tokenizer = before_attribute_name_state;
@@ -18633,6 +18417,7 @@ var require_HTMLParser = __commonJS({
             }
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18662,6 +18447,7 @@ var require_HTMLParser = __commonJS({
             tempbuf.push(c);
             return;
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18701,10 +18487,15 @@ var require_HTMLParser = __commonJS({
       function script_data_double_escape_start_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
+          // SPACE
           case 47:
+          // SOLIDUS
           case 62:
             if (buf2str(tempbuf) === "script") {
               tokenizer = script_data_double_escaped_state;
@@ -18714,6 +18505,7 @@ var require_HTMLParser = __commonJS({
             textrun.push(c);
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18743,6 +18535,7 @@ var require_HTMLParser = __commonJS({
             textrun.push(c);
             break;
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18858,10 +18651,15 @@ var require_HTMLParser = __commonJS({
       function script_data_double_escape_end_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
+          // SPACE
           case 47:
+          // SOLIDUS
           case 62:
             if (buf2str(tempbuf) === "script") {
               tokenizer = script_data_escaped_state;
@@ -18871,6 +18669,7 @@ var require_HTMLParser = __commonJS({
             textrun.push(c);
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -18900,6 +18699,7 @@ var require_HTMLParser = __commonJS({
             textrun.push(c);
             break;
           case 97:
+          // [a-z]
           case 98:
           case 99:
           case 100:
@@ -18936,10 +18736,17 @@ var require_HTMLParser = __commonJS({
       function before_attribute_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
+          // For SOLIDUS, GREATER-THAN SIGN, and EOF, spec says "reconsume in
+          // the after attribute name state", but in our implementation that
+          // state always has an active attribute in attrnamebuf.  Just clone
+          // the rules here, without the addAttribute business.
           case 47:
             tokenizer = self_closing_start_tag_state;
             break;
@@ -18956,8 +18763,7 @@ var require_HTMLParser = __commonJS({
             tokenizer = attribute_name_state;
             break;
           default:
-            if (handleSimpleAttribute())
-              break;
+            if (handleSimpleAttribute()) break;
             beginAttrName();
             reconsume(c, attribute_name_state);
             break;
@@ -18966,11 +18772,17 @@ var require_HTMLParser = __commonJS({
       function attribute_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
+          // SPACE
           case 47:
+          // SOLIDUS
           case 62:
+          // GREATER-THAN SIGN
           case -1:
             reconsume(c, after_attribute_name_state);
             break;
@@ -18978,6 +18790,7 @@ var require_HTMLParser = __commonJS({
             tokenizer = before_attribute_value_state;
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -19012,8 +18825,12 @@ var require_HTMLParser = __commonJS({
             );
             break;
           case 34:
+          // QUOTATION MARK
           case 39:
+          // APOSTROPHE
           case 60:
+          // LESS-THAN SIGN
+          /* falls through */
           default:
             attrnamebuf += getMatchingChars(ATTRNAME);
             break;
@@ -19022,8 +18839,11 @@ var require_HTMLParser = __commonJS({
       function after_attribute_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 47:
@@ -19052,8 +18872,11 @@ var require_HTMLParser = __commonJS({
       function before_attribute_value_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 34:
@@ -19065,6 +18888,8 @@ var require_HTMLParser = __commonJS({
             tokenizer = attribute_value_single_quoted_state;
             break;
           case 62:
+          // GREATER-THAN SIGN
+          /* falls through */
           default:
             beginAttrValue();
             reconsume(c, attribute_value_unquoted_state);
@@ -19128,8 +18953,11 @@ var require_HTMLParser = __commonJS({
       function attribute_value_unquoted_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             addAttribute(attrnamebuf, attrvaluebuf);
             tokenizer = before_attribute_name_state;
@@ -19154,10 +18982,16 @@ var require_HTMLParser = __commonJS({
             tokenizer = data_state;
             break;
           case 34:
+          // QUOTATION MARK
           case 39:
+          // APOSTROPHE
           case 60:
+          // LESS-THAN SIGN
           case 61:
+          // EQUALS SIGN
           case 96:
+          // GRAVE ACCENT
+          /* falls through */
           default:
             attrvaluebuf += getMatchingChars(UNQUOTEDATTRVAL);
             break;
@@ -19166,8 +19000,11 @@ var require_HTMLParser = __commonJS({
       function after_attribute_value_quoted_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = before_attribute_name_state;
             break;
@@ -19243,6 +19080,7 @@ var require_HTMLParser = __commonJS({
             tokenizer = data_state;
             insertToken(COMMENT, buf2str(commentbuf));
             break;
+          /* see comment in comment end state */
           default:
             reconsume(c, comment_state);
             break;
@@ -19261,6 +19099,7 @@ var require_HTMLParser = __commonJS({
             insertToken(COMMENT, buf2str(commentbuf));
             emitEOF();
             break;
+          /* see comment in comment end state */
           default:
             commentbuf.push(
               45
@@ -19289,6 +19128,7 @@ var require_HTMLParser = __commonJS({
             insertToken(COMMENT, buf2str(commentbuf));
             emitEOF();
             break;
+          /* see comment in comment end state */
           default:
             commentbuf.push(c);
             break;
@@ -19331,6 +19171,7 @@ var require_HTMLParser = __commonJS({
       function comment_less_than_sign_bang_dash_dash_state(c) {
         switch (c) {
           case 62:
+          // GREATER-THAN SIGN
           case -1:
             reconsume(c, comment_end_state);
             break;
@@ -19348,6 +19189,7 @@ var require_HTMLParser = __commonJS({
             insertToken(COMMENT, buf2str(commentbuf));
             emitEOF();
             break;
+          /* see comment in comment end state */
           default:
             commentbuf.push(
               45
@@ -19373,6 +19215,7 @@ var require_HTMLParser = __commonJS({
             insertToken(COMMENT, buf2str(commentbuf));
             emitEOF();
             break;
+          /* For security reasons: otherwise, hostile user could put a script in a comment e.g. in a blog comment and then DOS the server so that the end tag isn't read, and then the commented script tag would be treated as live code */
           default:
             commentbuf.push(45);
             commentbuf.push(45);
@@ -19396,6 +19239,7 @@ var require_HTMLParser = __commonJS({
             insertToken(COMMENT, buf2str(commentbuf));
             emitEOF();
             break;
+          /* see comment in comment end state */
           default:
             commentbuf.push(45);
             commentbuf.push(45);
@@ -19407,8 +19251,11 @@ var require_HTMLParser = __commonJS({
       function doctype_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = before_doctype_name_state;
             break;
@@ -19426,11 +19273,15 @@ var require_HTMLParser = __commonJS({
       function before_doctype_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -19487,8 +19338,11 @@ var require_HTMLParser = __commonJS({
       function doctype_name_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = after_doctype_name_state;
             break;
@@ -19497,6 +19351,7 @@ var require_HTMLParser = __commonJS({
             emitDoctype();
             break;
           case 65:
+          // [A-Z]
           case 66:
           case 67:
           case 68:
@@ -19543,8 +19398,11 @@ var require_HTMLParser = __commonJS({
       function after_doctype_name_state(c, lookahead, eof) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             nextchar += 1;
             break;
@@ -19577,8 +19435,11 @@ var require_HTMLParser = __commonJS({
       function after_doctype_public_keyword_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = before_doctype_public_identifier_state;
             break;
@@ -19609,8 +19470,11 @@ var require_HTMLParser = __commonJS({
       function before_doctype_public_identifier_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 34:
@@ -19692,8 +19556,11 @@ var require_HTMLParser = __commonJS({
       function after_doctype_public_identifier_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = between_doctype_public_and_system_identifiers_state;
             break;
@@ -19723,8 +19590,11 @@ var require_HTMLParser = __commonJS({
       function between_doctype_public_and_system_identifiers_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 62:
@@ -19753,8 +19623,11 @@ var require_HTMLParser = __commonJS({
       function after_doctype_system_keyword_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             tokenizer = before_doctype_system_identifier_state;
             break;
@@ -19785,8 +19658,11 @@ var require_HTMLParser = __commonJS({
       function before_doctype_system_identifier_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 34:
@@ -19868,8 +19744,11 @@ var require_HTMLParser = __commonJS({
       function after_doctype_system_identifier_state(c) {
         switch (c) {
           case 9:
+          // CHARACTER TABULATION (tab)
           case 10:
+          // LINE FEED (LF)
           case 12:
+          // FORM FEED (FF)
           case 32:
             break;
           case 62:
@@ -19910,6 +19789,7 @@ var require_HTMLParser = __commonJS({
             break;
           case 0:
             textIncludesNUL = true;
+          /* fall through */
           default:
             emitCharsWhile(CDATATEXT) || textrun.push(c);
             break;
@@ -19947,11 +19827,17 @@ var require_HTMLParser = __commonJS({
         tempbuf.push(38);
         switch (c) {
           case 9:
+          // TAB
           case 10:
+          // LINE FEED
           case 12:
+          // FORM FEED
           case 32:
+          // SPACE
           case 60:
+          // LESS-THAN SIGN
           case 38:
+          // AMPERSAND
           case -1:
             reconsume(c, character_reference_end_state);
             break;
@@ -19967,8 +19853,7 @@ var require_HTMLParser = __commonJS({
       function named_character_reference_state(c) {
         NAMEDCHARREF.lastIndex = nextchar;
         var matched = NAMEDCHARREF.exec(chars);
-        if (!matched)
-          throw new Error("should never happen");
+        if (!matched) throw new Error("should never happen");
         var name = matched[1];
         if (!name) {
           tokenizer = character_reference_end_state;
@@ -20004,6 +19889,7 @@ var require_HTMLParser = __commonJS({
         character_reference_code = 0;
         switch (c) {
           case 120:
+          // x
           case 88:
             tempbuf.push(c);
             tokenizer = hexadecimal_character_reference_start_state;
@@ -20025,12 +19911,14 @@ var require_HTMLParser = __commonJS({
           case 55:
           case 56:
           case 57:
+          // [0-9]
           case 65:
           case 66:
           case 67:
           case 68:
           case 69:
           case 70:
+          // [A-F]
           case 97:
           case 98:
           case 99:
@@ -20160,25 +20048,25 @@ var require_HTMLParser = __commonJS({
         switch (t) {
           case 1:
             value = value.replace(LEADINGWS, "");
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle anything non-space text below
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 5:
             var name = value;
             var publicid = arg3;
             var systemid = arg4;
-            doc.appendChild(new DocumentType(doc, name, publicid, systemid));
+            doc2.appendChild(new DocumentType(doc2, name, publicid, systemid));
             if (force_quirks || name.toLowerCase() !== "html" || quirkyPublicIds.test(publicid) || systemid && systemid.toLowerCase() === quirkySystemId || systemid === void 0 && conditionallyQuirkyPublicIds.test(publicid))
-              doc._quirks = true;
+              doc2._quirks = true;
             else if (limitedQuirkyPublicIds.test(publicid) || systemid !== void 0 && conditionallyQuirkyPublicIds.test(publicid))
-              doc._limitedQuirks = true;
+              doc2._limitedQuirks = true;
             parser = before_html_mode;
             return;
         }
-        doc._quirks = true;
+        doc2._quirks = true;
         parser = before_html_mode;
         parser(t, value, arg3, arg4);
       }
@@ -20187,19 +20075,19 @@ var require_HTMLParser = __commonJS({
         switch (t) {
           case 1:
             value = value.replace(LEADINGWS, "");
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle anything non-space text below
           case 5:
             return;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 2:
             if (value === "html") {
-              elt = createHTMLElt(doc, value, arg3);
+              elt = createHTMLElt(doc2, value, arg3);
               stack.push(elt);
-              doc.appendChild(elt);
+              doc2.appendChild(elt);
               parser = before_head_mode;
               return;
             }
@@ -20211,13 +20099,14 @@ var require_HTMLParser = __commonJS({
               case "body":
               case "br":
                 break;
+              // fall through on these
               default:
                 return;
             }
         }
-        elt = createHTMLElt(doc, "html", null);
+        elt = createHTMLElt(doc2, "html", null);
         stack.push(elt);
-        doc.appendChild(elt);
+        doc2.appendChild(elt);
         parser = before_head_mode;
         parser(t, value, arg3, arg4);
       }
@@ -20225,9 +20114,9 @@ var require_HTMLParser = __commonJS({
         switch (t) {
           case 1:
             value = value.replace(LEADINGWS, "");
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle anything non-space text below
           case 5:
             return;
           case 4:
@@ -20267,9 +20156,9 @@ var require_HTMLParser = __commonJS({
               insertText(ws[0]);
               value = value.substring(ws[0].length);
             }
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle non-whitespace below
           case 4:
             insertComment(value);
             return;
@@ -20281,6 +20170,9 @@ var require_HTMLParser = __commonJS({
                 in_body_mode(t, value, arg3, arg4);
                 return;
               case "meta":
+              // XXX:
+              // May need to change the encoding based on this tag
+              /* falls through */
               case "base":
               case "basefont":
               case "bgsound":
@@ -20297,17 +20189,18 @@ var require_HTMLParser = __commonJS({
                   parser = in_head_noscript_mode;
                   return;
                 }
+              // Otherwise, if scripting is enabled...
+              /* falls through */
               case "noframes":
               case "style":
                 parseRawText(value, arg3);
                 return;
               case "script":
-                insertElement(function(doc2) {
-                  var elt = createHTMLElt(doc2, value, arg3);
+                insertElement(function(doc3) {
+                  var elt = createHTMLElt(doc3, value, arg3);
                   elt._parser_inserted = true;
                   elt._force_async = false;
-                  if (fragment)
-                    elt._already_started = true;
+                  if (fragment) elt._already_started = true;
                   flushText();
                   return elt;
                 });
@@ -20336,6 +20229,7 @@ var require_HTMLParser = __commonJS({
               case "html":
               case "br":
                 break;
+              // handle these at the bottom of the function
               case "template":
                 if (!stack.contains("template")) {
                   return;
@@ -20367,9 +20261,9 @@ var require_HTMLParser = __commonJS({
               in_head_mode(t, ws[0]);
               value = value.substring(ws[0].length);
             }
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle non-whitespace below
           case 2:
             switch (value) {
               case "html":
@@ -20396,6 +20290,7 @@ var require_HTMLParser = __commonJS({
                 return;
               case "br":
                 break;
+              // goes to the outer default
               default:
                 return;
             }
@@ -20412,9 +20307,9 @@ var require_HTMLParser = __commonJS({
               insertText(ws[0]);
               value = value.substring(ws[0].length);
             }
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle non-whitespace below
           case 4:
             insertComment(value);
             return;
@@ -20475,11 +20370,9 @@ var require_HTMLParser = __commonJS({
           case 1:
             if (textIncludesNUL) {
               value = value.replace(NULCHARS, "");
-              if (value.length === 0)
-                return;
+              if (value.length === 0) return;
             }
-            if (frameset_ok && NONWS.test(value))
-              frameset_ok = false;
+            if (frameset_ok && NONWS.test(value)) frameset_ok = false;
             afereconstruct();
             insertText(value);
             return;
@@ -20522,15 +20415,11 @@ var require_HTMLParser = __commonJS({
                 transferAttributes(arg3, body);
                 return;
               case "frameset":
-                if (!frameset_ok)
-                  return;
+                if (!frameset_ok) return;
                 body = stack.elements[1];
-                if (!body || !(body instanceof impl.HTMLBodyElement))
-                  return;
-                if (body.parentNode)
-                  body.parentNode.removeChild(body);
-                while (!(stack.top instanceof impl.HTMLHtmlElement))
-                  stack.pop();
+                if (!body || !(body instanceof impl.HTMLBodyElement)) return;
+                if (body.parentNode) body.parentNode.removeChild(body);
+                while (!(stack.top instanceof impl.HTMLHtmlElement)) stack.pop();
                 insertHTMLElement(value, arg3);
                 parser = in_frameset_mode;
                 return;
@@ -20557,13 +20446,11 @@ var require_HTMLParser = __commonJS({
               case "section":
               case "summary":
               case "ul":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 insertHTMLElement(value, arg3);
                 return;
               case "menu":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 if (isA(stack.top, "menuitem")) {
                   stack.pop();
                 }
@@ -20575,28 +20462,22 @@ var require_HTMLParser = __commonJS({
               case "h4":
               case "h5":
               case "h6":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
-                if (stack.top instanceof impl.HTMLHeadingElement)
-                  stack.pop();
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
+                if (stack.top instanceof impl.HTMLHeadingElement) stack.pop();
                 insertHTMLElement(value, arg3);
                 return;
               case "pre":
               case "listing":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 insertHTMLElement(value, arg3);
                 ignore_linefeed = true;
                 frameset_ok = false;
                 return;
               case "form":
-                if (form_element_pointer && !stack.contains("template"))
-                  return;
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (form_element_pointer && !stack.contains("template")) return;
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 elt = insertHTMLElement(value, arg3);
-                if (!stack.contains("template"))
-                  form_element_pointer = elt;
+                if (!stack.contains("template")) form_element_pointer = elt;
                 return;
               case "li":
                 frameset_ok = false;
@@ -20606,11 +20487,9 @@ var require_HTMLParser = __commonJS({
                     in_body_mode(ENDTAG, "li");
                     break;
                   }
-                  if (isA(node, specialSet) && !isA(node, addressdivpSet))
-                    break;
+                  if (isA(node, specialSet) && !isA(node, addressdivpSet)) break;
                 }
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 insertHTMLElement(value, arg3);
                 return;
               case "dd":
@@ -20622,16 +20501,13 @@ var require_HTMLParser = __commonJS({
                     in_body_mode(ENDTAG, node.localName);
                     break;
                   }
-                  if (isA(node, specialSet) && !isA(node, addressdivpSet))
-                    break;
+                  if (isA(node, specialSet) && !isA(node, addressdivpSet)) break;
                 }
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 insertHTMLElement(value, arg3);
                 return;
               case "plaintext":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 insertHTMLElement(value, arg3);
                 tokenizer = plaintext_state;
                 return;
@@ -20652,6 +20528,7 @@ var require_HTMLParser = __commonJS({
                   afe.remove(activeElement);
                   stack.removeElement(activeElement);
                 }
+              /* falls through */
               case "b":
               case "big":
               case "code":
@@ -20684,7 +20561,7 @@ var require_HTMLParser = __commonJS({
                 frameset_ok = false;
                 return;
               case "table":
-                if (!doc._quirks && stack.inButtonScope("p")) {
+                if (!doc2._quirks && stack.inButtonScope("p")) {
                   in_body_mode(ENDTAG, "p");
                 }
                 insertHTMLElement(value, arg3);
@@ -20707,8 +20584,7 @@ var require_HTMLParser = __commonJS({
                 elt = insertHTMLElement(value, arg3);
                 stack.pop();
                 var type = elt.getAttribute("type");
-                if (!type || type.toLowerCase() !== "hidden")
-                  frameset_ok = false;
+                if (!type || type.toLowerCase() !== "hidden") frameset_ok = false;
                 return;
               case "param":
               case "source":
@@ -20717,8 +20593,7 @@ var require_HTMLParser = __commonJS({
                 stack.pop();
                 return;
               case "hr":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 if (isA(stack.top, "menuitem")) {
                   stack.pop();
                 }
@@ -20738,8 +20613,7 @@ var require_HTMLParser = __commonJS({
                 parser = text_mode;
                 return;
               case "xmp":
-                if (stack.inButtonScope("p"))
-                  in_body_mode(ENDTAG, "p");
+                if (stack.inButtonScope("p")) in_body_mode(ENDTAG, "p");
                 afereconstruct();
                 frameset_ok = false;
                 parseRawText(value, arg3);
@@ -20757,14 +20631,14 @@ var require_HTMLParser = __commonJS({
                   return;
                 }
                 break;
+              // XXX Otherwise treat it as any other open tag?
               case "select":
                 afereconstruct();
                 insertHTMLElement(value, arg3);
                 frameset_ok = false;
                 if (parser === in_table_mode || parser === in_caption_mode || parser === in_table_body_mode || parser === in_row_mode || parser === in_cell_mode)
                   parser = in_select_in_table_mode;
-                else
-                  parser = in_select_mode;
+                else parser = in_select_mode;
                 return;
               case "optgroup":
               case "option":
@@ -20833,13 +20707,11 @@ var require_HTMLParser = __commonJS({
                 in_head_mode(ENDTAG, value, arg3);
                 return;
               case "body":
-                if (!stack.inScope("body"))
-                  return;
+                if (!stack.inScope("body")) return;
                 parser = after_body_mode;
                 return;
               case "html":
-                if (!stack.inScope("body"))
-                  return;
+                if (!stack.inScope("body")) return;
                 parser = after_body_mode;
                 parser(t, value, arg3);
                 return;
@@ -20869,8 +20741,7 @@ var require_HTMLParser = __commonJS({
               case "section":
               case "summary":
               case "ul":
-                if (!stack.inScope(value))
-                  return;
+                if (!stack.inScope(value)) return;
                 stack.generateImpliedEndTags();
                 stack.popTag(value);
                 return;
@@ -20878,13 +20749,11 @@ var require_HTMLParser = __commonJS({
                 if (!stack.contains("template")) {
                   var openform = form_element_pointer;
                   form_element_pointer = null;
-                  if (!openform || !stack.elementInScope(openform))
-                    return;
+                  if (!openform || !stack.elementInScope(openform)) return;
                   stack.generateImpliedEndTags();
                   stack.removeElement(openform);
                 } else {
-                  if (!stack.inScope("form"))
-                    return;
+                  if (!stack.inScope("form")) return;
                   stack.generateImpliedEndTags();
                   stack.popTag("form");
                 }
@@ -20899,15 +20768,13 @@ var require_HTMLParser = __commonJS({
                 }
                 return;
               case "li":
-                if (!stack.inListItemScope(value))
-                  return;
+                if (!stack.inListItemScope(value)) return;
                 stack.generateImpliedEndTags(value);
                 stack.popTag(value);
                 return;
               case "dd":
               case "dt":
-                if (!stack.inScope(value))
-                  return;
+                if (!stack.inScope(value)) return;
                 stack.generateImpliedEndTags(value);
                 stack.popTag(value);
                 return;
@@ -20917,8 +20784,7 @@ var require_HTMLParser = __commonJS({
               case "h4":
               case "h5":
               case "h6":
-                if (!stack.elementTypeInScope(impl.HTMLHeadingElement))
-                  return;
+                if (!stack.elementTypeInScope(impl.HTMLHeadingElement)) return;
                 stack.generateImpliedEndTags();
                 stack.popElementType(impl.HTMLHeadingElement);
                 return;
@@ -20939,14 +20805,13 @@ var require_HTMLParser = __commonJS({
               case "tt":
               case "u":
                 var result = adoptionAgency(value);
-                if (result)
-                  return;
+                if (result) return;
                 break;
+              // Go to the "any other end tag" case
               case "applet":
               case "marquee":
               case "object":
-                if (!stack.inScope(value))
-                  return;
+                if (!stack.inScope(value)) return;
                 stack.generateImpliedEndTags();
                 stack.popTag(value);
                 afe.clearToMarker();
@@ -20974,8 +20839,7 @@ var require_HTMLParser = __commonJS({
             insertText(value);
             return;
           case -1:
-            if (stack.top instanceof impl.HTMLScriptElement)
-              stack.top._already_started = true;
+            if (stack.top instanceof impl.HTMLScriptElement) stack.top._already_started = true;
             stack.pop();
             parser = originalInsertionMode;
             parser(t);
@@ -20995,8 +20859,7 @@ var require_HTMLParser = __commonJS({
       function in_table_mode(t, value, arg3, arg4) {
         function getTypeAttr(attrs) {
           for (var i = 0, n = attrs.length; i < n; i++) {
-            if (attrs[i][0] === "type")
-              return attrs[i][1].toLowerCase();
+            if (attrs[i][0] === "type") return attrs[i][1].toLowerCase();
           }
           return null;
         }
@@ -21062,14 +20925,12 @@ var require_HTMLParser = __commonJS({
                 return;
               case "input":
                 var type = getTypeAttr(arg3);
-                if (type !== "hidden")
-                  break;
+                if (type !== "hidden") break;
                 insertHTMLElement(value, arg3);
                 stack.pop();
                 return;
               case "form":
-                if (form_element_pointer || stack.contains("template"))
-                  return;
+                if (form_element_pointer || stack.contains("template")) return;
                 form_element_pointer = insertHTMLElement(value, arg3);
                 stack.popElement(form_element_pointer);
                 return;
@@ -21078,8 +20939,7 @@ var require_HTMLParser = __commonJS({
           case 3:
             switch (value) {
               case "table":
-                if (!stack.inTableScope(value))
-                  return;
+                if (!stack.inTableScope(value)) return;
                 stack.popTag(value);
                 resetInsertionMode();
                 return;
@@ -21112,8 +20972,7 @@ var require_HTMLParser = __commonJS({
         if (t === TEXT) {
           if (textIncludesNUL) {
             value = value.replace(NULCHARS, "");
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
           }
           pending_table_text.push(value);
         } else {
@@ -21132,8 +20991,7 @@ var require_HTMLParser = __commonJS({
       }
       function in_caption_mode(t, value, arg3, arg4) {
         function end_caption() {
-          if (!stack.inTableScope("caption"))
-            return false;
+          if (!stack.inTableScope("caption")) return false;
           stack.generateImpliedEndTags();
           stack.popTag("caption");
           afe.clearToMarker();
@@ -21152,8 +21010,7 @@ var require_HTMLParser = __commonJS({
               case "th":
               case "thead":
               case "tr":
-                if (end_caption())
-                  parser(t, value, arg3, arg4);
+                if (end_caption()) parser(t, value, arg3, arg4);
                 return;
             }
             break;
@@ -21163,8 +21020,7 @@ var require_HTMLParser = __commonJS({
                 end_caption();
                 return;
               case "table":
-                if (end_caption())
-                  parser(t, value, arg3, arg4);
+                if (end_caption()) parser(t, value, arg3, arg4);
                 return;
               case "body":
               case "col":
@@ -21190,9 +21046,9 @@ var require_HTMLParser = __commonJS({
               insertText(ws[0]);
               value = value.substring(ws[0].length);
             }
-            if (value.length === 0)
-              return;
+            if (value.length === 0) return;
             break;
+          // Handle non-whitespace below
           case 4:
             insertComment(value);
             return;
@@ -21299,8 +21155,7 @@ var require_HTMLParser = __commonJS({
       }
       function in_row_mode(t, value, arg3, arg4) {
         function endrow() {
-          if (!stack.inTableScope("tr"))
-            return false;
+          if (!stack.inTableScope("tr")) return false;
           stack.clearToContext(tableRowContextSet);
           stack.pop();
           parser = in_table_body_mode;
@@ -21323,8 +21178,7 @@ var require_HTMLParser = __commonJS({
               case "tfoot":
               case "thead":
               case "tr":
-                if (endrow())
-                  parser(t, value, arg3, arg4);
+                if (endrow()) parser(t, value, arg3, arg4);
                 return;
             }
             break;
@@ -21334,15 +21188,13 @@ var require_HTMLParser = __commonJS({
                 endrow();
                 return;
               case "table":
-                if (endrow())
-                  parser(t, value, arg3, arg4);
+                if (endrow()) parser(t, value, arg3, arg4);
                 return;
               case "tbody":
               case "tfoot":
               case "thead":
                 if (stack.inTableScope(value)) {
-                  if (endrow())
-                    parser(t, value, arg3, arg4);
+                  if (endrow()) parser(t, value, arg3, arg4);
                 }
                 return;
               case "body":
@@ -21385,8 +21237,7 @@ var require_HTMLParser = __commonJS({
             switch (value) {
               case "td":
               case "th":
-                if (!stack.inTableScope(value))
-                  return;
+                if (!stack.inTableScope(value)) return;
                 stack.generateImpliedEndTags();
                 stack.popTag(value);
                 afe.clearToMarker();
@@ -21403,8 +21254,7 @@ var require_HTMLParser = __commonJS({
               case "tfoot":
               case "thead":
               case "tr":
-                if (!stack.inTableScope(value))
-                  return;
+                if (!stack.inTableScope(value)) return;
                 in_cell_mode(ENDTAG, stack.inTableScope("td") ? "td" : "th");
                 parser(t, value, arg3, arg4);
                 return;
@@ -21418,8 +21268,7 @@ var require_HTMLParser = __commonJS({
           case 1:
             if (textIncludesNUL) {
               value = value.replace(NULCHARS, "");
-              if (value.length === 0)
-                return;
+              if (value.length === 0) return;
             }
             insertText(value);
             return;
@@ -21437,15 +21286,12 @@ var require_HTMLParser = __commonJS({
                 in_body_mode(t, value, arg3, arg4);
                 return;
               case "option":
-                if (stack.top instanceof impl.HTMLOptionElement)
-                  in_select_mode(ENDTAG, value);
+                if (stack.top instanceof impl.HTMLOptionElement) in_select_mode(ENDTAG, value);
                 insertHTMLElement(value, arg3);
                 return;
               case "optgroup":
-                if (stack.top instanceof impl.HTMLOptionElement)
-                  in_select_mode(ENDTAG, "option");
-                if (stack.top instanceof impl.HTMLOptGroupElement)
-                  in_select_mode(ENDTAG, value);
+                if (stack.top instanceof impl.HTMLOptionElement) in_select_mode(ENDTAG, "option");
+                if (stack.top instanceof impl.HTMLOptGroupElement) in_select_mode(ENDTAG, value);
                 insertHTMLElement(value, arg3);
                 return;
               case "select":
@@ -21454,8 +21300,7 @@ var require_HTMLParser = __commonJS({
               case "input":
               case "keygen":
               case "textarea":
-                if (!stack.inSelectScope("select"))
-                  return;
+                if (!stack.inSelectScope("select")) return;
                 in_select_mode(ENDTAG, "select");
                 parser(t, value, arg3, arg4);
                 return;
@@ -21471,16 +21316,13 @@ var require_HTMLParser = __commonJS({
                 if (stack.top instanceof impl.HTMLOptionElement && stack.elements[stack.elements.length - 2] instanceof impl.HTMLOptGroupElement) {
                   in_select_mode(ENDTAG, "option");
                 }
-                if (stack.top instanceof impl.HTMLOptGroupElement)
-                  stack.pop();
+                if (stack.top instanceof impl.HTMLOptGroupElement) stack.pop();
                 return;
               case "option":
-                if (stack.top instanceof impl.HTMLOptionElement)
-                  stack.pop();
+                if (stack.top instanceof impl.HTMLOptionElement) stack.pop();
                 return;
               case "select":
-                if (!stack.inSelectScope(value))
-                  return;
+                if (!stack.inSelectScope(value)) return;
                 stack.popTag(value);
                 resetInsertionMode();
                 return;
@@ -21524,7 +21366,9 @@ var require_HTMLParser = __commonJS({
         }
         switch (t) {
           case 1:
+          // TEXT
           case 4:
+          // COMMENT
           case 5:
             in_body_mode(t, value, arg3, arg4);
             return;
@@ -21586,12 +21430,11 @@ var require_HTMLParser = __commonJS({
       function after_body_mode(t, value, arg3, arg4) {
         switch (t) {
           case 1:
-            if (NONWS.test(value))
-              break;
+            if (NONWS.test(value)) break;
             in_body_mode(t, value);
             return;
           case 4:
-            stack.elements[0]._appendChild(doc.createComment(value));
+            stack.elements[0]._appendChild(doc2.createComment(value));
             return;
           case 5:
             return;
@@ -21604,10 +21447,10 @@ var require_HTMLParser = __commonJS({
               return;
             }
             break;
+          // for any other tags
           case 3:
             if (value === "html") {
-              if (fragment)
-                return;
+              if (fragment) return;
               parser = after_after_body_mode;
               return;
             }
@@ -21620,8 +21463,7 @@ var require_HTMLParser = __commonJS({
         switch (t) {
           case 1:
             value = value.replace(ALLNONWS, "");
-            if (value.length > 0)
-              insertText(value);
+            if (value.length > 0) insertText(value);
             return;
           case 4:
             insertComment(value);
@@ -21650,8 +21492,7 @@ var require_HTMLParser = __commonJS({
             break;
           case 3:
             if (value === "frameset") {
-              if (fragment && stack.top instanceof impl.HTMLHtmlElement)
-                return;
+              if (fragment && stack.top instanceof impl.HTMLHtmlElement) return;
               stack.pop();
               if (!fragment && !(stack.top instanceof impl.HTMLFrameSetElement))
                 parser = after_frameset_mode;
@@ -21664,8 +21505,7 @@ var require_HTMLParser = __commonJS({
         switch (t) {
           case 1:
             value = value.replace(ALLNONWS, "");
-            if (value.length > 0)
-              insertText(value);
+            if (value.length > 0) insertText(value);
             return;
           case 4:
             insertComment(value);
@@ -21696,12 +21536,11 @@ var require_HTMLParser = __commonJS({
       function after_after_body_mode(t, value, arg3, arg4) {
         switch (t) {
           case 1:
-            if (NONWS.test(value))
-              break;
+            if (NONWS.test(value)) break;
             in_body_mode(t, value, arg3, arg4);
             return;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 5:
             in_body_mode(t, value, arg3, arg4);
@@ -21723,11 +21562,10 @@ var require_HTMLParser = __commonJS({
         switch (t) {
           case 1:
             value = value.replace(ALLNONWS, "");
-            if (value.length > 0)
-              in_body_mode(t, value, arg3, arg4);
+            if (value.length > 0) in_body_mode(t, value, arg3, arg4);
             return;
           case 4:
-            doc._appendChild(doc.createComment(value));
+            doc2._appendChild(doc2.createComment(value));
             return;
           case 5:
             in_body_mode(t, value, arg3, arg4);
@@ -21762,8 +21600,7 @@ var require_HTMLParser = __commonJS({
         var current;
         switch (t) {
           case 1:
-            if (frameset_ok && NONWSNONNUL.test(value))
-              frameset_ok = false;
+            if (frameset_ok && NONWSNONNUL.test(value)) frameset_ok = false;
             if (textIncludesNUL) {
               value = value.replace(NULCHARS, "\uFFFD");
             }
@@ -21777,8 +21614,8 @@ var require_HTMLParser = __commonJS({
           case 2:
             switch (value) {
               case "font":
-                if (!isHTMLFont(arg3))
-                  break;
+                if (!isHTMLFont(arg3)) break;
+              /* falls through */
               case "b":
               case "big":
               case "blockquote":
@@ -21861,8 +21698,7 @@ var require_HTMLParser = __commonJS({
                   break;
                 }
                 node = stack.elements[--i];
-                if (node.namespaceURI !== NAMESPACE.HTML)
-                  continue;
+                if (node.namespaceURI !== NAMESPACE.HTML) continue;
                 parser(t, value, arg3, arg4);
                 break;
               }
@@ -21895,8 +21731,7 @@ var require_HTMLParser = __commonJS({
             case 1:
               if (tokens.length > 0 && tokens[tokens.length - 1][0] === "Character") {
                 tokens[tokens.length - 1][1] += value;
-              } else
-                tokens.push(["Character", value]);
+              } else tokens.push(["Character", value]);
               break;
             case 4:
               tokens.push(["Comment", value]);
@@ -21921,8 +21756,7 @@ var require_HTMLParser = __commonJS({
                 }
               }
               var token = ["StartTag", value, attrs];
-              if (arg4)
-                token.push(true);
+              if (arg4) token.push(true);
               tokens.push(token);
               break;
             case 3:
@@ -21976,22 +21810,18 @@ var require_DOMImplementation = __commonJS({
         return f && f[version2 || ""] || false;
       },
       createDocumentType: function createDocumentType(qualifiedName, publicId, systemId) {
-        if (!xml.isValidQName(qualifiedName))
-          utils.InvalidCharacterError();
+        if (!xml.isValidQName(qualifiedName)) utils.InvalidCharacterError();
         return new DocumentType(this.contextObject, qualifiedName, publicId, systemId);
       },
       createDocument: function createDocument2(namespace, qualifiedName, doctype) {
         var d = new Document(false, null);
         var e;
-        if (qualifiedName)
-          e = d.createElementNS(namespace, qualifiedName);
-        else
-          e = null;
+        if (qualifiedName) e = d.createElementNS(namespace, qualifiedName);
+        else e = null;
         if (doctype) {
           d.appendChild(doctype);
         }
-        if (e)
-          d.appendChild(e);
+        if (e) d.appendChild(e);
         if (namespace === utils.NAMESPACE.HTML) {
           d._contentType = "application/xhtml+xml";
         } else if (namespace === utils.NAMESPACE.SVG) {
@@ -22017,10 +21847,10 @@ var require_DOMImplementation = __commonJS({
         d.modclock = 1;
         return d;
       },
-      mozSetOutputMutationHandler: function(doc, handler) {
-        doc.mutationHandler = handler;
+      mozSetOutputMutationHandler: function(doc2, handler) {
+        doc2.mutationHandler = handler;
       },
-      mozGetInputMutationHandler: function(doc) {
+      mozGetInputMutationHandler: function(doc2) {
         utils.nyi();
       },
       mozHTMLParser: HTMLParser
@@ -22303,11 +22133,11 @@ var require_lib = __commonJS({
 });
 
 // packages/qwik/src/testing/index.ts
-var testing_exports = {};
-__export(testing_exports, {
+var index_exports = {};
+__export(index_exports, {
   createDOM: () => createDOM
 });
-module.exports = __toCommonJS(testing_exports);
+module.exports = __toCommonJS(index_exports);
 
 // packages/qwik/src/core/util/element.ts
 var isNode = (value) => {
@@ -22358,7 +22188,7 @@ var throwErrorAndStop = (message, ...optionalParams) => {
   throw error;
 };
 var logErrorAndStop = (message, ...optionalParams) => {
-  const err = createAndLogError(true, message, ...optionalParams);
+  const err = createAndLogError(qDev, message, ...optionalParams);
   debugger;
   return err;
 };
@@ -22670,10 +22500,10 @@ var createPlatform = () => {
     }
   };
 };
-var toUrl = (doc, containerEl, url) => {
-  const baseURI = doc.baseURI;
-  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-  return new URL(url, base);
+var toUrl = (doc2, containerEl, url) => {
+  const baseURI = doc2.baseURI;
+  const base2 = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+  return new URL(url, base2);
 };
 var _platform = /* @__PURE__ */ createPlatform();
 var getPlatform = () => {
@@ -22907,7 +22737,163 @@ var isSignal = (obj) => {
   return obj instanceof SignalBase;
 };
 
+// packages/qwik/dist/preloader.mjs
+var import_build2 = require("@builder.io/qwik/build");
+var doc = import_build2.isBrowser ? document : void 0;
+var modulePreloadStr = "modulepreload";
+var preloadStr = "preload";
+var config = { t: 0, o: 25, l: 0.65 };
+var rel = import_build2.isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
+var loadStart = Date.now();
+var isJSRegex = /\.[mc]?js$/;
+var BundleImportState_None = 0;
+var BundleImportState_Queued = 1;
+var BundleImportState_Preload = 2;
+var BundleImportState_Alias = 3;
+var BundleImportState_Loaded = 4;
+var bundles = /* @__PURE__ */ new Map();
+var queueDirty;
+var preloadCount = 0;
+var queue = [];
+var log = (...e) => {
+  console.log(`Preloader ${Date.now() - loadStart}ms ${preloadCount}/${queue.length} queued>`, ...e);
+};
+var sortQueue = () => {
+  if (queueDirty) {
+    queue.sort((e, t) => e.u - t.u);
+    queueDirty = 0;
+  }
+};
+var trigger = () => {
+  if (!queue.length) return;
+  sortQueue();
+  while (queue.length) {
+    const e = queue[0];
+    const t = e.u;
+    const o = 1 - t;
+    const n = graph ? (
+      // The more likely the bundle, the more simultaneous preloads we want to allow
+      Math.max(1, config.o * o)
+    ) : (
+      // While the graph is not available, we limit to 2 preloads
+      2
+    );
+    if (o >= 0.99 || preloadCount < n) {
+      queue.shift();
+      preloadOne(e);
+    } else break;
+  }
+  if (config.t && !queue.length) {
+    const e = [...bundles.values()].filter((e2) => e2.i > BundleImportState_None);
+    const t = e.reduce((e2, t2) => e2 + t2.p, 0);
+    const o = e.reduce((e2, t2) => e2 + t2.$, 0);
+    log(`>>>> done ${e.length}/${bundles.size} total: ${t}ms waited, ${o}ms loaded`);
+  }
+};
+var preloadOne = (e) => {
+  if (e.i >= BundleImportState_Preload) return;
+  preloadCount++;
+  const t = Date.now();
+  e.p = t - e.m;
+  e.i = BundleImportState_Preload;
+  config.t && log(`<< load ${Math.round((1 - e.u) * 100)}% after ${`${e.p}ms`}`, e.B);
+  const o = doc.createElement("link");
+  o.href = new URL(`${base}${e.B}`, doc.baseURI).toString();
+  o.rel = rel;
+  o.as = "script";
+  o.onload = o.onerror = () => {
+    preloadCount--;
+    const n = Date.now();
+    e.$ = n - t;
+    e.i = BundleImportState_Loaded;
+    config.t && log(`>> done after ${e.$}ms`, e.B);
+    o.remove();
+    trigger();
+  };
+  doc.head.appendChild(o);
+};
+var adjustProbabilities = (e, t, o) => {
+  if (o == null ? void 0 : o.has(e)) return;
+  const n = e.u;
+  e.u = t;
+  if (n - e.u < 0.01) return;
+  if (
+    // don't queue until we have initialized the preloader
+    base != null && e.i < BundleImportState_Preload && e.u < config.l
+  ) {
+    if (e.i === BundleImportState_None) {
+      e.i = BundleImportState_Queued;
+      queue.push(e);
+      config.t && log(`queued ${Math.round((1 - e.u) * 100)}%`, e.B);
+    }
+    queueDirty = 1;
+  }
+  if (e.h) {
+    o || (o = /* @__PURE__ */ new Set());
+    o.add(e);
+    const t2 = 1 - e.u;
+    for (const n2 of e.h) {
+      const e2 = getBundle(n2.B);
+      if (e2.u === 0) continue;
+      let r;
+      if (n2.S > 0.5 && (t2 === 1 || t2 >= 0.99 && depsCount < 100)) {
+        depsCount++;
+        r = Math.min(0.01, 1 - n2.S);
+      } else {
+        const o2 = 1 - n2.S * t2;
+        const l = n2.q;
+        const s = o2 / l;
+        r = Math.max(0.02, e2.u * s);
+        n2.q = s;
+      }
+      adjustProbabilities(e2, r, o);
+    }
+  }
+};
+var handleBundle = (e, t) => {
+  const o = getBundle(e);
+  if (o && o.u > t) adjustProbabilities(o, t);
+};
+var depsCount;
+var preload = (e, t) => {
+  if (!(e == null ? void 0 : e.length)) return;
+  depsCount = 0;
+  let o = t ? 1 - t : 0.4;
+  if (Array.isArray(e)) for (let t2 = e.length - 1; t2 >= 0; t2--) {
+    const n = e[t2];
+    if (typeof n === "number") o = 1 - n / 10;
+    else handleBundle(n, o);
+  }
+  else handleBundle(e, o);
+  if (import_build2.isBrowser) trigger();
+};
+if (import_build2.isBrowser) document.addEventListener("qsymbol", (e) => {
+  const { symbol: t, href: o } = e.detail;
+  if (o) {
+    const e2 = t.slice(t.lastIndexOf("_") + 1);
+    preload(e2, 1);
+  }
+});
+var base;
+var graph;
+var makeBundle = (e, t) => ({ B: e, i: isJSRegex.test(e) ? BundleImportState_None : BundleImportState_Alias, h: t, u: 1, m: Date.now(), p: 0, $: 0 });
+var getBundle = (e) => {
+  let t = bundles.get(e);
+  if (!t) {
+    let o;
+    if (graph) {
+      o = graph.get(e);
+      if (!o) return;
+      if (!o.length) o = void 0;
+    }
+    t = makeBundle(e, o);
+    bundles.set(e, t);
+  }
+  return t;
+};
+
 // packages/qwik/src/core/qrl/qrl-class.ts
+var import_build3 = require("@builder.io/qwik/build");
 var isQrl = (value) => {
   return typeof value === "function" && typeof value.getSymbol === "function";
 };
@@ -22971,9 +22957,12 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
     if (chunk === "") {
       assertDefined(_containerEl, "Sync QRL must have container element");
       const hash2 = _containerEl.getAttribute(QInstance);
-      const doc = _containerEl.ownerDocument;
-      const qFuncs2 = getQFuncs(doc, hash2);
+      const doc2 = _containerEl.ownerDocument;
+      const qFuncs2 = getQFuncs(doc2, hash2);
       return qrl.resolved = symbolRef = qFuncs2[Number(symbol)];
+    }
+    if (import_build3.isBrowser && chunk) {
+      preload(chunk, 1);
     }
     const start = now();
     const ctx = tryGetInvokeContext();
@@ -22989,7 +22978,6 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
         (err) => {
           console.error(`qrl ${symbol} failed to load`, err);
           symbolRef = null;
-          throw err;
         }
       );
     }
@@ -23043,6 +23031,9 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
   }
   if (qDev) {
     seal(qrl);
+  }
+  if (import_build3.isBrowser && resolvedSymbol) {
+    preload(resolvedSymbol, 0.8);
   }
   return qrl;
 };
@@ -23392,7 +23383,7 @@ var isRecoverable = (err) => {
 };
 
 // packages/qwik/src/core/util/event.ts
-var import_build2 = require("@builder.io/qwik/build");
+var import_build4 = require("@builder.io/qwik/build");
 
 // packages/qwik/src/core/state/store.ts
 var getOrCreateProxy = (target, containerState, flags = 0) => {
@@ -23614,7 +23605,7 @@ var static_subtree = 1 << 1;
 var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
 // packages/qwik/src/core/render/dom/visitor.ts
-var import_build3 = require("@builder.io/qwik/build");
+var import_build5 = require("@builder.io/qwik/build");
 var SVG_NS = "http://www.w3.org/2000/svg";
 var IS_SVG = 1 << 0;
 var IS_HEAD = 1 << 1;
@@ -23731,8 +23722,8 @@ var _setProperty = (node, key, value) => {
     logError(codeToText(QError_setProperty), key, { node, value }, err);
   }
 };
-var createElement = (doc, expectTag, isSvg) => {
-  const el = isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
+var createElement = (doc2, expectTag, isSvg) => {
+  const el = isSvg ? doc2.createElementNS(SVG_NS, expectTag) : doc2.createElement(expectTag);
   return el;
 };
 
@@ -23776,8 +23767,8 @@ var VirtualElementImpl = class {
     this.open = open;
     this.close = close;
     this.isSvg = isSvg;
-    const doc = this.ownerDocument = open.ownerDocument;
-    this.$template$ = createElement(doc, "template", false);
+    const doc2 = this.ownerDocument = open.ownerDocument;
+    this.$template$ = createElement(doc2, "template", false);
     this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
     assertTrue(open.data.startsWith("qv "), "comment is not a qv");
     open[VIRTUAL_SYMBOL] = this;
@@ -24198,7 +24189,7 @@ var MockElement = class {
 };
 
 // packages/qwik/src/core/render/jsx/jsx-runtime.ts
-var import_build4 = require("@builder.io/qwik/build");
+var import_build6 = require("@builder.io/qwik/build");
 var _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
   assertString(type, "jsx type must be a string");
   const processed = key == null ? null : String(key);
@@ -24306,7 +24297,7 @@ var validateJSXNode = (node) => {
             }
           });
         }
-        if (import_build4.isBrowser) {
+        if (import_build6.isBrowser) {
           if (isFunction(type) || immutableProps) {
             const keys = {};
             flatChildren.forEach((child) => {
@@ -24652,8 +24643,8 @@ var ErrorSerializer = /* @__PURE__ */ serializer({
 var DocumentSerializer = /* @__PURE__ */ serializer({
   $prefix$: "",
   $test$: (v) => !!v && typeof v === "object" && isDocument(v),
-  $prepare$: (_, _c, doc) => {
-    return doc;
+  $prepare$: (_, _c, doc2) => {
+    return doc2;
   }
 });
 var SERIALIZABLE_STATE = Symbol("serializable-data");
@@ -25426,29 +25417,29 @@ var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefi
 
 // packages/qwik/src/testing/document.ts
 function createDocument(opts) {
-  const doc = import_qwik_dom.default.createDocument(opts == null ? void 0 : opts.html);
-  ensureGlobals(doc, opts);
-  return doc;
+  const doc2 = import_qwik_dom.default.createDocument(opts == null ? void 0 : opts.html);
+  ensureGlobals(doc2, opts);
+  return doc2;
 }
 function createWindow(opts = {}) {
   return createDocument(opts).defaultView;
 }
-function ensureGlobals(doc, opts) {
-  if (doc && doc[QWIK_DOC]) {
-    return doc.defaultView;
+function ensureGlobals(doc2, opts) {
+  if (doc2 && doc2[QWIK_DOC]) {
+    return doc2.defaultView;
   }
-  if (!doc || doc.nodeType !== 9) {
+  if (!doc2 || doc2.nodeType !== 9) {
     throw new Error(`Invalid document`);
   }
-  doc[QWIK_DOC] = true;
+  doc2[QWIK_DOC] = true;
   const loc = normalizeUrl(opts == null ? void 0 : opts.url);
-  Object.defineProperty(doc, "baseURI", {
+  Object.defineProperty(doc2, "baseURI", {
     get: () => loc.href,
     set: (url) => loc.href = normalizeUrl(url).href
   });
-  doc.defaultView = {
+  doc2.defaultView = {
     get document() {
-      return doc;
+      return doc2;
     },
     get location() {
       return loc;
@@ -25473,7 +25464,7 @@ function ensureGlobals(doc, opts) {
       }
     }
   };
-  return doc.defaultView;
+  return doc2.defaultView;
 }
 var noop2 = () => {
 };
@@ -25555,9 +25546,9 @@ function createPlatform2() {
 function setTestPlatform(_setPlatform) {
   _setPlatform(testPlatform);
 }
-function toUrl2(doc, containerEl, url) {
-  const base = new URL((containerEl == null ? void 0 : containerEl.getAttribute("q:base")) ?? doc.baseURI, doc.baseURI);
-  return new URL(url, base);
+function toUrl2(doc2, containerEl, url) {
+  const base2 = new URL((containerEl == null ? void 0 : containerEl.getAttribute("q:base")) ?? doc2.baseURI, doc2.baseURI);
+  return new URL(url, base2);
 }
 function toPath(url) {
   const normalizedUrl = new URL(String(url));
@@ -25615,7 +25606,7 @@ var ElementFixture = class {
     }
   }
 };
-async function trigger(root, queryOrElement, eventNameCamel, eventPayload = {}) {
+async function trigger2(root, queryOrElement, eventNameCamel, eventPayload = {}) {
   const elements = typeof queryOrElement === "string" ? Array.from(root.querySelectorAll(queryOrElement)) : [queryOrElement];
   for (const element of elements) {
     const kebabEventName = fromCamelToKebabCase(eventNameCamel);
@@ -25695,7 +25686,7 @@ var createDOM = async function({ html } = {}) {
     },
     screen: host,
     userEvent: async function(queryOrElement, eventNameCamel, eventPayload = {}) {
-      return trigger(host, queryOrElement, eventNameCamel, eventPayload);
+      return trigger2(host, queryOrElement, eventNameCamel, eventPayload);
     }
   };
 };

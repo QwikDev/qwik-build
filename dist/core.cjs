@@ -1,15 +1,15 @@
 /**
  * @license
- * @builder.io/qwik 1.13.0-dev+97aa67d
+ * @builder.io/qwik 1.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@builder.io/qwik/build')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@builder.io/qwik/build'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.qwikCore = {}, global.qwikBuild));
-})(this, (function (exports, build) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@builder.io/qwik/build'), require('@builder.io/qwik/preloader')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@builder.io/qwik/build', '@builder.io/qwik/preloader'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.qwikCore = {}, global.qwikBuild, global.qwikPreloader));
+})(this, (function (exports, build, preloader) { 'use strict';
 
     // <docs markdown="../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -109,7 +109,7 @@
         throw error;
     };
     const logErrorAndStop = (message, ...optionalParams) => {
-        const err = createAndLogError(true, message, ...optionalParams);
+        const err = createAndLogError(qDev, message, ...optionalParams);
         // eslint-disable-next-line no-debugger
         debugger;
         return err;
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.13.0-dev+97aa67d";
+    const version = "1.14.1";
 
     /**
      * @internal
@@ -1320,7 +1320,7 @@
     };
 
     const executeComponent = (rCtx, elCtx, attempt) => {
-        elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
+        elCtx.$flags$ &= -2;
         elCtx.$flags$ |= HOST_FLAG_MOUNTED;
         elCtx.$slots$ = [];
         elCtx.li.length = 0;
@@ -1761,7 +1761,7 @@
                     const placeholderCtx = createMockQContext(1);
                     const listeners = placeholderCtx.li;
                     listeners.push(...elCtx.li);
-                    elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                    elCtx.$flags$ &= -3;
                     placeholderCtx.$id$ = getNextIndex(rCtx);
                     const attributes = {
                         type: 'placeholder',
@@ -1931,7 +1931,7 @@
                 }
                 if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                     listeners.push(...hostCtx.li);
-                    hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                    hostCtx.$flags$ &= -3;
                 }
             }
             // Reset HOST flags
@@ -1949,7 +1949,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                     if (flags & IS_TABLE && !(tagName in tableContent)) {
                         throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                     }
-                    flags &= ~IS_TABLE;
+                    flags &= -257;
                 }
                 if (tagName === 'button') {
                     if (flags & IS_BUTTON) {
@@ -2050,7 +2050,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 flags |= IS_HTML;
             }
             else {
-                flags &= ~IS_HTML;
+                flags &= -5;
             }
             if (node.flags & static_subtree) {
                 flags |= IS_IMMUTABLE$1;
@@ -4105,7 +4105,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
     };
     const runResource = (task, containerState, rCtx, waitOn) => {
-        task.$flags$ &= ~TaskFlagsIsDirty;
+        task.$flags$ &= -17;
         cleanupTask(task);
         const el = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, TaskEvent);
@@ -4216,7 +4216,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return promise;
     };
     const runTask = (task, containerState, rCtx) => {
-        task.$flags$ &= ~TaskFlagsIsDirty;
+        task.$flags$ &= -17;
         cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, TaskEvent);
@@ -4268,7 +4268,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const runComputed = (task, containerState, rCtx) => {
         assertSignal(task.$state$);
-        task.$flags$ &= ~TaskFlagsIsDirty;
+        task.$flags$ &= -17;
         cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, ComputedEvent);
@@ -4281,7 +4281,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const ok = (returnValue) => {
             untrack(() => {
                 const signal = task.$state$;
-                signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
+                signal[QObjectSignalFlags] &= -3;
                 signal.untrackedValue = returnValue;
                 signal[QObjectManagerSymbol].$notifySubs$();
             });
@@ -4327,7 +4327,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const destroyTask = (task) => {
         if (task.$flags$ & TaskFlagsIsCleanup) {
-            task.$flags$ &= ~TaskFlagsIsCleanup;
+            task.$flags$ &= -33;
             const cleanup = task.$qrl$;
             cleanup();
         }
@@ -5251,7 +5251,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 return;
             }
             if (isSvg && tag === 'foreignObject') {
-                flags &= ~IS_SVG;
+                flags &= -2;
             }
             const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
             if (setsInnerHTML) {
@@ -5341,7 +5341,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             slotRctx.$slotCtx$ = slotCtx;
             slotCtx.$vdom$ = newVdom;
             newVdom.$elm$ = slotEl;
-            let newFlags = flags & ~IS_SVG;
+            let newFlags = flags & -2;
             if (slotEl.isSvg) {
                 newFlags |= IS_SVG;
             }
@@ -5455,7 +5455,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         else {
             elm = createElement(doc, tag, isSvg);
-            flags &= ~IS_HEAD;
+            flags &= -3;
         }
         if (vnode.$flags$ & static_subtree) {
             flags |= IS_IMMUTABLE;
@@ -5494,7 +5494,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             if (isSvg && tag === 'foreignObject') {
                 isSvg = false;
-                flags &= ~IS_SVG;
+                flags &= -2;
             }
             if (currentComponent) {
                 const scopedIds = currentComponent.$scopeIds$;
@@ -5505,7 +5505,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
                 if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                     elCtx.li.push(...currentComponent.li);
-                    currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                    currentComponent.$flags$ &= -3;
                 }
             }
             for (const listener of elCtx.li) {
@@ -5520,7 +5520,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             if (isSvg && tag === 'foreignObject') {
                 isSvg = false;
-                flags &= ~IS_SVG;
+                flags &= -2;
             }
         }
         else if (OnRenderProp in props) {
@@ -5569,7 +5569,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     slotRctx.$slotCtx$ = slotCtx;
                     slotCtx.$vdom$ = newVnode;
                     newVnode.$elm$ = slotEl;
-                    let newFlags = flags & ~IS_SVG;
+                    let newFlags = flags & -2;
                     if (slotEl.isSvg) {
                         newFlags |= IS_SVG;
                     }
@@ -7306,10 +7306,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
         if (!announcedQRL.has(symbol)) {
             // Emit event
             announcedQRL.add(symbol);
-            emitEvent('qprefetch', {
-                symbols: [getSymbolHash(symbol)],
-                bundles: chunk && [chunk],
-            });
         }
         // Unwrap subscribers
         return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
@@ -7753,7 +7749,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
 
     /**
-     * Allows to project the children of the current component. <Slot/> can only be used within the
+     * Allows to project the children of the current component. `<Slot/>` can only be used within the
      * context of a component defined with `component$`.
      *
      * @public
@@ -8759,6 +8755,10 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 // No need to wrap, syncQRLs can't have captured scope
                 return (qrl.resolved = symbolRef = qFuncs[Number(symbol)]);
             }
+            if (build.isBrowser && chunk) {
+                /** We run the QRL, so now the probability of the chunk is 100% */
+                preloader.p(chunk, 1);
+            }
             const start = now();
             const ctx = tryGetInvokeContext();
             if (symbolFn !== null) {
@@ -8773,7 +8773,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
                     console.error(`qrl ${symbol} failed to load`, err);
                     // We shouldn't cache rejections, we can try again later
                     symbolRef = null;
-                    throw err;
                 });
             }
             return symbolRef;
@@ -8830,6 +8829,13 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         if (qDev) {
             seal(qrl);
+        }
+        if (build.isBrowser && resolvedSymbol) {
+            /**
+             * Preloading the symbol instead of the chunk allows us to get probabilities for the bundle
+             * based on its contents.
+             */
+            preloader.p(resolvedSymbol, 0.8);
         }
         return qrl;
     };
@@ -9862,22 +9868,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
 
     // keep this import from qwik/build so the cjs build works
     /**
-     * Install a service worker which will prefetch the bundles.
-     *
-     * There can only be one service worker per page. Because there can be many separate Qwik Containers
-     * on the page each container needs to load its prefetch graph using `PrefetchGraph` component.
-     *
-     * @param opts - Options for the prefetch service worker.
-     *
-     *   - `base` - Base URL for the service worker `import.meta.env.BASE_URL` or `/`. Default is
-     *       `import.meta.env.BASE_URL`
-     *   - `scope` - Base URL for when the service-worker will activate. Default is `/`
-     *   - `path` - Path to the service worker. Default is `qwik-prefetch-service-worker.js` unless you pass
-     *       a path that starts with a `/` then the base is ignored. Default is
-     *       `qwik-prefetch-service-worker.js`
-     *   - `verbose` - Verbose logging for the service worker installation. Default is `false`
-     *   - `nonce` - Optional nonce value for security purposes, defaults to `undefined`.
-     *
+     * @deprecated This is no longer needed as the preloading happens automatically in qrl-class.ts.
+     *   Leave this in your app for a while so it uninstalls existing service workers, but don't use it
+     *   for new projects.
      * @alpha
      */
     const PrefetchServiceWorker = (opts) => {
@@ -9888,15 +9881,10 @@ Task Symbol: ${task.$qrl$.$symbol$}
             };
             return _jsxC('script', props, 0, 'prefetch-service-worker');
         }
-        const serverData = useServerData('containerAttributes', {});
         // if an MFE app has a custom BASE_URL then this will be the correct value
         // if you're not using MFE from another codebase then you want to override this value to your custom setup
         const baseUrl = globalThis.BASE_URL||"/" || '/';
         const resolvedOpts = {
-            base: serverData['q:base'],
-            manifestHash: serverData['q:manifest-hash'],
-            scope: '/',
-            verbose: false,
             path: 'qwik-prefetch-service-worker.js',
             ...opts,
         };
@@ -9910,19 +9898,16 @@ Task Symbol: ${task.$qrl$.$symbol$}
             // the file 'qwik-prefetch-service-worker.js' is not located in /build/
             resolvedOpts.path = baseUrl + resolvedOpts.path;
         }
-        let code = PREFETCH_CODE.replace('URL', resolvedOpts.path).replace('SCOPE', resolvedOpts.scope);
+        let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
         if (!build.isDev) {
-            code = code.replaceAll(/\s+/gm, '');
+            // consecutive spaces are indentation
+            code = code.replaceAll(/\s\s+/gm, '');
         }
         const props = {
             dangerouslySetInnerHTML: [
                 '(' + code + ')(',
                 [
-                    JSON.stringify(resolvedOpts.base),
-                    JSON.stringify(resolvedOpts.manifestHash),
-                    'navigator.serviceWorker',
-                    'window.qwikPrefetchSW||(window.qwikPrefetchSW=[])',
-                    resolvedOpts.verbose,
+                    'navigator.serviceWorker', // Service worker container
                 ].join(','),
                 ');',
             ].join(''),
@@ -9930,68 +9915,26 @@ Task Symbol: ${task.$qrl$.$symbol$}
         };
         return _jsxC('script', props, 0, 'prefetch-service-worker');
     };
-    const PREFETCH_CODE = /*#__PURE__*/ ((b, // base
-    h, // manifest hash
-    c, // Service worker container
-    q, // Queue of messages to send to the service worker.
-    v // Verbose mode
+    const PREFETCH_CODE = /*#__PURE__*/ ((c // Service worker container
     ) => {
-        c.register('URL', { scope: 'SCOPE' }).then((sw, onReady) => {
-            onReady = () => q.forEach((q.push = (v) => sw.active.postMessage(v)));
-            sw.installing
-                ? sw.installing.addEventListener('statechange', (e) => e.target.state == 'activated' && onReady())
-                : onReady();
-        });
-        v && q.push(['verbose']);
-        document.addEventListener('qprefetch', (e) => e.detail.bundles && q.push(['prefetch', b, ...e.detail.bundles]));
+        if ('getRegistrations' in c) {
+            c.getRegistrations().then((registrations) => {
+                registrations.forEach((registration) => {
+                    if (registration.active) {
+                        if (registration.active.scriptURL.endsWith('_URL_')) {
+                            registration.unregister().catch(console.error);
+                        }
+                    }
+                });
+            });
+        }
     }).toString();
     /**
-     * Load the prefetch graph for the container.
-     *
-     * Each Qwik container needs to include its own prefetch graph.
-     *
-     * @param opts - Options for the loading prefetch graph.
-     *
-     *   - `base` - Base of the graph. For a default installation this will default to the q:base value
-     *       `/build/`. But if more than one MFE is installed on the page, then each MFE needs to have
-     *       its own base.
-     *   - `manifestHash` - Hash of the manifest file to load. If not provided the hash will be extracted
-     *       from the container attribute `q:manifest-hash` and assume the default build file
-     *       `${base}/q-bundle-graph-${manifestHash}.json`.
-     *   - `manifestURL` - URL of the manifest file to load if non-standard bundle graph location name.
-     *
+     * @deprecated This is no longer needed as the preloading happens automatically in qrl-class. You
+     *   can remove this component from your app.
      * @alpha
      */
-    const PrefetchGraph = (opts = {}) => {
-        const isTest = undefined.TEST;
-        if (build.isDev && !isTest) {
-            const props = {
-                dangerouslySetInnerHTML: '<!-- PrefetchGraph is disabled in dev mode. -->',
-            };
-            return _jsxC('script', props, 0, 'prefetch-graph');
-        }
-        const serverData = useServerData('containerAttributes', {});
-        const resolvedOpts = {
-            // /build/q-bundle-graph-${manifestHash}.json is always within the q:base location /build/
-            base: serverData['q:base'],
-            manifestHash: serverData['q:manifest-hash'],
-            scope: '/',
-            verbose: false,
-            path: 'qwik-prefetch-service-worker.js',
-            ...opts,
-        };
-        const args = JSON.stringify([
-            'graph-url',
-            resolvedOpts.base,
-            `q-bundle-graph-${resolvedOpts.manifestHash}.json`,
-        ]);
-        const code = `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`;
-        const props = {
-            dangerouslySetInnerHTML: code,
-            nonce: opts.nonce,
-        };
-        return _jsxC('script', props, 0, 'prefetch-graph');
-    };
+    const PrefetchGraph = (opts = {}) => null;
 
     Object.defineProperty(exports, "isBrowser", {
         enumerable: true,

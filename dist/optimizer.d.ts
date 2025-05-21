@@ -1,5 +1,15 @@
 import type { Plugin as Plugin_2 } from 'vite';
 
+/**
+ * A function that returns a map of bundle names to their dependencies.
+ *
+ * @public
+ */
+export declare type BundleGraphAdder = (manifest: QwikManifest) => Record<string, {
+    imports?: string[];
+    dynamicImports?: string[];
+}>;
+
 /** @public */
 export declare interface ComponentEntryStrategy {
     type: 'component';
@@ -71,16 +81,6 @@ declare interface HookEntryStrategy_2 {
 /** @public */
 export declare interface InlineEntryStrategy {
     type: 'inline';
-}
-
-/** @public */
-export declare interface InsightManifest {
-    type: 'smart';
-    manual: Record<string, string>;
-    prefetch: {
-        route: string;
-        symbols: string[];
-    }[];
 }
 
 /** @public */
@@ -176,13 +176,31 @@ export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib' | 'test';
 
 /** @public */
 export declare interface QwikBundle {
+    /** Size of the bundle */
     size: number;
-    hasSymbols?: boolean;
+    /** Total size of this bundle's static import graph */
+    total: number;
+    /** Interactivity score of the bundle */
+    interactivity?: number;
+    /** Symbols in the bundle */
     symbols?: string[];
+    /** Direct imports */
     imports?: string[];
+    /** Dynamic imports */
     dynamicImports?: string[];
+    /** Source files of the bundle */
     origins?: string[];
 }
+
+/**
+ * Bundle graph.
+ *
+ * Format: [ 'bundle-a.js', 3, 5 // Depends on 'bundle-b.js' and 'bundle-c.js' 'bundle-b.js', 5, //
+ * Depends on 'bundle-c.js' 'bundle-c.js', ]
+ *
+ * @public
+ */
+export declare type QwikBundleGraph = Array<string | number>;
 
 /**
  * The metadata of the build. One of its uses is storing where QRL symbols are located.
@@ -204,16 +222,25 @@ export declare interface QwikManifest {
     bundles: {
         [fileName: string]: QwikBundle;
     };
+    /** All bundles in a compact graph format with probabilities */
+    bundleGraph?: QwikBundleGraph;
+    /** The preloader bundle fileName */
+    preloader?: string;
+    /** The Qwik core bundle fileName */
+    core?: string;
     /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
+    /** The version of the manifest */
     version: string;
+    /** The options used to build the manifest */
     options?: {
         target?: string;
         buildMode?: string;
         entryStrategy?: {
-            [key: string]: any;
+            type: EntryStrategy['type'];
         };
     };
+    /** The platform used to build the manifest */
     platform?: {
         [name: string]: string;
     };
@@ -235,7 +262,6 @@ declare interface QwikPluginOptions {
     vendorRoots?: string[];
     manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
     manifestInput?: QwikManifest | null;
-    insightsManifest?: InsightManifest | null;
     input?: string[] | string | {
         [entry: string]: string;
     };
@@ -356,7 +382,7 @@ export declare interface QwikSymbol {
     displayName: string;
     hash: string;
     canonicalFilename: string;
-    ctxKind: 'function' | 'event';
+    ctxKind: 'function' | 'eventHandler';
     ctxName: string;
     captures: boolean;
     parent: string | null;
@@ -393,11 +419,11 @@ export declare interface QwikVitePluginApi {
     getOptimizer: () => Optimizer | null;
     getOptions: () => NormalizedQwikPluginOptions;
     getManifest: () => QwikManifest | null;
-    getInsightsManifest: (clientOutDir?: string | null) => Promise<InsightManifest | null>;
     getRootDir: () => string | null;
     getClientOutDir: () => string | null;
     getClientPublicOutDir: () => string | null;
     getAssetsDir: () => string | undefined;
+    registerBundleGraphAdder: (adder: BundleGraphAdder) => void;
 }
 
 declare interface QwikVitePluginCommonOptions {
@@ -484,6 +510,14 @@ declare interface QwikVitePluginCommonOptions {
      * to be stable between releases
      */
     experimental?: (keyof typeof ExperimentalFeatures)[];
+    /**
+     * Disables automatic preloading of font assets (WOFF/WOFF2/TTF) found in the build output. When
+     * enabled, the plugin will not add `<link rel="preload">` tags for font files in the document
+     * head.
+     *
+     * Disabling may impact Cumulative Layout Shift (CLS) metrics.
+     */
+    disableFontPreload?: boolean;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
@@ -575,6 +609,7 @@ declare interface QwikVitePluginSSROptions extends QwikVitePluginCommonOptions {
 export declare interface ResolvedManifest {
     mapper: SymbolMapper;
     manifest: QwikManifest;
+    injections: GlobalInjections[];
 }
 
 /** @public */
@@ -587,7 +622,7 @@ declare interface SegmentAnalysis {
     canonicalFilename: string;
     extension: string;
     parent: string | null;
-    ctxKind: 'event' | 'function';
+    ctxKind: 'eventHandler' | 'function';
     ctxName: string;
     captures: boolean;
     loc: [number, number];

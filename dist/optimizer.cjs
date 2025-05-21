@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.13.0-dev+97aa67d
+ * @builder.io/qwik/optimizer 1.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -816,15 +816,15 @@ globalThis.qwikOptimizer = function(module) {
       };
     }
   });
-  var src_exports = {};
-  __export(src_exports, {
+  var index_exports = {};
+  __export(index_exports, {
     createOptimizer: () => createOptimizer,
     qwikRollup: () => qwikRollup,
     qwikVite: () => qwikVite,
     symbolMapper: () => symbolMapper,
     versions: () => versions
   });
-  module.exports = __toCommonJS(src_exports);
+  module.exports = __toCommonJS(index_exports);
   function createPath(opts = {}) {
     function assertPath(path) {
       if ("string" !== typeof path) {
@@ -889,14 +889,14 @@ globalThis.qwikOptimizer = function(module) {
     }
     function _format(sep2, pathObject) {
       const dir = pathObject.dir || pathObject.root;
-      const base = pathObject.base || (pathObject.name || "") + (pathObject.ext || "");
+      const base2 = pathObject.base || (pathObject.name || "") + (pathObject.ext || "");
       if (!dir) {
-        return base;
+        return base2;
       }
       if (dir === pathObject.root) {
-        return dir + base;
+        return dir + base2;
       }
-      return dir + sep2 + base;
+      return dir + sep2 + base2;
     }
     const resolve = function(...paths) {
       let resolvedPath = "";
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.13.0-dev+97aa67d"
+    qwik: "1.14.1"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1500,13 +1500,13 @@ globalThis.qwikOptimizer = function(module) {
     return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
       const a = symbols[symbolNameA];
       const b = symbols[symbolNameB];
-      if ("event" === a.ctxKind && "event" !== b.ctxKind) {
+      if ("eventHandler" === a.ctxKind && "eventHandler" !== b.ctxKind) {
         return -1;
       }
-      if ("event" !== a.ctxKind && "event" === b.ctxKind) {
+      if ("eventHandler" !== a.ctxKind && "eventHandler" === b.ctxKind) {
         return 1;
       }
-      if ("event" === a.ctxKind && "event" === b.ctxKind) {
+      if ("eventHandler" === a.ctxKind && "eventHandler" === b.ctxKind) {
         const aIndex = EVENT_PRIORITY.indexOf(a.ctxName.toLowerCase());
         const bIndex = EVENT_PRIORITY.indexOf(b.ctxName.toLowerCase());
         if (aIndex > -1 && bIndex > -1) {
@@ -1609,6 +1609,113 @@ globalThis.qwikOptimizer = function(module) {
     }
     return;
   }
+  var getBundleInteractivity = (bundle, manifest) => {
+    let maxScore = 0;
+    if (bundle.symbols) {
+      for (const symbolName of bundle.symbols) {
+        let score = 1;
+        const symbol = manifest.symbols[symbolName];
+        if (symbol) {
+          if ("function" === symbol.ctxKind) {
+            /(component|useStyles|useStylesScoped)/i.test(symbol.ctxName) ? score += 1 : /(useComputed|useTask|useVisibleTask|useOn)/i.test(symbol.ctxName) && (score += 2);
+          } else {
+            score += 1;
+            /(click|mouse|pointer|touch|key|scroll|gesture|wheel)/i.test(symbol.ctxName) && (score += 3);
+          }
+        }
+        maxScore = Math.max(maxScore, score);
+      }
+    }
+    return maxScore;
+  };
+  function computeTotals(graph2) {
+    let index = 0;
+    const stack = [];
+    const sccList = [];
+    const idx = new Map;
+    const low = new Map;
+    const onStack = new Set;
+    function strongConnect(v) {
+      idx.set(v, index);
+      low.set(v, index);
+      index++;
+      stack.push(v);
+      onStack.add(v);
+      const children = graph2[v].imports || [];
+      for (const w of children) {
+        if (idx.has(w)) {
+          onStack.has(w) && low.set(v, Math.min(low.get(v), idx.get(w)));
+        } else {
+          strongConnect(w);
+          low.set(v, Math.min(low.get(v), low.get(w)));
+        }
+      }
+      if (low.get(v) === idx.get(v)) {
+        const comp = [];
+        let x;
+        do {
+          x = stack.pop();
+          onStack.delete(x);
+          comp.push(x);
+        } while (x !== v);
+        sccList.push(comp);
+      }
+    }
+    for (const v of Object.keys(graph2)) {
+      idx.has(v) || strongConnect(v);
+    }
+    const sccIndex = new Map;
+    sccList.forEach(((comp, i) => {
+      for (const v of comp) {
+        sccIndex.set(v, i);
+      }
+    }));
+    const sccDAG = Array.from({
+      length: sccList.length
+    }, (() => new Set));
+    for (const v of Object.keys(graph2)) {
+      const i = sccIndex.get(v);
+      for (const w of graph2[v].imports || []) {
+        const j = sccIndex.get(w);
+        i !== j && sccDAG[i].add(j);
+      }
+    }
+    const visited = new Set;
+    const order = [];
+    function dfsSCC(u) {
+      visited.add(u);
+      for (const v of sccDAG[u]) {
+        visited.has(v) || dfsSCC(v);
+      }
+      order.push(u);
+    }
+    for (let i = 0; i < sccList.length; i++) {
+      visited.has(i) || dfsSCC(i);
+    }
+    order.reverse();
+    const sccTotals = new Array(sccList.length).fill(0);
+    for (let i = 0; i < sccList.length; i++) {
+      let sumSize = 0;
+      for (const nodeId of sccList[i]) {
+        sumSize += graph2[nodeId].size;
+      }
+      sccTotals[i] = sumSize;
+    }
+    for (let k = order.length - 1; k >= 0; k--) {
+      const sccId = order[k];
+      let total = sccTotals[sccId];
+      for (const child of sccDAG[sccId]) {
+        total += sccTotals[child];
+      }
+      sccTotals[sccId] = total;
+    }
+    for (let i = 0; i < sccList.length; i++) {
+      const total = sccTotals[i];
+      for (const nodeId of sccList[i]) {
+        graph2[nodeId].total = total;
+      }
+    }
+  }
   function generateManifestFromBundles(path, segments, injections, outputBundles, opts, debug) {
     const manifest = {
       manifestHash: "",
@@ -1620,7 +1727,9 @@ globalThis.qwikOptimizer = function(module) {
       options: {
         target: opts.target,
         buildMode: opts.buildMode,
-        entryStrategy: opts.entryStrategy
+        entryStrategy: opts.entryStrategy && {
+          type: opts.entryStrategy.type
+        }
       }
     };
     const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
@@ -1633,31 +1742,30 @@ globalThis.qwikOptimizer = function(module) {
       }
       return canonPath(bundle.fileName);
     };
-    const qrlNames = new Set([ ...segments.map((h => h.name)) ]);
+    const qrlNames = new Set(segments.map((h => h.name)));
     for (const outputBundle of Object.values(outputBundles)) {
       if ("chunk" !== outputBundle.type) {
         continue;
       }
       const bundleFileName = canonPath(outputBundle.fileName);
+      const size = outputBundle.code.length;
       const bundle = {
-        size: outputBundle.code.length,
-        hasSymbols: false
+        size: size,
+        total: -1
       };
-      let hasSymbols = false;
       for (const symbol of outputBundle.exports) {
-        if (qrlNames.has(symbol) && (!manifest.mapping[symbol] || 1 !== outputBundle.exports.length)) {
-          hasSymbols = true;
-          manifest.mapping[symbol] = bundleFileName;
-        }
+        qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
       }
-      hasSymbols && (bundle.hasSymbols = true);
       const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
       bundleImports.length > 0 && (bundle.imports = bundleImports);
       const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
       bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
       const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
       const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
-      modulePaths.length > 0 && (bundle.origins = modulePaths);
+      if (modulePaths.length > 0) {
+        bundle.origins = modulePaths;
+        modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
+      }
       manifest.bundles[bundleFileName] = bundle;
     }
     for (const segment of segments) {
@@ -1680,6 +1788,11 @@ globalThis.qwikOptimizer = function(module) {
         loc: segment.loc
       };
     }
+    for (const bundle of Object.values(manifest.bundles)) {
+      const interactivityScore = getBundleInteractivity(bundle, manifest);
+      bundle.interactivity = interactivityScore;
+    }
+    computeTotals(manifest.bundles);
     return updateSortAndPriorities(manifest);
   }
   async function createLinter(sys, rootDir, tsconfigFileNames) {
@@ -1692,23 +1805,16 @@ globalThis.qwikOptimizer = function(module) {
     if (invalidEslintConfig) {
       const options = {
         cache: true,
-        useEslintrc: false,
         overrideConfig: {
-          root: true,
-          env: {
-            browser: true,
-            es2021: true,
-            node: true
-          },
-          extends: [ "plugin:qwik/recommended" ],
-          parser: "@typescript-eslint/parser",
-          parserOptions: {
-            tsconfigRootDir: rootDir,
-            project: tsconfigFileNames,
-            ecmaVersion: 2021,
-            sourceType: "module",
-            ecmaFeatures: {
-              jsx: true
+          languageOptions: {
+            parserOptions: {
+              tsconfigRootDir: rootDir,
+              project: tsconfigFileNames,
+              ecmaVersion: 2021,
+              sourceType: "module",
+              ecmaFeatures: {
+                jsx: true
+              }
             }
           }
         }
@@ -1877,6 +1983,150 @@ globalThis.qwikOptimizer = function(module) {
   function isWin(os) {
     return "win32" === os;
   }
+  function parseId(originalId) {
+    const [pathId, query] = originalId.split("?");
+    const queryStr = query || "";
+    return {
+      originalId: originalId,
+      pathId: pathId,
+      query: queryStr ? `?${query}` : "",
+      params: new URLSearchParams(queryStr)
+    };
+  }
+  var minimumSpeed = 300;
+  var slowSize = .5 / (1024 * minimumSpeed / 8);
+  var getSymbolHash = symbolName => {
+    const index = symbolName.lastIndexOf("_");
+    if (index > -1) {
+      return symbolName.slice(index + 1);
+    }
+    return symbolName;
+  };
+  function convertManifestToBundleGraph(manifest, bundleGraphAdders) {
+    var _a, _b, _c, _d;
+    const bundleGraph = [];
+    if (!manifest.bundles) {
+      return [];
+    }
+    const graph2 = {
+      ...manifest.bundles
+    };
+    for (const [symbol, bundleName] of Object.entries(manifest.mapping)) {
+      const hash = getSymbolHash(symbol);
+      hash && (graph2[hash] = {
+        dynamicImports: [ bundleName ]
+      });
+    }
+    if (bundleGraphAdders) {
+      const combined = {
+        ...manifest,
+        bundles: graph2
+      };
+      for (const adder of bundleGraphAdders) {
+        const result = adder(combined);
+        result && Object.assign(graph2, result);
+      }
+    }
+    for (const bundleName of Object.keys(graph2)) {
+      const bundle = graph2[bundleName];
+      const imports = (null == (_a = bundle.imports) ? void 0 : _a.filter((dep => graph2[dep]))) || [];
+      const dynamicImports = (null == (_b = bundle.dynamicImports) ? void 0 : _b.filter((dep => {
+        var _a2;
+        return graph2[dep] && (graph2[dep].symbols || (null == (_a2 = graph2[dep].origins) ? void 0 : _a2.some((o => !o.includes("node_modules")))));
+      }))) || [];
+      graph2[bundleName] = {
+        ...bundle,
+        imports: imports,
+        dynamicImports: dynamicImports
+      };
+    }
+    const notUsed = new Set(Object.keys(graph2));
+    for (const bundleName of Object.keys(graph2)) {
+      for (const dep of graph2[bundleName].imports) {
+        notUsed.delete(dep);
+      }
+      for (const dep of graph2[bundleName].dynamicImports) {
+        notUsed.delete(dep);
+      }
+    }
+    for (const bundleName of notUsed) {
+      const bundle = graph2[bundleName];
+      (null == (_c = bundle.imports) ? void 0 : _c.length) || (null == (_d = bundle.dynamicImports) ? void 0 : _d.length) || delete graph2[bundleName];
+    }
+    const names = Object.keys(graph2);
+    const map = new Map;
+    const clearTransitiveDeps = (parentDeps, bundleName, seen = new Set) => {
+      const bundle = graph2[bundleName];
+      for (const dep of bundle.imports) {
+        parentDeps.has(dep) && parentDeps.delete(dep);
+        if (!seen.has(dep)) {
+          seen.add(dep);
+          clearTransitiveDeps(parentDeps, dep, seen);
+        }
+      }
+    };
+    for (const bundleName of names) {
+      const bundle = graph2[bundleName];
+      const deps = new Set(bundle.imports);
+      for (const depName of deps) {
+        clearTransitiveDeps(deps, depName);
+      }
+      const dynDeps = new Set(bundle.dynamicImports);
+      const depProbability = new Map;
+      for (const depName of dynDeps) {
+        clearTransitiveDeps(dynDeps, depName);
+        const dep = graph2[depName];
+        let probability = .5;
+        probability += .08 * (dep.interactivity || 0);
+        if (bundle.origins && dep.origins) {
+          for (const origin of bundle.origins) {
+            if (dep.origins.some((o => o.startsWith(origin)))) {
+              probability += .25;
+              break;
+            }
+          }
+        }
+        dep.total > slowSize && (probability += probability > .5 ? .02 : -.02);
+        dep.total < 1e3 && (probability += .15);
+        depProbability.set(depName, Math.min(probability, .99));
+      }
+      if (dynDeps.size > 0) {
+        const sorted = Array.from(dynDeps).sort(((a, b) => depProbability.get(b) - depProbability.get(a)));
+        let lastProbability = -1;
+        for (const depName of sorted) {
+          if (depProbability.get(depName) !== lastProbability) {
+            lastProbability = depProbability.get(depName);
+            deps.add(-Math.round(10 * lastProbability));
+          }
+          deps.add(depName);
+        }
+      }
+      const index = bundleGraph.length;
+      bundleGraph.push(bundleName);
+      for (let i = 0; i < deps.size; i++) {
+        bundleGraph.push(null);
+      }
+      map.set(bundleName, {
+        index: index,
+        deps: deps
+      });
+    }
+    for (const bundleName of names) {
+      const bundle = map.get(bundleName);
+      let {index: index, deps: deps} = bundle;
+      index++;
+      for (const depName of deps) {
+        if ("number" === typeof depName) {
+          bundleGraph[index++] = depName;
+          continue;
+        }
+        const dep = map.get(depName);
+        const depIndex = dep.index;
+        bundleGraph[index++] = depIndex;
+      }
+    }
+    return bundleGraph;
+  }
   var REG_CTX_NAME = [ "server" ];
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
   var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
@@ -1912,7 +2162,6 @@ globalThis.qwikOptimizer = function(module) {
       srcInputs: null,
       sourcemap: !!optimizerOptions.sourcemap,
       manifestInput: null,
-      insightsManifest: null,
       manifestOutput: null,
       transformedModuleOutput: null,
       scope: null,
@@ -2133,7 +2382,7 @@ globalThis.qwikOptimizer = function(module) {
           id: QWIK_CLIENT_MANIFEST_ID,
           moduleSideEffects: false
         };
-      } else {
+      } else if (devServer || isServer2 || !pathId.endsWith(QWIK_PRELOADER_ID)) {
         const qrlMatch = null == (_a = /^(?<parent>.*\.[mc]?[jt]sx?)_(?<name>[^/]+)\.js(?<query>$|\?.*$)/.exec(id2)) ? void 0 : _a.groups;
         if (qrlMatch) {
           const {parent: parent, name: name, query: query} = qrlMatch;
@@ -2161,6 +2410,19 @@ globalThis.qwikOptimizer = function(module) {
               skipSelf: true
             });
           }
+        }
+      } else {
+        debug(`resolveId(${count})`, "Resolved", QWIK_PRELOADER_ID);
+        const preloader = await ctx.resolve(QWIK_PRELOADER_ID, importerId, {
+          skipSelf: true
+        });
+        if (preloader) {
+          ctx.emitFile({
+            id: preloader.id,
+            type: "chunk",
+            preserveSignature: "allow-extension"
+          });
+          return preloader;
         }
       }
       debug(`resolveId(${count}) end`, (null == result ? void 0 : result.id) || result);
@@ -2238,7 +2500,7 @@ globalThis.qwikOptimizer = function(module) {
       const {pathId: pathId} = parseId(id2);
       const parsedPathId = path.parse(pathId);
       const dir = parsedPathId.dir;
-      const base = parsedPathId.base;
+      const base2 = parsedPathId.base;
       const ext = parsedPathId.ext.toLowerCase();
       if (ext in TRANSFORM_EXTS || TRANSFORM_REGEX.test(pathId)) {
         const strip = "client" === opts.target || "ssr" === opts.target;
@@ -2251,7 +2513,7 @@ globalThis.qwikOptimizer = function(module) {
           }
           return "false";
         })));
-        let filePath = base;
+        let filePath = base2;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
         filePath = normalizePath(filePath);
         const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
@@ -2336,11 +2598,12 @@ globalThis.qwikOptimizer = function(module) {
     const createOutputAnalyzer = rollupBundle => {
       const injections = [];
       const addInjection = b => injections.push(b);
-      const generateManifest = async () => {
+      const generateManifest2 = async extra => {
         const optimizer2 = getOptimizer();
         const path = optimizer2.sys.path;
         const segments = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.segment)).filter((h => !!h));
         const manifest = generateManifestFromBundles(path, segments, injections, rollupBundle, opts, debug);
+        extra && Object.assign(manifest, extra);
         for (const symbol of Object.values(manifest.symbols)) {
           symbol.origin && (symbol.origin = normalizePath(symbol.origin));
         }
@@ -2355,7 +2618,7 @@ globalThis.qwikOptimizer = function(module) {
       };
       return {
         addInjection: addInjection,
-        generateManifest: generateManifest
+        generateManifest: generateManifest2
       };
     };
     const getOptions = () => opts;
@@ -2363,7 +2626,7 @@ globalThis.qwikOptimizer = function(module) {
     const debug = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
     };
-    const log = (...str) => {
+    const log2 = (...str) => {
       console.log(`[QWIK PLUGIN: ${id}]`, ...str);
     };
     const onDiagnostics = cb => {
@@ -2376,7 +2639,16 @@ globalThis.qwikOptimizer = function(module) {
     }
     async function getQwikServerManifestModule(isServer2) {
       const manifest = isServer2 ? opts.manifestInput : null;
-      return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(manifest)};\n`;
+      let serverManifest = null;
+      (null == manifest ? void 0 : manifest.manifestHash) && (serverManifest = {
+        manifestHash: manifest.manifestHash,
+        injections: manifest.injections,
+        bundleGraph: manifest.bundleGraph,
+        mapping: manifest.mapping,
+        preloader: manifest.preloader,
+        core: manifest.core
+      });
+      return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(serverManifest)};\n`;
     }
     function setSourceMapSupport(sourcemap) {
       opts.sourcemap = sourcemap;
@@ -2402,18 +2674,50 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
     function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
-      if (opts.entryStrategy.manual) {
-        const module2 = getModuleInfo(id2);
-        const segment = module2.meta.segment;
-        if (segment) {
-          const {hash: hash} = segment;
-          const chunkName = opts.entryStrategy.manual[hash] || segment.entry;
-          if (chunkName) {
-            return chunkName;
-          }
+      var _a;
+      if ("client" === opts.target && (id2.endsWith(QWIK_PRELOADER_REAL_ID) || "\0vite/preload-helper.js" === id2)) {
+        return "qwik-preloader";
+      }
+      const module2 = getModuleInfo(id2);
+      const segment = module2.meta.segment;
+      if (segment) {
+        const {hash: hash} = segment;
+        const chunkName = (null == (_a = opts.entryStrategy.manual) ? void 0 : _a[hash]) || segment.entry;
+        if (chunkName) {
+          return chunkName;
         }
       }
       return null;
+    }
+    async function generateManifest(ctx, rollupBundle, bundleGraphAdders, manifestExtra) {
+      var _a;
+      const outputAnalyzer = createOutputAnalyzer(rollupBundle);
+      const manifest = await outputAnalyzer.generateManifest(manifestExtra);
+      manifest.platform = {
+        ...null == manifestExtra ? void 0 : manifestExtra.platform,
+        rollup: (null == (_a = ctx.meta) ? void 0 : _a.rollupVersion) || "",
+        env: optimizer.sys.env,
+        os: optimizer.sys.os
+      };
+      "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
+      const assetsDir = opts.assetsDir;
+      const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
+      const bundleGraph = convertManifestToBundleGraph(manifest, bundleGraphAdders);
+      ctx.emitFile({
+        type: "asset",
+        fileName: optimizer.sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.json`),
+        source: JSON.stringify(bundleGraph)
+      });
+      manifest.bundleGraph = bundleGraph;
+      const manifestStr = JSON.stringify(manifest, null, "\t");
+      ctx.emitFile({
+        fileName: Q_MANIFEST_FILENAME,
+        type: "asset",
+        source: manifestStr
+      });
+      "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+      "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(getTransformedOutputs());
+      return manifestStr;
     }
     return {
       buildStart: buildStart,
@@ -2427,7 +2731,7 @@ globalThis.qwikOptimizer = function(module) {
       init: init2,
       load: load,
       debug: debug,
-      log: log,
+      log: log2,
       normalizeOptions: normalizeOptions,
       normalizePath: normalizePath,
       onDiagnostics: onDiagnostics,
@@ -2437,7 +2741,8 @@ globalThis.qwikOptimizer = function(module) {
       setSourceMapSupport: setSourceMapSupport,
       configureServer: configureServer,
       handleHotUpdate: handleHotUpdate,
-      manualChunks: manualChunks
+      manualChunks: manualChunks,
+      generateManifest: generateManifest
     };
   }
   var makeNormalizePath = sys => id => {
@@ -2457,16 +2762,6 @@ globalThis.qwikOptimizer = function(module) {
   function isAdditionalFile(mod) {
     return mod.isEntry || mod.segment;
   }
-  function parseId(originalId) {
-    const [pathId, query] = originalId.split("?");
-    const queryStr = query || "";
-    return {
-      originalId: originalId,
-      pathId: pathId,
-      query: queryStr ? `?${query}` : "",
-      params: new URLSearchParams(queryStr)
-    };
-  }
   var TRANSFORM_EXTS = {
     ".jsx": true,
     ".ts": true,
@@ -2479,6 +2774,8 @@ globalThis.qwikOptimizer = function(module) {
   var QWIK_JSX_DEV_RUNTIME_ID = "@builder.io/qwik/jsx-dev-runtime";
   var QWIK_CORE_SERVER = "@builder.io/qwik/server";
   var QWIK_CLIENT_MANIFEST_ID = "@qwik-client-manifest";
+  var QWIK_PRELOADER_ID = "@builder.io/qwik/preloader";
+  var QWIK_PRELOADER_REAL_ID = "qwik/dist/preloader.mjs";
   var SRC_DIR_DEFAULT = "src";
   var CLIENT_OUT_DIR = "dist";
   var SSR_OUT_DIR = "server";
@@ -2553,27 +2850,8 @@ globalThis.qwikOptimizer = function(module) {
         return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
-        var _a;
         const opts = qwikPlugin.getOptions();
-        if ("client" === opts.target) {
-          const optimizer = qwikPlugin.getOptimizer();
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
-          const manifest = await outputAnalyzer.generateManifest();
-          manifest.platform = {
-            ...versions,
-            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
-            env: optimizer.sys.env,
-            os: optimizer.sys.os
-          };
-          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-          "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-          this.emitFile({
-            type: "asset",
-            fileName: Q_MANIFEST_FILENAME,
-            source: JSON.stringify(manifest, null, 2)
-          });
-        }
+        "client" === opts.target && await qwikPlugin.generateManifest(this, rollupBundle);
       }
     };
     return rollupPlugin;
@@ -2648,8 +2926,8 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   }
-  var QWIK_LOADER_DEFAULT_MINIFIED = '(()=>{var e=Object.defineProperty,t=Object.getOwnPropertySymbols,o=Object.prototype.hasOwnProperty,r=Object.prototype.propertyIsEnumerable,n=(t,o,r)=>o in t?e(t,o,{enumerable:!0,configurable:!0,writable:!0,value:r}):t[o]=r,s=(e,s)=>{for(var a in s||(s={}))o.call(s,a)&&n(e,a,s[a]);if(t)for(var a of t(s))r.call(s,a)&&n(e,a,s[a]);return e};((e,t)=>{const o="__q_context__",r=window,n=new Set,a=new Set([e]),i="replace",c="forEach",l="target",f="getAttribute",p="isConnected",b="qvisible",u="_qwikjson_",y=(e,t)=>Array.from(e.querySelectorAll(t)),h=e=>{const t=[];return a.forEach((o=>t.push(...y(o,e)))),t},d=e=>{S(e),y(e,"[q\\\\:shadowroot]").forEach((e=>{const t=e.shadowRoot;t&&d(t)}))},m=e=>e&&"function"==typeof e.then,w=(e,t,o=t.type)=>{h("[on"+e+"\\\\:"+o+"]")[c]((r=>g(r,e,t,o)))},q=t=>{if(void 0===t[u]){let o=(t===e.documentElement?e.body:t).lastElementChild;for(;o;){if("SCRIPT"===o.tagName&&"qwik/json"===o[f]("type")){t[u]=JSON.parse(o.textContent[i](/\\\\x3C(\\/?script)/gi,"<$1"));break}o=o.previousElementSibling}}},v=(e,t)=>new CustomEvent(e,{detail:t}),g=async(t,r,n,a=n.type)=>{const c="on"+r+":"+a;t.hasAttribute("preventdefault:"+a)&&n.preventDefault(),t.hasAttribute("stoppropagation:"+a)&&n.stopPropagation();const l=t._qc_,b=l&&l.li.filter((e=>e[0]===c));if(b&&b.length>0){for(const e of b){const o=e[1].getFn([t,n],(()=>t[p]))(n,t),r=n.cancelBubble;m(o)&&await o,r&&n.stopPropagation()}return}const u=t[f](c);if(u){const r=t.closest("[q\\\\:container]"),a=r[f]("q:base"),c=r[f]("q:version")||"unknown",l=r[f]("q:manifest-hash")||"dev",b=new URL(a,e.baseURI);for(const f of u.split("\\n")){const u=new URL(f,b),y=u.href,h=u.hash[i](/^#?([^?[|]*).*$/,"$1")||"default",d=performance.now();let w,v,g;const A=f.startsWith("#"),_={qBase:a,qManifest:l,qVersion:c,href:y,symbol:h,element:t,reqTime:d};if(A){const t=r.getAttribute("q:instance");w=(e["qFuncs_"+t]||[])[Number.parseInt(h)],w||(v="sync",g=Error("sync handler error for symbol: "+h))}else{const e=u.href.split("#")[0];try{const t=import(e);q(r),w=(await t)[h],w||(v="no-symbol",g=Error(`${h} not in ${e}`))}catch(e){v||(v="async"),g=e}}if(!w){E("qerror",s({importError:v,error:g},_)),console.error(g);break}const k=e[o];if(t[p])try{e[o]=[t,n,u],A||E("qsymbol",s({},_));const r=w(n,t);m(r)&&await r}catch(e){E("qerror",s({error:e},_))}finally{e[o]=k}}}},E=(t,o)=>{e.dispatchEvent(v(t,o))},A=e=>e[i](/([A-Z])/g,(e=>"-"+e.toLowerCase())),_=async e=>{let t=A(e.type),o=e[l];for(w("-document",e,t);o&&o[f];){const r=g(o,"",e,t);let n=e.cancelBubble;m(r)&&await r,n=n||e.cancelBubble||o.hasAttribute("stoppropagation:"+e.type),o=e.bubbles&&!0!==n?o.parentElement:null}},k=e=>{w("-window",e,A(e.type))},C=()=>{var o;const s=e.readyState;if(!t&&("interactive"==s||"complete"==s)&&(a.forEach(d),t=1,E("qinit"),(null!=(o=r.requestIdleCallback)?o:r.setTimeout).bind(r)((()=>E("qidle"))),n.has(b))){const e=h("[on\\\\:"+b+"]"),t=new IntersectionObserver((e=>{for(const o of e)o.isIntersecting&&(t.unobserve(o[l]),g(o[l],"",v(b,o)))}));e[c]((e=>t.observe(e)))}},O=(e,t,o,r=!1)=>e.addEventListener(t,o,{capture:r,passive:!1}),S=(...e)=>{for(const t of e)"string"==typeof t?n.has(t)||(a.forEach((e=>O(e,t,_,!0))),O(r,t,k,!0),n.add(t)):a.has(t)||(n.forEach((e=>O(t,e,_,!0))),a.add(t))};if(!(o in e)){e[o]=0;const t=r.qwikevents;Array.isArray(t)&&S(...t),r.qwikevents={events:n,roots:a,push:S},O(e,"readystatechange",C),C()}})(document)})()';
-  var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    var __defProp = Object.defineProperty;\n    var __getOwnPropSymbols = Object.getOwnPropertySymbols;\n    var __hasOwnProp = Object.prototype.hasOwnProperty;\n    var __propIsEnum = Object.prototype.propertyIsEnumerable;\n    var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, {\n        enumerable: !0,\n        configurable: !0,\n        writable: !0,\n        value: value\n    }) : obj[key] = value;\n    var __spreadValues = (a, b) => {\n        for (var prop in b || (b = {})) {\n            __hasOwnProp.call(b, prop) && __defNormalProp(a, prop, b[prop]);\n        }\n        if (__getOwnPropSymbols) {\n            for (var prop of __getOwnPropSymbols(b)) {\n                __propIsEnum.call(b, prop) && __defNormalProp(a, prop, b[prop]);\n            }\n        }\n        return a;\n    };\n    ((doc, hasInitialized) => {\n        const Q_CONTEXT = "__q_context__";\n        const win = window;\n        const events =  new Set;\n        const roots =  new Set([ doc ]);\n        const nativeQuerySelectorAll = (root, selector) => Array.from(root.querySelectorAll(selector));\n        const querySelectorAll = query => {\n            const elements = [];\n            roots.forEach((root => elements.push(...nativeQuerySelectorAll(root, query))));\n            return elements;\n        };\n        const findShadowRoots = fragment => {\n            processEventOrNode(fragment);\n            nativeQuerySelectorAll(fragment, "[q\\\\:shadowroot]").forEach((parent => {\n                const shadowRoot = parent.shadowRoot;\n                shadowRoot && findShadowRoots(shadowRoot);\n            }));\n        };\n        const isPromise = promise => promise && "function" == typeof promise.then;\n        const broadcast = (infix, ev, type = ev.type) => {\n            querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((el => dispatch(el, infix, ev, type)));\n        };\n        const resolveContainer = containerEl => {\n            if (void 0 === containerEl._qwikjson_) {\n                let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;\n                while (script) {\n                    if ("SCRIPT" === script.tagName && "qwik/json" === script.getAttribute("type")) {\n                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\\\x3C(\\/?script)/gi, "<$1"));\n                        break;\n                    }\n                    script = script.previousElementSibling;\n                }\n            }\n        };\n        const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n            detail: detail\n        });\n        const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n            const attrName = "on" + onPrefix + ":" + eventName;\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            element.hasAttribute("stoppropagation:" + eventName) && ev.stopPropagation();\n            const ctx = element._qc_;\n            const relevantListeners = ctx && ctx.li.filter((li => li[0] === attrName));\n            if (relevantListeners && relevantListeners.length > 0) {\n                for (const listener of relevantListeners) {\n                    const results = listener[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);\n                    const cancelBubble = ev.cancelBubble;\n                    isPromise(results) && await results;\n                    cancelBubble && ev.stopPropagation();\n                }\n                return;\n            }\n            const attrValue = element.getAttribute(attrName);\n            if (attrValue) {\n                const container = element.closest("[q\\\\:container]");\n                const qBase = container.getAttribute("q:base");\n                const qVersion = container.getAttribute("q:version") || "unknown";\n                const qManifest = container.getAttribute("q:manifest-hash") || "dev";\n                const base = new URL(qBase, doc.baseURI);\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = new URL(qrl, base);\n                    const href = url.href;\n                    const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n                    const reqTime = performance.now();\n                    let handler;\n                    let importError;\n                    let error;\n                    const isSync = qrl.startsWith("#");\n                    const eventData = {\n                        qBase: qBase,\n                        qManifest: qManifest,\n                        qVersion: qVersion,\n                        href: href,\n                        symbol: symbol,\n                        element: element,\n                        reqTime: reqTime\n                    };\n                    if (isSync) {\n                        const hash = container.getAttribute("q:instance");\n                        handler = (doc["qFuncs_" + hash] || [])[Number.parseInt(symbol)];\n                        if (!handler) {\n                            importError = "sync";\n                            error = new Error("sync handler error for symbol: " + symbol);\n                        }\n                    } else {\n                        const uri = url.href.split("#")[0];\n                        try {\n                            const module = import(\n                                                        uri);\n                            resolveContainer(container);\n                            handler = (await module)[symbol];\n                            if (!handler) {\n                                importError = "no-symbol";\n                                error = new Error(`${symbol} not in ${uri}`);\n                            }\n                        } catch (err) {\n                            importError || (importError = "async");\n                            error = err;\n                        }\n                    }\n                    if (!handler) {\n                        emitEvent("qerror", __spreadValues({\n                            importError: importError,\n                            error: error\n                        }, eventData));\n                        console.error(error);\n                        break;\n                    }\n                    const previousCtx = doc[Q_CONTEXT];\n                    if (element.isConnected) {\n                        try {\n                            doc[Q_CONTEXT] = [ element, ev, url ];\n                            isSync || emitEvent("qsymbol", __spreadValues({}, eventData));\n                            const results = handler(ev, element);\n                            isPromise(results) && await results;\n                        } catch (error2) {\n                            emitEvent("qerror", __spreadValues({\n                                error: error2\n                            }, eventData));\n                        } finally {\n                            doc[Q_CONTEXT] = previousCtx;\n                        }\n                    }\n                }\n            }\n        };\n        const emitEvent = (eventName, detail) => {\n            doc.dispatchEvent(createEvent(eventName, detail));\n        };\n        const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n        const processDocumentEvent = async ev => {\n            let type = camelToKebab(ev.type);\n            let element = ev.target;\n            broadcast("-document", ev, type);\n            while (element && element.getAttribute) {\n                const results = dispatch(element, "", ev, type);\n                let cancelBubble = ev.cancelBubble;\n                isPromise(results) && await results;\n                cancelBubble = cancelBubble || ev.cancelBubble || element.hasAttribute("stoppropagation:" + ev.type);\n                element = ev.bubbles && !0 !== cancelBubble ? element.parentElement : null;\n            }\n        };\n        const processWindowEvent = ev => {\n            broadcast("-window", ev, camelToKebab(ev.type));\n        };\n        const processReadyStateChange = () => {\n            var _a;\n            const readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                roots.forEach(findShadowRoots);\n                hasInitialized = 1;\n                emitEvent("qinit");\n                (null != (_a = win.requestIdleCallback) ? _a : win.setTimeout).bind(win)((() => emitEvent("qidle")));\n                if (events.has("qvisible")) {\n                    const results = querySelectorAll("[on\\\\:qvisible]");\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", createEvent("qvisible", entry));\n                            }\n                        }\n                    }));\n                    results.forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addEventListener = (el, eventName, handler, capture = !1) => el.addEventListener(eventName, handler, {\n            capture: capture,\n            passive: !1\n        });\n        const processEventOrNode = (...eventNames) => {\n            for (const eventNameOrNode of eventNames) {\n                if ("string" == typeof eventNameOrNode) {\n                    if (!events.has(eventNameOrNode)) {\n                        roots.forEach((root => addEventListener(root, eventNameOrNode, processDocumentEvent, !0)));\n                        addEventListener(win, eventNameOrNode, processWindowEvent, !0);\n                        events.add(eventNameOrNode);\n                    }\n                } else if (!roots.has(eventNameOrNode)) {\n                    events.forEach((eventName => addEventListener(eventNameOrNode, eventName, processDocumentEvent, !0)));\n                    roots.add(eventNameOrNode);\n                }\n            }\n        };\n        if (!(Q_CONTEXT in doc)) {\n            doc[Q_CONTEXT] = 0;\n            const qwikevents = win.qwikevents;\n            Array.isArray(qwikevents) && processEventOrNode(...qwikevents);\n            win.qwikevents = {\n                events: events,\n                roots: roots,\n                push: processEventOrNode\n            };\n            addEventListener(doc, "readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})()';
+  var QWIK_LOADER_DEFAULT_MINIFIED = '(()=>{const t=document,e=window,n=new Set,o=new Set([t]);let r;const s=(t,e)=>Array.from(t.querySelectorAll(e)),a=t=>{const e=[];return o.forEach((n=>e.push(...s(n,t)))),e},i=t=>{w(t),s(t,"[q\\\\:shadowroot]").forEach((t=>{const e=t.shadowRoot;e&&i(e)}))},c=t=>t&&"function"==typeof t.then,l=(t,e,n=e.type)=>{a("[on"+t+"\\\\:"+n+"]").forEach((o=>b(o,t,e,n)))},f=e=>{if(void 0===e._qwikjson_){let n=(e===t.documentElement?t.body:e).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===n.getAttribute("type")){e._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/gi,"<$1"));break}n=n.previousElementSibling}}},p=(t,e)=>new CustomEvent(t,{detail:e}),b=async(e,n,o,r=o.type)=>{const s="on"+n+":"+r;e.hasAttribute("preventdefault:"+r)&&o.preventDefault(),e.hasAttribute("stoppropagation:"+r)&&o.stopPropagation();const a=e._qc_,i=a&&a.li.filter((t=>t[0]===s));if(i&&i.length>0){for(const t of i){const n=t[1].getFn([e,o],(()=>e.isConnected))(o,e),r=o.cancelBubble;c(n)&&await n,r&&o.stopPropagation()}return}const l=e.getAttribute(s);if(l){const n=e.closest("[q\\\\:container]"),r=n.getAttribute("q:base"),s=n.getAttribute("q:version")||"unknown",a=n.getAttribute("q:manifest-hash")||"dev",i=new URL(r,t.baseURI);for(const p of l.split("\\n")){const l=new URL(p,i),b=l.href,h=l.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",q=performance.now();let _,d,y;const w=p.startsWith("#"),g={qBase:r,qManifest:a,qVersion:s,href:b,symbol:h,element:e,reqTime:q};if(w){const e=n.getAttribute("q:instance");_=(t["qFuncs_"+e]||[])[Number.parseInt(h)],_||(d="sync",y=Error("sym:"+h))}else{u("qsymbol",g);const t=l.href.split("#")[0];try{const e=import(t);f(n),_=(await e)[h],_||(d="no-symbol",y=Error(`${h} not in ${t}`))}catch(t){d||(d="async"),y=t}}if(!_){u("qerror",{importError:d,error:y,...g}),console.error(y);break}const m=t.__q_context__;if(e.isConnected)try{t.__q_context__=[e,o,l];const n=_(o,e);c(n)&&await n}catch(t){u("qerror",{error:t,...g})}finally{t.__q_context__=m}}}},u=(e,n)=>{t.dispatchEvent(p(e,n))},h=t=>t.replace(/([A-Z])/g,(t=>"-"+t.toLowerCase())),q=async t=>{let e=h(t.type),n=t.target;for(l("-document",t,e);n&&n.getAttribute;){const o=b(n,"",t,e);let r=t.cancelBubble;c(o)&&await o,r=r||t.cancelBubble||n.hasAttribute("stoppropagation:"+t.type),n=t.bubbles&&!0!==r?n.parentElement:null}},_=t=>{l("-window",t,h(t.type))},d=()=>{var s;const c=t.readyState;if(!r&&("interactive"==c||"complete"==c)&&(o.forEach(i),r=1,u("qinit"),(null!=(s=e.requestIdleCallback)?s:e.setTimeout).bind(e)((()=>u("qidle"))),n.has("qvisible"))){const t=a("[on\\\\:qvisible]"),e=new IntersectionObserver((t=>{for(const n of t)n.isIntersecting&&(e.unobserve(n.target),b(n.target,"",p("qvisible",n)))}));t.forEach((t=>e.observe(t)))}},y=(t,e,n,o=!1)=>t.addEventListener(e,n,{capture:o,passive:!1}),w=(...t)=>{for(const r of t)"string"==typeof r?n.has(r)||(o.forEach((t=>y(t,r,q,!0))),y(e,r,_,!0),n.add(r)):o.has(r)||(n.forEach((t=>y(r,t,q,!0))),o.add(r))};if(!("__q_context__"in t)){t.__q_context__=0;const r=e.qwikevents;Array.isArray(r)&&w(...r),e.qwikevents={events:n,roots:o,push:w},y(t,"readystatechange",d),d()}})()';
+  var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n  const doc = document;\n  const win = window;\n  const events = /* @__PURE__ */ new Set();\n  const roots = /* @__PURE__ */ new Set([doc]);\n  let hasInitialized;\n  const nativeQuerySelectorAll = (root, selector) => Array.from(root.querySelectorAll(selector));\n  const querySelectorAll = (query) => {\n    const elements = [];\n    roots.forEach((root) => elements.push(...nativeQuerySelectorAll(root, query)));\n    return elements;\n  };\n  const findShadowRoots = (fragment) => {\n    processEventOrNode(fragment);\n    nativeQuerySelectorAll(fragment, "[q\\\\:shadowroot]").forEach((parent) => {\n      const shadowRoot = parent.shadowRoot;\n      shadowRoot && findShadowRoots(shadowRoot);\n    });\n  };\n  const isPromise = (promise) => promise && typeof promise.then === "function";\n  const broadcast = (infix, ev, type = ev.type) => {\n    querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach(\n      (el) => dispatch(el, infix, ev, type)\n    );\n  };\n  const resolveContainer = (containerEl) => {\n    if (containerEl._qwikjson_ === void 0) {\n      const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;\n      let script = parentJSON.lastElementChild;\n      while (script) {\n        if (script.tagName === "SCRIPT" && script.getAttribute("type") === "qwik/json") {\n          containerEl._qwikjson_ = JSON.parse(\n            script.textContent.replace(/\\\\x3C(\\/?script)/gi, "<$1")\n          );\n          break;\n        }\n        script = script.previousElementSibling;\n      }\n    }\n  };\n  const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n    detail\n  });\n  const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n    const attrName = "on" + onPrefix + ":" + eventName;\n    if (element.hasAttribute("preventdefault:" + eventName)) {\n      ev.preventDefault();\n    }\n    if (element.hasAttribute("stoppropagation:" + eventName)) {\n      ev.stopPropagation();\n    }\n    const ctx = element._qc_;\n    const relevantListeners = ctx && ctx.li.filter((li) => li[0] === attrName);\n    if (relevantListeners && relevantListeners.length > 0) {\n      for (const listener of relevantListeners) {\n        const results = listener[1].getFn([element, ev], () => element.isConnected)(ev, element);\n        const cancelBubble = ev.cancelBubble;\n        if (isPromise(results)) {\n          await results;\n        }\n        if (cancelBubble) {\n          ev.stopPropagation();\n        }\n      }\n      return;\n    }\n    const attrValue = element.getAttribute(attrName);\n    if (attrValue) {\n      const container = element.closest("[q\\\\:container]");\n      const qBase = container.getAttribute("q:base");\n      const qVersion = container.getAttribute("q:version") || "unknown";\n      const qManifest = container.getAttribute("q:manifest-hash") || "dev";\n      const base = new URL(qBase, doc.baseURI);\n      for (const qrl of attrValue.split("\\n")) {\n        const url = new URL(qrl, base);\n        const href = url.href;\n        const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const reqTime = performance.now();\n        let handler;\n        let importError;\n        let error;\n        const isSync = qrl.startsWith("#");\n        const eventData = {\n          qBase,\n          qManifest,\n          qVersion,\n          href,\n          symbol,\n          element,\n          reqTime\n        };\n        if (isSync) {\n          const hash = container.getAttribute("q:instance");\n          handler = (doc["qFuncs_" + hash] || [])[Number.parseInt(symbol)];\n          if (!handler) {\n            importError = "sync";\n            error = new Error("sym:" + symbol);\n          }\n        } else {\n          emitEvent("qsymbol", eventData);\n          const uri = url.href.split("#")[0];\n          try {\n            const module = import(\n                            uri\n            );\n            resolveContainer(container);\n            handler = (await module)[symbol];\n            if (!handler) {\n              importError = "no-symbol";\n              error = new Error(`${symbol} not in ${uri}`);\n            }\n          } catch (err) {\n            importError || (importError = "async");\n            error = err;\n          }\n        }\n        if (!handler) {\n          emitEvent("qerror", {\n            importError,\n            error,\n            ...eventData\n          });\n          console.error(error);\n          break;\n        }\n        const previousCtx = doc.__q_context__;\n        if (element.isConnected) {\n          try {\n            doc.__q_context__ = [element, ev, url];\n            const results = handler(ev, element);\n            if (isPromise(results)) {\n              await results;\n            }\n          } catch (error2) {\n            emitEvent("qerror", { error: error2, ...eventData });\n          } finally {\n            doc.__q_context__ = previousCtx;\n          }\n        }\n      }\n    }\n  };\n  const emitEvent = (eventName, detail) => {\n    doc.dispatchEvent(createEvent(eventName, detail));\n  };\n  const camelToKebab = (str) => str.replace(/([A-Z])/g, (a) => "-" + a.toLowerCase());\n  const processDocumentEvent = async (ev) => {\n    let type = camelToKebab(ev.type);\n    let element = ev.target;\n    broadcast("-document", ev, type);\n    while (element && element.getAttribute) {\n      const results = dispatch(element, "", ev, type);\n      let cancelBubble = ev.cancelBubble;\n      if (isPromise(results)) {\n        await results;\n      }\n      cancelBubble = cancelBubble || ev.cancelBubble || element.hasAttribute("stoppropagation:" + ev.type);\n      element = ev.bubbles && cancelBubble !== true ? element.parentElement : null;\n    }\n  };\n  const processWindowEvent = (ev) => {\n    broadcast("-window", ev, camelToKebab(ev.type));\n  };\n  const processReadyStateChange = () => {\n    var _a;\n    const readyState = doc.readyState;\n    if (!hasInitialized && (readyState == "interactive" || readyState == "complete")) {\n      roots.forEach(findShadowRoots);\n      hasInitialized = 1;\n      emitEvent("qinit");\n      const riC = (_a = win.requestIdleCallback) != null ? _a : win.setTimeout;\n      riC.bind(win)(() => emitEvent("qidle"));\n      if (events.has("qvisible")) {\n        const results = querySelectorAll("[on\\\\:qvisible]");\n        const observer = new IntersectionObserver((entries) => {\n          for (const entry of entries) {\n            if (entry.isIntersecting) {\n              observer.unobserve(entry.target);\n              dispatch(entry.target, "", createEvent("qvisible", entry));\n            }\n          }\n        });\n        results.forEach((el) => observer.observe(el));\n      }\n    }\n  };\n  const addEventListener = (el, eventName, handler, capture = false) => {\n    return el.addEventListener(eventName, handler, { capture, passive: false });\n  };\n  const processEventOrNode = (...eventNames) => {\n    for (const eventNameOrNode of eventNames) {\n      if (typeof eventNameOrNode === "string") {\n        if (!events.has(eventNameOrNode)) {\n          roots.forEach(\n            (root) => addEventListener(root, eventNameOrNode, processDocumentEvent, true)\n          );\n          addEventListener(win, eventNameOrNode, processWindowEvent, true);\n          events.add(eventNameOrNode);\n        }\n      } else {\n        if (!roots.has(eventNameOrNode)) {\n          events.forEach(\n            (eventName) => addEventListener(eventNameOrNode, eventName, processDocumentEvent, true)\n          );\n          roots.add(eventNameOrNode);\n        }\n      }\n    }\n  };\n  if (!("__q_context__" in doc)) {\n    doc.__q_context__ = 0;\n    const qwikevents = win.qwikevents;\n    if (Array.isArray(qwikevents)) {\n      processEventOrNode(...qwikevents);\n    }\n    win.qwikevents = {\n      events,\n      roots,\n      push: processEventOrNode\n    };\n    addEventListener(doc, "readystatechange", processReadyStateChange);\n    processReadyStateChange();\n  }\n})()';
   var import_bmp = __toESM(require_bmp(), 1);
   var import_cur = __toESM(require_cur(), 1);
   var import_dds = __toESM(require_dds(), 1);
@@ -2943,7 +3221,7 @@ globalThis.qwikOptimizer = function(module) {
     throw error;
   };
   var logErrorAndStop = (message, ...optionalParams) => {
-    const err = createAndLogError(true, message, ...optionalParams);
+    const err = createAndLogError(qDev, message, ...optionalParams);
     debugger;
     return err;
   };
@@ -3071,7 +3349,7 @@ globalThis.qwikOptimizer = function(module) {
     importSymbol(containerEl, url, symbolName) {
       var _a;
       if (isServer) {
-        const hash = getSymbolHash(symbolName);
+        const hash = getSymbolHash2(symbolName);
         const regSym = null == (_a = globalThis.__qwik_reg_symbols) ? void 0 : _a.get(hash);
         if (regSym) {
           return regSym;
@@ -3101,10 +3379,10 @@ globalThis.qwikOptimizer = function(module) {
     })),
     chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
   });
-  var toUrl = (doc, containerEl, url) => {
-    const baseURI = doc.baseURI;
-    const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-    return new URL(url, base);
+  var toUrl = (doc2, containerEl, url) => {
+    const baseURI = doc2.baseURI;
+    const base2 = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+    return new URL(url, base2);
   };
   var _platform = createPlatform();
   var getPlatform = () => _platform;
@@ -3264,8 +3542,8 @@ globalThis.qwikOptimizer = function(module) {
     Object.freeze(EMPTY_ARRAY);
     Object.freeze(EMPTY_OBJ);
   }
-  var createElement = (doc, expectTag, isSvg) => {
-    const el = isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
+  var createElement = (doc2, expectTag, isSvg) => {
+    const el = isSvg ? doc2.createElementNS(SVG_NS, expectTag) : doc2.createElement(expectTag);
     return el;
   };
   var parseVirtualAttributes = str => {
@@ -3293,8 +3571,8 @@ globalThis.qwikOptimizer = function(module) {
       this.open = open;
       this.close = close;
       this.isSvg = isSvg;
-      const doc = this.ownerDocument = open.ownerDocument;
-      this.$template$ = createElement(doc, "template", false);
+      const doc2 = this.ownerDocument = open.ownerDocument;
+      this.$template$ = createElement(doc2, "template", false);
       this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
       assertTrue(open.data.startsWith("qv "), "comment is not a qv");
       open[VIRTUAL_SYMBOL] = this;
@@ -4643,7 +4921,7 @@ globalThis.qwikOptimizer = function(module) {
   var DocumentSerializer = serializer({
     $prefix$: "",
     $test$: v => !!v && "object" === typeof v && isDocument(v),
-    $prepare$: (_, _c, doc) => doc
+    $prepare$: (_, _c, doc2) => doc2
   });
   var SERIALIZABLE_STATE = Symbol("serializable-data");
   var ComponentSerializer = serializer({
@@ -5028,6 +5306,178 @@ globalThis.qwikOptimizer = function(module) {
   var getProxyTarget = obj => obj[QOjectTargetSymbol];
   var getSubscriptionManager = obj => obj[QObjectManagerSymbol];
   var getProxyFlags = obj => obj[QObjectFlagsSymbol];
+  var doc = isBrowser ? document : void 0;
+  var modulePreloadStr = "modulepreload";
+  var preloadStr = "preload";
+  var config = {
+    t: 0,
+    o: 25,
+    l: .65
+  };
+  var rel = isBrowser && doc.createElement("link").relList.supports(modulePreloadStr) ? modulePreloadStr : preloadStr;
+  var loadStart = Date.now();
+  var isJSRegex = /\.[mc]?js$/;
+  var BundleImportState_None = 0;
+  var BundleImportState_Queued = 1;
+  var BundleImportState_Preload = 2;
+  var BundleImportState_Alias = 3;
+  var BundleImportState_Loaded = 4;
+  var bundles = new Map;
+  var queueDirty;
+  var preloadCount = 0;
+  var queue = [];
+  var log = (...e) => {
+    console.log(`Preloader ${Date.now() - loadStart}ms ${preloadCount}/${queue.length} queued>`, ...e);
+  };
+  var sortQueue = () => {
+    if (queueDirty) {
+      queue.sort(((e, t) => e.u - t.u));
+      queueDirty = 0;
+    }
+  };
+  var trigger = () => {
+    if (!queue.length) {
+      return;
+    }
+    sortQueue();
+    while (queue.length) {
+      const e = queue[0];
+      const t = e.u;
+      const o = 1 - t;
+      const n = graph ? Math.max(1, config.o * o) : 2;
+      if (!(o >= .99 || preloadCount < n)) {
+        break;
+      }
+      queue.shift();
+      preloadOne(e);
+    }
+    if (config.t && !queue.length) {
+      const e = [ ...bundles.values() ].filter((e2 => e2.i > BundleImportState_None));
+      const t = e.reduce(((e2, t2) => e2 + t2.p), 0);
+      const o = e.reduce(((e2, t2) => e2 + t2.$), 0);
+      log(`>>>> done ${e.length}/${bundles.size} total: ${t}ms waited, ${o}ms loaded`);
+    }
+  };
+  var preloadOne = e => {
+    if (e.i >= BundleImportState_Preload) {
+      return;
+    }
+    preloadCount++;
+    const t = Date.now();
+    e.p = t - e.m;
+    e.i = BundleImportState_Preload;
+    config.t && log(`<< load ${Math.round(100 * (1 - e.u))}% after ${e.p}ms`, e.B);
+    const o = doc.createElement("link");
+    o.href = new URL(`${base}${e.B}`, doc.baseURI).toString();
+    o.rel = rel;
+    o.as = "script";
+    o.onload = o.onerror = () => {
+      preloadCount--;
+      const n = Date.now();
+      e.$ = n - t;
+      e.i = BundleImportState_Loaded;
+      config.t && log(`>> done after ${e.$}ms`, e.B);
+      o.remove();
+      trigger();
+    };
+    doc.head.appendChild(o);
+  };
+  var adjustProbabilities = (e, t, o) => {
+    if (null == o ? void 0 : o.has(e)) {
+      return;
+    }
+    const n = e.u;
+    e.u = t;
+    if (n - e.u < .01) {
+      return;
+    }
+    if (null != base && e.i < BundleImportState_Preload && e.u < config.l) {
+      if (e.i === BundleImportState_None) {
+        e.i = BundleImportState_Queued;
+        queue.push(e);
+        config.t && log(`queued ${Math.round(100 * (1 - e.u))}%`, e.B);
+      }
+      queueDirty = 1;
+    }
+    if (e.h) {
+      o || (o = new Set);
+      o.add(e);
+      const t2 = 1 - e.u;
+      for (const n2 of e.h) {
+        const e2 = getBundle(n2.B);
+        if (0 === e2.u) {
+          continue;
+        }
+        let r;
+        if (n2.S > .5 && (1 === t2 || t2 >= .99 && depsCount < 100)) {
+          depsCount++;
+          r = Math.min(.01, 1 - n2.S);
+        } else {
+          const o2 = 1 - n2.S * t2;
+          const l = n2.q;
+          const s = o2 / l;
+          r = Math.max(.02, e2.u * s);
+          n2.q = s;
+        }
+        adjustProbabilities(e2, r, o);
+      }
+    }
+  };
+  var handleBundle = (e, t) => {
+    const o = getBundle(e);
+    o && o.u > t && adjustProbabilities(o, t);
+  };
+  var depsCount;
+  var preload = (e, t) => {
+    if (!(null == e ? void 0 : e.length)) {
+      return;
+    }
+    depsCount = 0;
+    let o = t ? 1 - t : .4;
+    if (Array.isArray(e)) {
+      for (let t2 = e.length - 1; t2 >= 0; t2--) {
+        const n = e[t2];
+        "number" === typeof n ? o = 1 - n / 10 : handleBundle(n, o);
+      }
+    } else {
+      handleBundle(e, o);
+    }
+    isBrowser && trigger();
+  };
+  isBrowser && document.addEventListener("qsymbol", (e => {
+    const {symbol: t, href: o} = e.detail;
+    if (o) {
+      const e2 = t.slice(t.lastIndexOf("_") + 1);
+      preload(e2, 1);
+    }
+  }));
+  var base;
+  var graph;
+  var makeBundle = (e, t) => ({
+    B: e,
+    i: isJSRegex.test(e) ? BundleImportState_None : BundleImportState_Alias,
+    h: t,
+    u: 1,
+    m: Date.now(),
+    p: 0,
+    $: 0
+  });
+  var getBundle = e => {
+    let t = bundles.get(e);
+    if (!t) {
+      let o;
+      if (graph) {
+        o = graph.get(e);
+        if (!o) {
+          return;
+        }
+        o.length || (o = void 0);
+      }
+      t = makeBundle(e, o);
+      bundles.set(e, t);
+    }
+    return t;
+  };
   var isQrl = value => "function" === typeof value && "function" === typeof value.getSymbol;
   var SYNC_QRL = "<sync>";
   var isSyncQrl = value => isQrl(value) && value.$symbol$ == SYNC_QRL;
@@ -5079,10 +5529,11 @@ globalThis.qwikOptimizer = function(module) {
       if ("" === chunk) {
         assertDefined(_containerEl, "Sync QRL must have container element");
         const hash2 = _containerEl.getAttribute(QInstance);
-        const doc = _containerEl.ownerDocument;
-        const qFuncs = getQFuncs(doc, hash2);
+        const doc2 = _containerEl.ownerDocument;
+        const qFuncs = getQFuncs(doc2, hash2);
         return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
       }
+      isBrowser && chunk && preload(chunk, 1);
       const start = now();
       const ctx = tryGetInvokeContext();
       if (null !== symbolFn) {
@@ -5094,7 +5545,6 @@ globalThis.qwikOptimizer = function(module) {
       "object" === typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, null == ctx ? void 0 : ctx.$element$, start)), (err => {
         console.error(`qrl ${symbol} failed to load`, err);
         symbolRef = null;
-        throw err;
       }));
       return symbolRef;
     };
@@ -5113,7 +5563,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     const createOrReuseInvocationContext = invoke2 => null == invoke2 ? newInvokeContext() : isArray(invoke2) ? newInvokeContextFromTuple(invoke2) : invoke2;
     const resolvedSymbol = refSymbol ?? symbol;
-    const hash = getSymbolHash(resolvedSymbol);
+    const hash = getSymbolHash2(resolvedSymbol);
     Object.assign(qrl, {
       getSymbol: () => resolvedSymbol,
       getHash: () => hash,
@@ -5133,9 +5583,10 @@ globalThis.qwikOptimizer = function(module) {
     });
     symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved))));
     qDev && seal(qrl);
+    isBrowser && resolvedSymbol && preload(resolvedSymbol, .8);
     return qrl;
   };
-  var getSymbolHash = symbolName => {
+  var getSymbolHash2 = symbolName => {
     const index = symbolName.lastIndexOf("_");
     if (index > -1) {
       return symbolName.slice(index + 1);
@@ -5156,14 +5607,14 @@ globalThis.qwikOptimizer = function(module) {
   var emitUsedSymbol = (symbol, element, reqTime) => {
     if (!EMITTED.has(symbol)) {
       EMITTED.add(symbol);
-      emitEvent("qsymbol", {
+      emitEvent2("qsymbol", {
         symbol: symbol,
         element: element,
         reqTime: reqTime
       });
     }
   };
-  var emitEvent = (eventName, detail) => {
+  var emitEvent2 = (eventName, detail) => {
     qTest || isServerPlatform() || "object" !== typeof document || document.dispatchEvent(new CustomEvent(eventName, {
       bubbles: false,
       detail: detail
@@ -5190,16 +5641,16 @@ globalThis.qwikOptimizer = function(module) {
     const host = HOST_HEADER && headers[HOST_HEADER.toLowerCase()] || headers[":authority"] || headers.host;
     return `${protocol}://${host}`;
   }
-  function createSymbolMapper(base) {
+  function createSymbolMapper(base2) {
     return (symbolName, _mapper, parent) => {
       if (symbolName === SYNC_QRL) {
         return [ symbolName, "" ];
       }
       if (!parent) {
         console.error("qwik vite-dev-server symbolMapper: unknown qrl requested without parent:", symbolName);
-        return [ symbolName, `${base}${symbolName}.js` ];
+        return [ symbolName, `${base2}${symbolName}.js` ];
       }
-      const qrlFile = `${base}${parent.startsWith("/") ? parent.slice(1) : parent}_${symbolName}.js`;
+      const qrlFile = `${base2}${parent.startsWith("/") ? parent.slice(1) : parent}_${symbolName}.js`;
       return [ symbolName, qrlFile ];
     };
   }
@@ -5210,9 +5661,9 @@ globalThis.qwikOptimizer = function(module) {
     }
     throw new Error("symbolMapper not initialized");
   };
-  async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
+  async function configureDevServer(base2, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
     var _a;
-    symbolMapper = lazySymbolMapper = createSymbolMapper(base);
+    symbolMapper = lazySymbolMapper = createSymbolMapper(base2);
     if (!devSsrServer) {
       return;
     }
@@ -5257,11 +5708,8 @@ globalThis.qwikOptimizer = function(module) {
           if ("function" === typeof render) {
             const manifest = {
               manifestHash: "",
-              symbols: {},
               mapping: {},
-              bundles: {},
-              injections: [],
-              version: "1"
+              injections: []
             };
             const added = new Set;
             const CSS_EXTENSIONS = [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ];
@@ -5293,7 +5741,7 @@ globalThis.qwikOptimizer = function(module) {
                       location: "head",
                       attributes: {
                         rel: "stylesheet",
-                        href: `${base}${url2.slice(1)}`
+                        href: `${base2}${url2.slice(1)}`
                       }
                     });
                   }
@@ -5307,7 +5755,6 @@ globalThis.qwikOptimizer = function(module) {
               snapshot: !isClientDevOnly,
               manifest: isClientDevOnly ? void 0 : manifest,
               symbolMapper: isClientDevOnly ? void 0 : symbolMapper,
-              prefetchStrategy: null,
               serverData: serverData,
               containerAttributes: {
                 ...serverData.containerAttributes
@@ -5336,7 +5783,7 @@ globalThis.qwikOptimizer = function(module) {
                     return importerPath && JS_EXTENSIONS.test(importerPath);
                   }));
                   if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
-                    res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                    res.write(`<link rel="stylesheet" href="${base2}${v.url.slice(1)}">`);
                     added.add(v.url);
                   }
                 }
@@ -5446,9 +5893,9 @@ globalThis.qwikOptimizer = function(module) {
     }
     return true;
   };
-  function relativeURL(url, base) {
-    if (url.startsWith(base)) {
-      url = url.slice(base.length);
+  function relativeURL(url, base2) {
+    if (url.startsWith(base2)) {
+      url = url.slice(base2.length);
       url.startsWith("/") || (url = "/" + url);
     }
     return url;
@@ -5482,28 +5929,19 @@ globalThis.qwikOptimizer = function(module) {
     let rootDir = null;
     let ssrOutDir = null;
     const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
+    const disableFontPreload = qwikViteOpts.disableFontPreload ?? false;
     const injections = [];
     const qwikPlugin = createQwikPlugin(qwikViteOpts.optimizerOptions);
-    async function loadQwikInsights(clientOutDir2 = "") {
-      const sys = qwikPlugin.getSys();
-      const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2, "q-insights.json");
-      const path = absolutePathAwareJoin(sys.path, process.cwd(), cwdRelativePath);
-      const fs = await sys.dynamicImport("node:fs");
-      if (fs.existsSync(path)) {
-        qwikPlugin.log("Reading Qwik Insight data from: " + cwdRelativePath);
-        return JSON.parse(await fs.promises.readFile(path, "utf-8"));
-      }
-      return null;
-    }
+    const bundleGraphAdders = new Set;
     const api = {
       getOptimizer: () => qwikPlugin.getOptimizer(),
       getOptions: () => qwikPlugin.getOptions(),
       getManifest: () => manifestInput,
-      getInsightsManifest: (clientOutDir2 = "") => loadQwikInsights(clientOutDir2),
       getRootDir: () => qwikPlugin.getOptions().rootDir,
       getClientOutDir: () => clientOutDir,
       getClientPublicOutDir: () => clientPublicOutDir,
-      getAssetsDir: () => viteAssetsDir
+      getAssetsDir: () => viteAssetsDir,
+      registerBundleGraphAdder: adder => bundleGraphAdders.add(adder)
     };
     const vitePluginPre = {
       name: "vite-plugin-qwik",
@@ -5628,8 +6066,8 @@ globalThis.qwikOptimizer = function(module) {
               exclude: [ /./ ]
             },
             rollupOptions: {
+              maxParallelFileOps: 1,
               output: {
-                hoistTransitiveImports: false,
                 manualChunks: qwikPlugin.manualChunks
               }
             }
@@ -5681,22 +6119,15 @@ globalThis.qwikOptimizer = function(module) {
         }
         return updatedViteConfig;
       },
-      async configResolved(config) {
-        var _a, _b;
-        basePathname = config.base;
+      async configResolved(config2) {
+        var _a;
+        basePathname = config2.base;
         if (!(basePathname.startsWith("/") && basePathname.endsWith("/"))) {
           console.error("warning: vite's config.base must begin and end with /. This will be an error in v2. If you have a valid use case, please open an issue.");
           basePathname.endsWith("/") || (basePathname += "/");
         }
-        const sys = qwikPlugin.getSys();
-        if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
-          try {
-            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a = qwikViteOpts.client) ? void 0 : _a.outDir);
-            entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
-          } catch {}
-        }
-        const useSourcemap = !!config.build.sourcemap;
-        useSourcemap && void 0 === (null == (_b = qwikViteOpts.optimizerOptions) ? void 0 : _b.sourcemap) && qwikPlugin.setSourceMapSupport(true);
+        const useSourcemap = !!config2.build.sourcemap;
+        useSourcemap && void 0 === (null == (_a = qwikViteOpts.optimizerOptions) ? void 0 : _a.sourcemap) && qwikPlugin.setSourceMapSupport(true);
         qwikPlugin.normalizeOptions(qwikViteOpts);
       },
       async buildStart() {
@@ -5752,10 +6183,8 @@ globalThis.qwikOptimizer = function(module) {
       generateBundle: {
         order: "post",
         async handler(_, rollupBundle) {
-          var _a;
           const opts = qwikPlugin.getOptions();
           if ("client" === opts.target) {
-            const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
             for (const [fileName, b] of Object.entries(rollupBundle)) {
               if ("asset" === b.type) {
                 const baseFilename = basePathname + fileName;
@@ -5777,7 +6206,7 @@ globalThis.qwikOptimizer = function(module) {
                   });
                 } else {
                   const selectedFont = FONTS.find((ext => fileName.endsWith(ext)));
-                  selectedFont && injections.unshift({
+                  selectedFont && !disableFontPreload && injections.unshift({
                     tag: "link",
                     location: "head",
                     attributes: {
@@ -5791,47 +6220,16 @@ globalThis.qwikOptimizer = function(module) {
                 }
               }
             }
-            for (const i of injections) {
-              outputAnalyzer.addInjection(i);
-            }
-            const optimizer = qwikPlugin.getOptimizer();
-            const manifest = await outputAnalyzer.generateManifest();
-            manifest.platform = {
-              ...versions,
-              vite: "",
-              rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
-              env: optimizer.sys.env,
-              os: optimizer.sys.os
-            };
-            "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-            const clientManifestStr = JSON.stringify(manifest, null, 2);
-            this.emitFile({
-              type: "asset",
-              fileName: Q_MANIFEST_FILENAME,
-              source: clientManifestStr
+            const clientManifestStr = await qwikPlugin.generateManifest(this, rollupBundle, bundleGraphAdders, {
+              injections: injections,
+              platform: {
+                vite: ""
+              }
             });
-            const assetsDir = qwikPlugin.getOptions().assetsDir || "";
-            const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
             const sys = qwikPlugin.getSys();
-            this.emitFile({
-              type: "asset",
-              fileName: sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.json`),
-              source: JSON.stringify(convertManifestToBundleGraph(manifest))
-            });
-            const fs = await sys.dynamicImport("node:fs");
-            const workerScriptPath = (await this.resolve("@builder.io/qwik/qwik-prefetch.js")).id;
-            const workerScript = await fs.promises.readFile(workerScriptPath, "utf-8");
-            const qwikPrefetchServiceWorkerFile = "qwik-prefetch-service-worker.js";
-            this.emitFile({
-              type: "asset",
-              fileName: useAssetsDir ? sys.path.join(assetsDir, "build", qwikPrefetchServiceWorkerFile) : qwikPrefetchServiceWorkerFile,
-              source: workerScript
-            });
-            "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-            "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
             if (tmpClientManifestPath && "node" === sys.env) {
-              const fs2 = await sys.dynamicImport("node:fs");
-              await fs2.promises.writeFile(tmpClientManifestPath, clientManifestStr);
+              const fs = await sys.dynamicImport("node:fs");
+              await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
             }
           }
         }
@@ -5897,12 +6295,12 @@ globalThis.qwikOptimizer = function(module) {
           type: "full-reload"
         });
       },
-      onLog(level, log) {
+      onLog(level, log2) {
         var _a, _b, _c;
-        if ("vite-plugin-qwik" == log.plugin) {
+        if ("vite-plugin-qwik" == log2.plugin) {
           const color = LOG_COLOR[level] || ANSI_COLOR.White;
-          const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
-          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${null == (_a = null == log ? void 0 : log.loc) ? void 0 : _a.file}:${null == (_b = null == log ? void 0 : log.loc) ? void 0 : _b.line}:${null == (_c = null == log ? void 0 : log.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
+          const frames = (log2.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log2.plugin}](${level}): ${log2.message}\n`, `  ${null == (_a = null == log2 ? void 0 : log2.loc) ? void 0 : _a.file}:${null == (_b = null == log2 ? void 0 : log2.loc) ? void 0 : _b.line}:${null == (_c = null == log2 ? void 0 : log2.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
           return false;
         }
       }
@@ -5994,7 +6392,7 @@ globalThis.qwikOptimizer = function(module) {
           } catch (e) {
             console.error(e);
           }
-        } catch (e) {}
+        } catch {}
         prevPackageJsonDir = packageJsonDir;
         packageJsonDir = sys.path.dirname(packageJsonDir);
       } while (packageJsonDir !== prevPackageJsonDir);
@@ -6006,94 +6404,6 @@ globalThis.qwikOptimizer = function(module) {
   };
   var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
   var CLIENT_DEV_INPUT = "entry.dev";
-  function absolutePathAwareJoin(path, ...segments) {
-    for (let i = segments.length - 1; i >= 0; --i) {
-      const segment = segments[i];
-      if (segment.startsWith(path.sep) || -1 !== segment.indexOf(path.delimiter)) {
-        segments.splice(0, i);
-        break;
-      }
-    }
-    return path.join(...segments);
-  }
-  function convertManifestToBundleGraph(manifest) {
-    const bundleGraph = [];
-    const graph = manifest.bundles;
-    if (!graph) {
-      return [];
-    }
-    const names = Object.keys(graph).sort();
-    const map = new Map;
-    const clearTransitiveDeps = (parentDeps, seen, bundleName) => {
-      const bundle = graph[bundleName];
-      if (!bundle) {
-        return;
-      }
-      for (const dep of bundle.imports || []) {
-        parentDeps.has(dep) && parentDeps.delete(dep);
-        if (!seen.has(dep)) {
-          seen.add(dep);
-          clearTransitiveDeps(parentDeps, seen, dep);
-        }
-      }
-    };
-    for (const bundleName of names) {
-      const bundle = graph[bundleName];
-      const index = bundleGraph.length;
-      const deps = new Set(bundle.imports);
-      for (const depName of deps) {
-        if (!graph[depName]) {
-          continue;
-        }
-        clearTransitiveDeps(deps, new Set, depName);
-      }
-      let didAdd = false;
-      for (const depName of bundle.dynamicImports || []) {
-        const dep = graph[depName];
-        if (!graph[depName]) {
-          continue;
-        }
-        if (dep.hasSymbols) {
-          if (!didAdd) {
-            deps.add("<dynamic>");
-            didAdd = true;
-          }
-          deps.add(depName);
-        }
-      }
-      map.set(bundleName, {
-        index: index,
-        deps: deps
-      });
-      bundleGraph.push(bundleName);
-      while (index + deps.size >= bundleGraph.length) {
-        bundleGraph.push(null);
-      }
-    }
-    for (const bundleName of names) {
-      const bundle = map.get(bundleName);
-      if (!bundle) {
-        console.warn(`Bundle ${bundleName} not found in the bundle graph.`);
-        continue;
-      }
-      let {index: index, deps: deps} = bundle;
-      index++;
-      for (const depName of deps) {
-        if ("<dynamic>" === depName) {
-          bundleGraph[index++] = -1;
-          continue;
-        }
-        const dep = map.get(depName);
-        if (!dep) {
-          console.warn(`Dependency ${depName} of ${bundleName} not found in the bundle graph.`);
-          continue;
-        }
-        const depIndex = dep.index;
-        bundleGraph[index++] = depIndex;
-      }
-    }
-    return bundleGraph;
-  }
   return module.exports;
 }("object" === typeof module && module.exports ? module : {
   exports: {}
