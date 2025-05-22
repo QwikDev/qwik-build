@@ -55,7 +55,9 @@ export declare enum ExperimentalFeatures {
     /** Enable the Valibot form validation */
     valibot = "valibot",
     /** Disable SPA navigation handler in Qwik City */
-    noSPA = "noSPA"
+    noSPA = "noSPA",
+    /** Enable request.rewrite() */
+    enableRequestRewrite = "enableRequestRewrite"
 }
 
 /** @public */
