@@ -2,6 +2,7 @@
 
 import type { QwikManifest } from './optimizer';
 import type { ResolvedManifest } from './optimizer';
+import type { ServerQwikManifest } from './optimizer';
 import type { SnapshotResult } from '.';
 import type { StreamWriter } from '.';
 import type { SymbolMapperFn } from './optimizer';
@@ -152,6 +153,14 @@ export declare interface PreloaderOptions {
 }
 
 /** @public */
+declare interface QwikAsset {
+    /** Name of the asset */
+    name: string | undefined;
+    /** Size of the asset */
+    size: number;
+}
+
+/** @public */
 declare interface QwikBundle {
     /** Size of the bundle */
     size: number;
@@ -181,7 +190,15 @@ declare type QwikBundleGraph = Array<string | number>;
 
 /** @public */
 export declare interface QwikLoaderOptions {
+    /**
+     * Whether to include the qwikloader script in the document. Normally you don't need to worry
+     * about this, but in case of multi-container apps using different Qwik versions, you might want
+     * to only enable it on one of the containers.
+     *
+     * Defaults to `'auto'`.
+     */
     include?: 'always' | 'never' | 'auto';
+    /** @deprecated No longer used, the qwikloader is always loaded as soon as possible */
     position?: 'top' | 'bottom';
 }
 
@@ -197,20 +214,31 @@ declare interface QwikManifest_2 {
     symbols: {
         [symbolName: string]: QwikSymbol;
     };
-    /** Where QRLs are located */
+    /** Where QRLs are located. The key is the symbol name, the value is the bundle fileName */
     mapping: {
         [symbolName: string]: string;
     };
-    /** All code bundles, used to know the import graph */
+    /**
+     * All code bundles, used to know the import graph. The key is the bundle fileName relative to
+     * "build/"
+     */
     bundles: {
         [fileName: string]: QwikBundle;
     };
+    /** All assets. The key is the fileName relative to the rootDir */
+    assets?: {
+        [fileName: string]: QwikAsset;
+    };
     /** All bundles in a compact graph format with probabilities */
     bundleGraph?: QwikBundleGraph;
+    /** The bundle graph fileName */
+    bundleGraphAsset?: string;
     /** The preloader bundle fileName */
     preloader?: string;
     /** The Qwik core bundle fileName */
     core?: string;
+    /** The Qwik loader bundle fileName */
+    qwikLoader?: string;
     /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
     /** The version of the manifest */
@@ -292,7 +320,7 @@ export declare interface RenderResult {
     prefetchResources: PrefetchResource[];
     snapshotResult: SnapshotResult | undefined;
     isStatic: boolean;
-    manifest?: QwikManifest;
+    manifest?: ServerQwikManifest;
 }
 
 /** @public */
@@ -350,7 +378,7 @@ export declare interface RenderToStringResult extends RenderResult {
 /** @public */
 declare interface ResolvedManifest_2 {
     mapper: SymbolMapper;
-    manifest: QwikManifest_2;
+    manifest: ServerQwikManifest_2;
     injections: GlobalInjections[];
 }
 
@@ -373,6 +401,13 @@ export declare interface SerializeDocumentOptions {
     symbolMapper?: SymbolMapperFn;
     debug?: boolean;
 }
+
+/**
+ * The manifest values that are needed for SSR.
+ *
+ * @public
+ */
+declare type ServerQwikManifest_2 = Pick<QwikManifest_2, 'manifestHash' | 'injections' | 'bundleGraph' | 'bundleGraphAsset' | 'mapping' | 'preloader' | 'core' | 'qwikLoader'>;
 
 /** @public */
 export declare function setServerPlatform(manifest?: Partial<QwikManifest | ResolvedManifest>): Promise<void>;
@@ -403,7 +438,7 @@ declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: stri
  * @public
  */
 export declare type SymbolsToPrefetch = 'auto' | ((opts: {
-    manifest: QwikManifest;
+    manifest: ServerQwikManifest;
 }) => PrefetchResource[]);
 
 /** @public */
