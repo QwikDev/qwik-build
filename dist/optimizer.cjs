@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.14.1-dev+a44097c
+ * @builder.io/qwik/optimizer 1.14.1-dev+80f318d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.14.1-dev+a44097c"
+    qwik: "1.14.1-dev+80f318d"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2896,8 +2896,9 @@ globalThis.qwikOptimizer = function(module) {
         const sanitized = relativePath.replace(/^(\.\.\/)+/, "").replace(/^\/+/, "").replace(/\//g, "-");
         return `build/${sanitized}.js`;
       } : "build/q-[hash].js";
-      outputOpts.entryFileNames || (outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
-      outputOpts.chunkFileNames || (outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
+      const getFilePath = fileNamePattern => "string" === typeof fileNamePattern ? useAssetsDir ? `${opts.assetsDir}/${fileNamePattern}` : fileNamePattern : useAssetsDir ? chunkInfo => `${opts.assetsDir}/${fileNamePattern(chunkInfo)}` : chunkInfo => fileNamePattern(chunkInfo);
+      outputOpts.entryFileNames || (outputOpts.entryFileNames = getFilePath(fileName));
+      outputOpts.chunkFileNames || (outputOpts.chunkFileNames = getFilePath(fileName));
     } else {
       "production" === opts.buildMode && (outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "q-[hash].js"));
     }
