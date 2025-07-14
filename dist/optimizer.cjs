@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.14.1-dev+b76adc2
+ * @builder.io/qwik/optimizer 1.14.1-dev+07c59ee
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.14.1-dev+b76adc2"
+    qwik: "1.14.1-dev+07c59ee"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1775,7 +1775,7 @@ globalThis.qwikOptimizer = function(module) {
       const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
       if (modulePaths.length > 0) {
         bundle.origins = modulePaths;
-        modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) ? manifest.core = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m))) && (manifest.qwikLoader = bundleFileName);
+        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) ? manifest.core = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m))) && (manifest.qwikLoader = bundleFileName);
       }
       manifest.bundles[bundleFileName] = bundle;
     }
@@ -2702,7 +2702,7 @@ globalThis.qwikOptimizer = function(module) {
     function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
       var _a;
       if ("client" === opts.target) {
-        if (id2.endsWith(QWIK_PRELOADER_REAL_ID) || "\0vite/preload-helper.js" === id2) {
+        if (id2.endsWith("@builder.io/qwik/build") || /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(id2) || "\0vite/preload-helper.js" === id2) {
           return "qwik-preloader";
         }
         if (/qwik[\\/]dist[\\/]qwikloader\.js$/.test(id2)) {
@@ -2809,7 +2809,6 @@ globalThis.qwikOptimizer = function(module) {
   var QWIK_CORE_SERVER = "@builder.io/qwik/server";
   var QWIK_CLIENT_MANIFEST_ID = "@qwik-client-manifest";
   var QWIK_PRELOADER_ID = "@builder.io/qwik/preloader";
-  var QWIK_PRELOADER_REAL_ID = "qwik/dist/preloader.mjs";
   var SRC_DIR_DEFAULT = "src";
   var CLIENT_OUT_DIR = "dist";
   var SSR_OUT_DIR = "server";
