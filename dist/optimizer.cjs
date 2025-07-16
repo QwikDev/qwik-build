@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.14.1-dev+7bb5229
+ * @builder.io/qwik/optimizer 1.14.1-dev+7843e78
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.14.1-dev+7bb5229"
+    qwik: "1.14.1-dev+7843e78"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1775,7 +1775,9 @@ globalThis.qwikOptimizer = function(module) {
       const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
       if (modulePaths.length > 0) {
         bundle.origins = modulePaths;
-        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) ? manifest.core = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m))) && (manifest.qwikLoader = bundleFileName);
+        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m))) && (manifest.preloader = bundleFileName);
+        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
+        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m))) && (manifest.qwikLoader = bundleFileName);
       }
       manifest.bundles[bundleFileName] = bundle;
     }
