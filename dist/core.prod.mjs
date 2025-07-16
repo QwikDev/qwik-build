@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.14.0-dev+ca1944c
+ * @builder.io/qwik 1.14.1-dev+7843e78
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.14.0-dev+ca1944c";
+const version = "1.14.1-dev+7843e78";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -5293,7 +5293,8 @@ const fastSkipSerialize = obj => noSerializeSet.has(obj);
 
 const fastWeakSerialize = obj => weakSerializeSet.has(obj);
 
-const noSerialize = input => (null != input && noSerializeSet.add(input), input);
+const noSerialize = input => (("object" == typeof input && null !== input || "function" == typeof input) && noSerializeSet.add(input), 
+input);
 
 const _weakSerialize = input => (weakSerializeSet.add(input), input);
 
