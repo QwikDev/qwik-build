@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.14.1-dev+07c59ee
+ * @builder.io/qwik/optimizer 1.14.1-dev+7bb5229
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.14.1-dev+07c59ee"
+  qwik: "1.14.1-dev+7bb5229"
 };
 
 async function getSystem() {
@@ -2613,18 +2613,11 @@ function createQwikPlugin(optimizerOptions = {}) {
           parentIds.set(key, id2);
           currentOutputs.set(key, [ mod, id2 ]);
           deps.add(key);
-          if ("client" === opts.target) {
-            if (devServer) {
-              const rollupModule = devServer.moduleGraph.getModuleById(key);
-              rollupModule && devServer.moduleGraph.invalidateModule(rollupModule);
-            } else {
-              ctx.emitFile({
-                id: key,
-                type: "chunk",
-                preserveSignature: "allow-extension"
-              });
-            }
-          }
+          "client" !== opts.target || devServer || ctx.emitFile({
+            id: key,
+            type: "chunk",
+            preserveSignature: "allow-extension"
+          });
         }
       }
       for (const id3 of deps.values()) {
