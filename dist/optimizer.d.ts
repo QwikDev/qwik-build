@@ -55,7 +55,9 @@ export declare enum ExperimentalFeatures {
     /** Enable the Valibot form validation */
     valibot = "valibot",
     /** Disable SPA navigation handler in Qwik City */
-    noSPA = "noSPA"
+    noSPA = "noSPA",
+    /** Enable request.rewrite() */
+    enableRequestRewrite = "enableRequestRewrite"
 }
 
 /** @public */
@@ -169,6 +171,14 @@ export declare interface Path {
 }
 
 /** @public */
+export declare interface QwikAsset {
+    /** Name of the asset */
+    name: string | undefined;
+    /** Size of the asset */
+    size: number;
+}
+
+/** @public */
 export declare type QwikBuildMode = 'production' | 'development';
 
 /** @public */
@@ -214,20 +224,31 @@ export declare interface QwikManifest {
     symbols: {
         [symbolName: string]: QwikSymbol;
     };
-    /** Where QRLs are located */
+    /** Where QRLs are located. The key is the symbol name, the value is the bundle fileName */
     mapping: {
         [symbolName: string]: string;
     };
-    /** All code bundles, used to know the import graph */
+    /**
+     * All code bundles, used to know the import graph. The key is the bundle fileName relative to
+     * "build/"
+     */
     bundles: {
         [fileName: string]: QwikBundle;
     };
+    /** All assets. The key is the fileName relative to the rootDir */
+    assets?: {
+        [fileName: string]: QwikAsset;
+    };
     /** All bundles in a compact graph format with probabilities */
     bundleGraph?: QwikBundleGraph;
+    /** The bundle graph fileName */
+    bundleGraphAsset?: string;
     /** The preloader bundle fileName */
     preloader?: string;
     /** The Qwik core bundle fileName */
     core?: string;
+    /** The Qwik loader bundle fileName */
+    qwikLoader?: string;
     /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
     /** The version of the manifest */
@@ -608,7 +629,7 @@ declare interface QwikVitePluginSSROptions extends QwikVitePluginCommonOptions {
 /** @public */
 export declare interface ResolvedManifest {
     mapper: SymbolMapper;
-    manifest: QwikManifest;
+    manifest: ServerQwikManifest;
     injections: GlobalInjections[];
 }
 
@@ -637,6 +658,13 @@ declare interface SegmentEntryStrategy {
 }
 export { SegmentEntryStrategy as HookEntryStrategy }
 export { SegmentEntryStrategy }
+
+/**
+ * The manifest values that are needed for SSR.
+ *
+ * @public
+ */
+export declare type ServerQwikManifest = Pick<QwikManifest, 'manifestHash' | 'injections' | 'bundleGraph' | 'bundleGraphAsset' | 'mapping' | 'preloader' | 'core' | 'qwikLoader'>;
 
 /** @public */
 export declare interface SingleEntryStrategy {

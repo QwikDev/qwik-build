@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.14.1
+ * @builder.io/qwik/optimizer 1.15.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.14.1"
+  qwik: "1.15.0"
 };
 
 async function getSystem() {
@@ -1284,6 +1284,10 @@ async function getSystem() {
     sys.path = await sys.dynamicImport("node:path");
     sys.cwd = () => process.cwd();
     sys.os = process.platform;
+  } else if ("deno" === sysEnv) {
+    sys.path = await sys.dynamicImport("node:path");
+    sys.cwd = () => Deno.cwd();
+    sys.os = Deno.platform();
   }
   return sys;
 }
@@ -1728,25 +1732,28 @@ function computeTotals(graph2) {
   }
 }
 
-function generateManifestFromBundles(path, segments, injections, outputBundles, opts, debug) {
+function generateManifestFromBundles(path, segments, injections, outputBundles, opts, debug, canonPath) {
   var _a3;
   const manifest = {
-    manifestHash: "",
-    symbols: {},
-    mapping: {},
-    bundles: {},
-    injections: injections,
     version: "1",
+    manifestHash: "",
     options: {
       target: opts.target,
       buildMode: opts.buildMode,
       entryStrategy: opts.entryStrategy && {
         type: opts.entryStrategy.type
       }
-    }
+    },
+    core: void 0,
+    preloader: void 0,
+    bundleGraphAsset: void 0,
+    injections: injections,
+    mapping: {},
+    bundles: {},
+    assets: {},
+    symbols: {},
+    bundleGraph: void 0
   };
-  const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
-  const canonPath = p => path.relative(buildPath, path.resolve(opts.rootDir, opts.outDir, p));
   const getBundleName = name => {
     const bundle = outputBundles[name];
     if (!bundle) {
@@ -1757,7 +1764,11 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
   };
   const qrlNames = new Set(segments.map((h => h.name)));
   for (const outputBundle of Object.values(outputBundles)) {
-    if ("chunk" !== outputBundle.type) {
+    if ("asset" === outputBundle.type) {
+      outputBundle.fileName.endsWith("js.map") || (manifest.assets[outputBundle.fileName] = {
+        name: outputBundle.names[0],
+        size: outputBundle.source.length
+      });
       continue;
     }
     const bundleFileName = canonPath(outputBundle.fileName);
@@ -1777,7 +1788,9 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
     if (modulePaths.length > 0) {
       bundle.origins = modulePaths;
-      modulePaths.some((m => m.endsWith(QWIK_PRELOADER_REAL_ID))) ? manifest.preloader = bundleFileName : modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
+      modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m))) && (manifest.preloader = bundleFileName);
+      modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
+      modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m))) && (manifest.qwikLoader = bundleFileName);
     }
     manifest.bundles[bundleFileName] = bundle;
   }
@@ -1790,14 +1803,14 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     }
     ((_a3 = manifest.bundles[bundle]).symbols || (_a3.symbols = [])).push(symbol);
     manifest.symbols[symbol] = {
-      origin: segment.origin,
       displayName: segment.displayName,
-      canonicalFilename: segment.canonicalFilename,
       hash: segment.hash,
       ctxKind: segment.ctxKind,
       ctxName: segment.ctxName,
       captures: segment.captures,
+      canonicalFilename: segment.canonicalFilename,
       parent: segment.parent,
+      origin: segment.origin,
       loc: segment.loc
     };
   }
@@ -2165,6 +2178,7 @@ var ExperimentalFeatures = (ExperimentalFeatures2 => {
   ExperimentalFeatures2.preventNavigate = "preventNavigate";
   ExperimentalFeatures2.valibot = "valibot";
   ExperimentalFeatures2.noSPA = "noSPA";
+  ExperimentalFeatures2.enableRequestRewrite = "enableRequestRewrite";
   return ExperimentalFeatures2;
 })(ExperimentalFeatures || {});
 
@@ -2372,6 +2386,16 @@ function createQwikPlugin(optimizerOptions = {}) {
     debug("transformedOutputs.clear()");
     clientTransformedOutputs.clear();
     serverTransformedOutputs.clear();
+    if ("client" === opts.target) {
+      const ql = await _ctx.resolve("@builder.io/qwik/qwikloader.js", void 0, {
+        skipSelf: true
+      });
+      ql && _ctx.emitFile({
+        id: ql.id,
+        type: "chunk",
+        preserveSignature: "allow-extension"
+      });
+    }
   };
   const getIsServer = viteOpts => devServer ? !!viteOpts?.ssr : "ssr" === opts.target || "test" === opts.target;
   let resolveIdCount = 0;
@@ -2591,18 +2615,11 @@ function createQwikPlugin(optimizerOptions = {}) {
           parentIds.set(key, id2);
           currentOutputs.set(key, [ mod, id2 ]);
           deps.add(key);
-          if ("client" === opts.target) {
-            if (devServer) {
-              const rollupModule = devServer.moduleGraph.getModuleById(key);
-              rollupModule && devServer.moduleGraph.invalidateModule(rollupModule);
-            } else {
-              ctx.emitFile({
-                id: key,
-                type: "chunk",
-                preserveSignature: "allow-extension"
-              });
-            }
-          }
+          "client" !== opts.target || devServer || ctx.emitFile({
+            id: key,
+            type: "chunk",
+            preserveSignature: "allow-extension"
+          });
         }
       }
       for (const id3 of deps.values()) {
@@ -2625,12 +2642,17 @@ function createQwikPlugin(optimizerOptions = {}) {
   };
   const createOutputAnalyzer = rollupBundle => {
     const injections = [];
-    const addInjection = b => injections.push(b);
-    const generateManifest2 = async extra => {
+    const outputAnalyzer = {
+      addInjection: b => injections.push(b)
+    };
+    outputAnalyzer.generateManifest = async extra => {
       const optimizer2 = getOptimizer();
       const path = optimizer2.sys.path;
+      const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
+      const canonPath = p => path.relative(buildPath, path.resolve(opts.rootDir, opts.outDir, p));
+      outputAnalyzer.canonPath = canonPath;
       const segments = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.segment)).filter((h => !!h));
-      const manifest = generateManifestFromBundles(path, segments, injections, rollupBundle, opts, debug);
+      const manifest = generateManifestFromBundles(path, segments, injections, rollupBundle, opts, debug, canonPath);
       extra && Object.assign(manifest, extra);
       for (const symbol of Object.values(manifest.symbols)) {
         symbol.origin && (symbol.origin = normalizePath(symbol.origin));
@@ -2644,10 +2666,7 @@ function createQwikPlugin(optimizerOptions = {}) {
       manifest.manifestHash = hashCode(JSON.stringify(manifest));
       return manifest;
     };
-    return {
-      addInjection: addInjection,
-      generateManifest: generateManifest2
-    };
+    return outputAnalyzer;
   };
   const getOptions = () => opts;
   const getTransformedOutputs = () => Array.from(clientTransformedOutputs.values()).map((t => t[0]));
@@ -2670,11 +2689,13 @@ function createQwikPlugin(optimizerOptions = {}) {
     let serverManifest = null;
     manifest?.manifestHash && (serverManifest = {
       manifestHash: manifest.manifestHash,
-      injections: manifest.injections,
-      bundleGraph: manifest.bundleGraph,
-      mapping: manifest.mapping,
+      core: manifest.core,
       preloader: manifest.preloader,
-      core: manifest.core
+      qwikLoader: manifest.qwikLoader,
+      bundleGraphAsset: manifest.bundleGraphAsset,
+      injections: manifest.injections,
+      mapping: manifest.mapping,
+      bundleGraph: manifest.bundleGraph
     });
     return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(serverManifest)};\n`;
   }
@@ -2702,8 +2723,13 @@ function createQwikPlugin(optimizerOptions = {}) {
     }
   }
   function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
-    if ("client" === opts.target && (id2.endsWith(QWIK_PRELOADER_REAL_ID) || "\0vite/preload-helper.js" === id2)) {
-      return "qwik-preloader";
+    if ("client" === opts.target) {
+      if (id2.endsWith("@builder.io/qwik/build") || /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(id2) || "\0vite/preload-helper.js" === id2) {
+        return "qwik-preloader";
+      }
+      if (/qwik[\\/]dist[\\/]qwikloader\.js$/.test(id2)) {
+        return "qwik-loader";
+      }
     }
     const module = getModuleInfo(id2);
     const segment = module.meta.segment;
@@ -2726,15 +2752,18 @@ function createQwikPlugin(optimizerOptions = {}) {
       os: optimizer.sys.os
     };
     "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-    const assetsDir = opts.assetsDir;
-    const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
     const bundleGraph = convertManifestToBundleGraph(manifest, bundleGraphAdders);
-    ctx.emitFile({
+    const bgAsset = ctx.emitFile({
       type: "asset",
-      fileName: optimizer.sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.json`),
+      name: "bundle-graph.json",
       source: JSON.stringify(bundleGraph)
     });
-    manifest.bundleGraph = bundleGraph;
+    const bgPath = ctx.getFileName(bgAsset);
+    manifest.bundleGraphAsset = bgPath;
+    manifest.assets[bgPath] = {
+      name: "bundle-graph.json",
+      size: bundleGraph.length
+    };
     const manifestStr = JSON.stringify(manifest, null, "\t");
     ctx.emitFile({
       fileName: Q_MANIFEST_FILENAME,
@@ -2812,8 +2841,6 @@ var QWIK_CORE_SERVER = "@builder.io/qwik/server";
 var QWIK_CLIENT_MANIFEST_ID = "@qwik-client-manifest";
 
 var QWIK_PRELOADER_ID = "@builder.io/qwik/preloader";
-
-var QWIK_PRELOADER_REAL_ID = "qwik/dist/preloader.mjs";
 
 var SRC_DIR_DEFAULT = "src";
 
@@ -2939,8 +2966,9 @@ function normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOptsObj, use
       const sanitized = relativePath.replace(/^(\.\.\/)+/, "").replace(/^\/+/, "").replace(/\//g, "-");
       return `build/${sanitized}.js`;
     } : "build/q-[hash].js";
-    outputOpts.entryFileNames || (outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
-    outputOpts.chunkFileNames || (outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
+    const getFilePath = fileNamePattern => "string" === typeof fileNamePattern ? useAssetsDir ? `${opts.assetsDir}/${fileNamePattern}` : fileNamePattern : useAssetsDir ? chunkInfo => `${opts.assetsDir}/${fileNamePattern(chunkInfo)}` : chunkInfo => fileNamePattern(chunkInfo);
+    outputOpts.entryFileNames || (outputOpts.entryFileNames = getFilePath(fileName));
+    outputOpts.chunkFileNames || (outputOpts.chunkFileNames = getFilePath(fileName));
   } else {
     "production" === opts.buildMode && (outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "q-[hash].js"));
   }
@@ -2972,9 +3000,9 @@ function createRollupError2(id, diagnostic) {
   return err;
 }
 
-var QWIK_LOADER_DEFAULT_MINIFIED = '(()=>{const t=document,e=window,n=new Set,o=new Set([t]);let r;const s=(t,e)=>Array.from(t.querySelectorAll(e)),a=t=>{const e=[];return o.forEach((n=>e.push(...s(n,t)))),e},i=t=>{w(t),s(t,"[q\\\\:shadowroot]").forEach((t=>{const e=t.shadowRoot;e&&i(e)}))},c=t=>t&&"function"==typeof t.then,l=(t,e,n=e.type)=>{a("[on"+t+"\\\\:"+n+"]").forEach((o=>b(o,t,e,n)))},f=e=>{if(void 0===e._qwikjson_){let n=(e===t.documentElement?t.body:e).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===n.getAttribute("type")){e._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/gi,"<$1"));break}n=n.previousElementSibling}}},p=(t,e)=>new CustomEvent(t,{detail:e}),b=async(e,n,o,r=o.type)=>{const s="on"+n+":"+r;e.hasAttribute("preventdefault:"+r)&&o.preventDefault(),e.hasAttribute("stoppropagation:"+r)&&o.stopPropagation();const a=e._qc_,i=a&&a.li.filter((t=>t[0]===s));if(i&&i.length>0){for(const t of i){const n=t[1].getFn([e,o],(()=>e.isConnected))(o,e),r=o.cancelBubble;c(n)&&await n,r&&o.stopPropagation()}return}const l=e.getAttribute(s);if(l){const n=e.closest("[q\\\\:container]"),r=n.getAttribute("q:base"),s=n.getAttribute("q:version")||"unknown",a=n.getAttribute("q:manifest-hash")||"dev",i=new URL(r,t.baseURI);for(const p of l.split("\\n")){const l=new URL(p,i),b=l.href,h=l.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",q=performance.now();let _,d,y;const w=p.startsWith("#"),g={qBase:r,qManifest:a,qVersion:s,href:b,symbol:h,element:e,reqTime:q};if(w){const e=n.getAttribute("q:instance");_=(t["qFuncs_"+e]||[])[Number.parseInt(h)],_||(d="sync",y=Error("sym:"+h))}else{u("qsymbol",g);const t=l.href.split("#")[0];try{const e=import(t);f(n),_=(await e)[h],_||(d="no-symbol",y=Error(`${h} not in ${t}`))}catch(t){d||(d="async"),y=t}}if(!_){u("qerror",{importError:d,error:y,...g}),console.error(y);break}const m=t.__q_context__;if(e.isConnected)try{t.__q_context__=[e,o,l];const n=_(o,e);c(n)&&await n}catch(t){u("qerror",{error:t,...g})}finally{t.__q_context__=m}}}},u=(e,n)=>{t.dispatchEvent(p(e,n))},h=t=>t.replace(/([A-Z])/g,(t=>"-"+t.toLowerCase())),q=async t=>{let e=h(t.type),n=t.target;for(l("-document",t,e);n&&n.getAttribute;){const o=b(n,"",t,e);let r=t.cancelBubble;c(o)&&await o,r=r||t.cancelBubble||n.hasAttribute("stoppropagation:"+t.type),n=t.bubbles&&!0!==r?n.parentElement:null}},_=t=>{l("-window",t,h(t.type))},d=()=>{var s;const c=t.readyState;if(!r&&("interactive"==c||"complete"==c)&&(o.forEach(i),r=1,u("qinit"),(null!=(s=e.requestIdleCallback)?s:e.setTimeout).bind(e)((()=>u("qidle"))),n.has("qvisible"))){const t=a("[on\\\\:qvisible]"),e=new IntersectionObserver((t=>{for(const n of t)n.isIntersecting&&(e.unobserve(n.target),b(n.target,"",p("qvisible",n)))}));t.forEach((t=>e.observe(t)))}},y=(t,e,n,o=!1)=>t.addEventListener(e,n,{capture:o,passive:!1}),w=(...t)=>{for(const r of t)"string"==typeof r?n.has(r)||(o.forEach((t=>y(t,r,q,!0))),y(e,r,_,!0),n.add(r)):o.has(r)||(n.forEach((t=>y(r,t,q,!0))),o.add(r))};if(!("__q_context__"in t)){t.__q_context__=0;const r=e.qwikevents;Array.isArray(r)&&w(...r),e.qwikevents={events:n,roots:o,push:w},y(t,"readystatechange",d),d()}})()';
+var QWIK_LOADER_DEFAULT_MINIFIED = 'const t=document,e=window,n=new Set,o=new Set([t]);let r;const s=(t,e)=>Array.from(t.querySelectorAll(e)),i=t=>{const e=[];return o.forEach((n=>e.push(...s(n,t)))),e},a=t=>{g(t),s(t,"[q\\\\:shadowroot]").forEach((t=>{const e=t.shadowRoot;e&&a(e)}))},c=t=>t&&"function"==typeof t.then;let l=!0;const f=(t,e,n=e.type)=>{let o=l;i("[on"+t+"\\\\:"+n+"]").forEach((r=>{o=!0,b(r,t,e,n)})),o||window[t.slice(1)].removeEventListener(n,"-window"===t?d:_)},p=e=>{if(void 0===e._qwikjson_){let n=(e===t.documentElement?t.body:e).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===n.getAttribute("type")){e._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/gi,"<$1"));break}n=n.previousElementSibling}}},u=(t,e)=>new CustomEvent(t,{detail:e}),b=async(e,n,o,r=o.type)=>{const s="on"+n+":"+r;e.hasAttribute("preventdefault:"+r)&&o.preventDefault(),e.hasAttribute("stoppropagation:"+r)&&o.stopPropagation();const i=e._qc_,a=i&&i.li.filter((t=>t[0]===s));if(a&&a.length>0){for(const t of a){const n=t[1].getFn([e,o],(()=>e.isConnected))(o,e),r=o.cancelBubble;c(n)&&await n,r&&o.stopPropagation()}return}const l=e.getAttribute(s);if(l){const n=e.closest("[q\\\\:container]"),r=n.getAttribute("q:base"),s=n.getAttribute("q:version")||"unknown",i=n.getAttribute("q:manifest-hash")||"dev",a=new URL(r,t.baseURI);for(const f of l.split("\\n")){const l=new URL(f,a),u=l.href,b=l.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",q=performance.now();let _,d,w;const m=f.startsWith("#"),y={qBase:r,qManifest:i,qVersion:s,href:u,symbol:b,element:e,reqTime:q};if(m){const e=n.getAttribute("q:instance");_=(t["qFuncs_"+e]||[])[Number.parseInt(b)],_||(d="sync",w=Error("sym:"+b))}else{h("qsymbol",y);const t=l.href.split("#")[0];try{const e=import(t);p(n),_=(await e)[b],_||(d="no-symbol",w=Error(`${b} not in ${t}`))}catch(t){d||(d="async"),w=t}}if(!_){h("qerror",{importError:d,error:w,...y}),console.error(w);break}const g=t.__q_context__;if(e.isConnected)try{t.__q_context__=[e,o,l];const n=_(o,e);c(n)&&await n}catch(t){h("qerror",{error:t,...y})}finally{t.__q_context__=g}}}},h=(e,n)=>{t.dispatchEvent(u(e,n))},q=t=>t.replace(/([A-Z])/g,(t=>"-"+t.toLowerCase())),_=async t=>{let e=q(t.type),n=t.target;for(f("-document",t,e);n&&n.getAttribute;){const o=b(n,"",t,e);let r=t.cancelBubble;c(o)&&await o,r||(r=r||t.cancelBubble||n.hasAttribute("stoppropagation:"+t.type)),n=t.bubbles&&!0!==r?n.parentElement:null}},d=t=>{f("-window",t,q(t.type))},w=()=>{var s;const c=t.readyState;if(!r&&("interactive"==c||"complete"==c)&&(o.forEach(a),r=1,h("qinit"),(null!=(s=e.requestIdleCallback)?s:e.setTimeout).bind(e)((()=>h("qidle"))),n.has("qvisible"))){const t=i("[on\\\\:qvisible]"),e=new IntersectionObserver((t=>{for(const n of t)n.isIntersecting&&(e.unobserve(n.target),b(n.target,"",u("qvisible",n)))}));t.forEach((t=>e.observe(t)))}},m=(t,e,n,o=!1)=>{t.addEventListener(e,n,{capture:o,passive:!1})};let y;const g=(...t)=>{l=!0,clearTimeout(y),y=setTimeout((()=>l=!1),2e4);for(const r of t)"string"==typeof r?n.has(r)||(o.forEach((t=>m(t,r,_,!0))),m(e,r,d,!0),n.add(r)):o.has(r)||(n.forEach((t=>m(r,t,_,!0))),o.add(r))};if(!("__q_context__"in t)){t.__q_context__=0;const r=e.qwikevents;r&&(Array.isArray(r)?g(...r):g("click","input")),e.qwikevents={events:n,roots:o,push:g},m(t,"readystatechange",w),w()}';
 
-var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n  const doc = document;\n  const win = window;\n  const events = /* @__PURE__ */ new Set();\n  const roots = /* @__PURE__ */ new Set([doc]);\n  let hasInitialized;\n  const nativeQuerySelectorAll = (root, selector) => Array.from(root.querySelectorAll(selector));\n  const querySelectorAll = (query) => {\n    const elements = [];\n    roots.forEach((root) => elements.push(...nativeQuerySelectorAll(root, query)));\n    return elements;\n  };\n  const findShadowRoots = (fragment) => {\n    processEventOrNode(fragment);\n    nativeQuerySelectorAll(fragment, "[q\\\\:shadowroot]").forEach((parent) => {\n      const shadowRoot = parent.shadowRoot;\n      shadowRoot && findShadowRoots(shadowRoot);\n    });\n  };\n  const isPromise = (promise) => promise && typeof promise.then === "function";\n  const broadcast = (infix, ev, type = ev.type) => {\n    querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach(\n      (el) => dispatch(el, infix, ev, type)\n    );\n  };\n  const resolveContainer = (containerEl) => {\n    if (containerEl._qwikjson_ === void 0) {\n      const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;\n      let script = parentJSON.lastElementChild;\n      while (script) {\n        if (script.tagName === "SCRIPT" && script.getAttribute("type") === "qwik/json") {\n          containerEl._qwikjson_ = JSON.parse(\n            script.textContent.replace(/\\\\x3C(\\/?script)/gi, "<$1")\n          );\n          break;\n        }\n        script = script.previousElementSibling;\n      }\n    }\n  };\n  const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n    detail\n  });\n  const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n    const attrName = "on" + onPrefix + ":" + eventName;\n    if (element.hasAttribute("preventdefault:" + eventName)) {\n      ev.preventDefault();\n    }\n    if (element.hasAttribute("stoppropagation:" + eventName)) {\n      ev.stopPropagation();\n    }\n    const ctx = element._qc_;\n    const relevantListeners = ctx && ctx.li.filter((li) => li[0] === attrName);\n    if (relevantListeners && relevantListeners.length > 0) {\n      for (const listener of relevantListeners) {\n        const results = listener[1].getFn([element, ev], () => element.isConnected)(ev, element);\n        const cancelBubble = ev.cancelBubble;\n        if (isPromise(results)) {\n          await results;\n        }\n        if (cancelBubble) {\n          ev.stopPropagation();\n        }\n      }\n      return;\n    }\n    const attrValue = element.getAttribute(attrName);\n    if (attrValue) {\n      const container = element.closest("[q\\\\:container]");\n      const qBase = container.getAttribute("q:base");\n      const qVersion = container.getAttribute("q:version") || "unknown";\n      const qManifest = container.getAttribute("q:manifest-hash") || "dev";\n      const base = new URL(qBase, doc.baseURI);\n      for (const qrl of attrValue.split("\\n")) {\n        const url = new URL(qrl, base);\n        const href = url.href;\n        const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const reqTime = performance.now();\n        let handler;\n        let importError;\n        let error;\n        const isSync = qrl.startsWith("#");\n        const eventData = {\n          qBase,\n          qManifest,\n          qVersion,\n          href,\n          symbol,\n          element,\n          reqTime\n        };\n        if (isSync) {\n          const hash = container.getAttribute("q:instance");\n          handler = (doc["qFuncs_" + hash] || [])[Number.parseInt(symbol)];\n          if (!handler) {\n            importError = "sync";\n            error = new Error("sym:" + symbol);\n          }\n        } else {\n          emitEvent("qsymbol", eventData);\n          const uri = url.href.split("#")[0];\n          try {\n            const module = import(\n                            uri\n            );\n            resolveContainer(container);\n            handler = (await module)[symbol];\n            if (!handler) {\n              importError = "no-symbol";\n              error = new Error(`${symbol} not in ${uri}`);\n            }\n          } catch (err) {\n            importError || (importError = "async");\n            error = err;\n          }\n        }\n        if (!handler) {\n          emitEvent("qerror", {\n            importError,\n            error,\n            ...eventData\n          });\n          console.error(error);\n          break;\n        }\n        const previousCtx = doc.__q_context__;\n        if (element.isConnected) {\n          try {\n            doc.__q_context__ = [element, ev, url];\n            const results = handler(ev, element);\n            if (isPromise(results)) {\n              await results;\n            }\n          } catch (error2) {\n            emitEvent("qerror", { error: error2, ...eventData });\n          } finally {\n            doc.__q_context__ = previousCtx;\n          }\n        }\n      }\n    }\n  };\n  const emitEvent = (eventName, detail) => {\n    doc.dispatchEvent(createEvent(eventName, detail));\n  };\n  const camelToKebab = (str) => str.replace(/([A-Z])/g, (a) => "-" + a.toLowerCase());\n  const processDocumentEvent = async (ev) => {\n    let type = camelToKebab(ev.type);\n    let element = ev.target;\n    broadcast("-document", ev, type);\n    while (element && element.getAttribute) {\n      const results = dispatch(element, "", ev, type);\n      let cancelBubble = ev.cancelBubble;\n      if (isPromise(results)) {\n        await results;\n      }\n      cancelBubble = cancelBubble || ev.cancelBubble || element.hasAttribute("stoppropagation:" + ev.type);\n      element = ev.bubbles && cancelBubble !== true ? element.parentElement : null;\n    }\n  };\n  const processWindowEvent = (ev) => {\n    broadcast("-window", ev, camelToKebab(ev.type));\n  };\n  const processReadyStateChange = () => {\n    var _a;\n    const readyState = doc.readyState;\n    if (!hasInitialized && (readyState == "interactive" || readyState == "complete")) {\n      roots.forEach(findShadowRoots);\n      hasInitialized = 1;\n      emitEvent("qinit");\n      const riC = (_a = win.requestIdleCallback) != null ? _a : win.setTimeout;\n      riC.bind(win)(() => emitEvent("qidle"));\n      if (events.has("qvisible")) {\n        const results = querySelectorAll("[on\\\\:qvisible]");\n        const observer = new IntersectionObserver((entries) => {\n          for (const entry of entries) {\n            if (entry.isIntersecting) {\n              observer.unobserve(entry.target);\n              dispatch(entry.target, "", createEvent("qvisible", entry));\n            }\n          }\n        });\n        results.forEach((el) => observer.observe(el));\n      }\n    }\n  };\n  const addEventListener = (el, eventName, handler, capture = false) => {\n    return el.addEventListener(eventName, handler, { capture, passive: false });\n  };\n  const processEventOrNode = (...eventNames) => {\n    for (const eventNameOrNode of eventNames) {\n      if (typeof eventNameOrNode === "string") {\n        if (!events.has(eventNameOrNode)) {\n          roots.forEach(\n            (root) => addEventListener(root, eventNameOrNode, processDocumentEvent, true)\n          );\n          addEventListener(win, eventNameOrNode, processWindowEvent, true);\n          events.add(eventNameOrNode);\n        }\n      } else {\n        if (!roots.has(eventNameOrNode)) {\n          events.forEach(\n            (eventName) => addEventListener(eventNameOrNode, eventName, processDocumentEvent, true)\n          );\n          roots.add(eventNameOrNode);\n        }\n      }\n    }\n  };\n  if (!("__q_context__" in doc)) {\n    doc.__q_context__ = 0;\n    const qwikevents = win.qwikevents;\n    if (Array.isArray(qwikevents)) {\n      processEventOrNode(...qwikevents);\n    }\n    win.qwikevents = {\n      events,\n      roots,\n      push: processEventOrNode\n    };\n    addEventListener(doc, "readystatechange", processReadyStateChange);\n    processReadyStateChange();\n  }\n})()';
+var QWIK_LOADER_DEFAULT_DEBUG = 'const doc = document;\nconst win = window;\nconst events = /* @__PURE__ */ new Set();\nconst roots = /* @__PURE__ */ new Set([doc]);\nlet hasInitialized;\nconst nativeQuerySelectorAll = (root, selector) => Array.from(root.querySelectorAll(selector));\nconst querySelectorAll = (query) => {\n  const elements = [];\n  roots.forEach((root) => elements.push(...nativeQuerySelectorAll(root, query)));\n  return elements;\n};\nconst findShadowRoots = (fragment) => {\n  processEventOrNode(fragment);\n  nativeQuerySelectorAll(fragment, "[q\\\\:shadowroot]").forEach((parent) => {\n    const shadowRoot = parent.shadowRoot;\n    shadowRoot && findShadowRoots(shadowRoot);\n  });\n};\nconst isPromise = (promise) => promise && typeof promise.then === "function";\nlet doNotClean = true;\nconst broadcast = (infix, ev, type = ev.type) => {\n  let found = doNotClean;\n  querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((el) => {\n    found = true;\n    dispatch(el, infix, ev, type);\n  });\n  if (!found) {\n    window[infix.slice(1)].removeEventListener(\n      type,\n      infix === "-window" ? processWindowEvent : processDocumentEvent\n    );\n  }\n};\nconst resolveContainer = (containerEl) => {\n  if (containerEl._qwikjson_ === void 0) {\n    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;\n    let script = parentJSON.lastElementChild;\n    while (script) {\n      if (script.tagName === "SCRIPT" && script.getAttribute("type") === "qwik/json") {\n        containerEl._qwikjson_ = JSON.parse(\n          script.textContent.replace(/\\\\x3C(\\/?script)/gi, "<$1")\n        );\n        break;\n      }\n      script = script.previousElementSibling;\n    }\n  }\n};\nconst createEvent = (eventName, detail) => new CustomEvent(eventName, {\n  detail\n});\nconst dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n  const attrName = "on" + onPrefix + ":" + eventName;\n  if (element.hasAttribute("preventdefault:" + eventName)) {\n    ev.preventDefault();\n  }\n  if (element.hasAttribute("stoppropagation:" + eventName)) {\n    ev.stopPropagation();\n  }\n  const ctx = element._qc_;\n  const relevantListeners = ctx && ctx.li.filter((li) => li[0] === attrName);\n  if (relevantListeners && relevantListeners.length > 0) {\n    for (const listener of relevantListeners) {\n      const results = listener[1].getFn([element, ev], () => element.isConnected)(ev, element);\n      const cancelBubble = ev.cancelBubble;\n      if (isPromise(results)) {\n        await results;\n      }\n      if (cancelBubble) {\n        ev.stopPropagation();\n      }\n    }\n    return;\n  }\n  const attrValue = element.getAttribute(attrName);\n  if (attrValue) {\n    const container = element.closest("[q\\\\:container]");\n    const qBase = container.getAttribute("q:base");\n    const qVersion = container.getAttribute("q:version") || "unknown";\n    const qManifest = container.getAttribute("q:manifest-hash") || "dev";\n    const base = new URL(qBase, doc.baseURI);\n    for (const qrl of attrValue.split("\\n")) {\n      const url = new URL(qrl, base);\n      const href = url.href;\n      const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n      const reqTime = performance.now();\n      let handler;\n      let importError;\n      let error;\n      const isSync = qrl.startsWith("#");\n      const eventData = {\n        qBase,\n        qManifest,\n        qVersion,\n        href,\n        symbol,\n        element,\n        reqTime\n      };\n      if (isSync) {\n        const hash = container.getAttribute("q:instance");\n        handler = (doc["qFuncs_" + hash] || [])[Number.parseInt(symbol)];\n        if (!handler) {\n          importError = "sync";\n          error = new Error("sym:" + symbol);\n        }\n      } else {\n        emitEvent("qsymbol", eventData);\n        const uri = url.href.split("#")[0];\n        try {\n          const module = import(\n                        uri\n          );\n          resolveContainer(container);\n          handler = (await module)[symbol];\n          if (!handler) {\n            importError = "no-symbol";\n            error = new Error(`${symbol} not in ${uri}`);\n          }\n        } catch (err) {\n          importError || (importError = "async");\n          error = err;\n        }\n      }\n      if (!handler) {\n        emitEvent("qerror", {\n          importError,\n          error,\n          ...eventData\n        });\n        console.error(error);\n        break;\n      }\n      const previousCtx = doc.__q_context__;\n      if (element.isConnected) {\n        try {\n          doc.__q_context__ = [element, ev, url];\n          const results = handler(ev, element);\n          if (isPromise(results)) {\n            await results;\n          }\n        } catch (error2) {\n          emitEvent("qerror", { error: error2, ...eventData });\n        } finally {\n          doc.__q_context__ = previousCtx;\n        }\n      }\n    }\n  }\n};\nconst emitEvent = (eventName, detail) => {\n  doc.dispatchEvent(createEvent(eventName, detail));\n};\nconst camelToKebab = (str) => str.replace(/([A-Z])/g, (a) => "-" + a.toLowerCase());\nconst processDocumentEvent = async (ev) => {\n  let type = camelToKebab(ev.type);\n  let element = ev.target;\n  broadcast("-document", ev, type);\n  while (element && element.getAttribute) {\n    const results = dispatch(element, "", ev, type);\n    let cancelBubble = ev.cancelBubble;\n    if (isPromise(results)) {\n      await results;\n    }\n    cancelBubble || (cancelBubble = cancelBubble || ev.cancelBubble || element.hasAttribute("stoppropagation:" + ev.type));\n    element = ev.bubbles && cancelBubble !== true ? element.parentElement : null;\n  }\n};\nconst processWindowEvent = (ev) => {\n  broadcast("-window", ev, camelToKebab(ev.type));\n};\nconst processReadyStateChange = () => {\n  var _a;\n  const readyState = doc.readyState;\n  if (!hasInitialized && (readyState == "interactive" || readyState == "complete")) {\n    roots.forEach(findShadowRoots);\n    hasInitialized = 1;\n    emitEvent("qinit");\n    const riC = (_a = win.requestIdleCallback) != null ? _a : win.setTimeout;\n    riC.bind(win)(() => emitEvent("qidle"));\n    if (events.has("qvisible")) {\n      const results = querySelectorAll("[on\\\\:qvisible]");\n      const observer = new IntersectionObserver((entries) => {\n        for (const entry of entries) {\n          if (entry.isIntersecting) {\n            observer.unobserve(entry.target);\n            dispatch(entry.target, "", createEvent("qvisible", entry));\n          }\n        }\n      });\n      results.forEach((el) => observer.observe(el));\n    }\n  }\n};\nconst addEventListener = (el, eventName, handler, capture = false) => {\n  el.addEventListener(eventName, handler, { capture, passive: false });\n};\nlet cleanTimer;\nconst processEventOrNode = (...eventNames) => {\n  doNotClean = true;\n  clearTimeout(cleanTimer);\n  cleanTimer = setTimeout(() => doNotClean = false, 2e4);\n  for (const eventNameOrNode of eventNames) {\n    if (typeof eventNameOrNode === "string") {\n      if (!events.has(eventNameOrNode)) {\n        roots.forEach(\n          (root) => addEventListener(root, eventNameOrNode, processDocumentEvent, true)\n        );\n        addEventListener(win, eventNameOrNode, processWindowEvent, true);\n        events.add(eventNameOrNode);\n      }\n    } else {\n      if (!roots.has(eventNameOrNode)) {\n        events.forEach(\n          (eventName) => addEventListener(eventNameOrNode, eventName, processDocumentEvent, true)\n        );\n        roots.add(eventNameOrNode);\n      }\n    }\n  }\n};\nif (!("__q_context__" in doc)) {\n  doc.__q_context__ = 0;\n  const qwikevents = win.qwikevents;\n  if (qwikevents) {\n    if (Array.isArray(qwikevents)) {\n      processEventOrNode(...qwikevents);\n    } else {\n      processEventOrNode("click", "input");\n    }\n  }\n  win.qwikevents = {\n    events,\n    roots,\n    push: processEventOrNode\n  };\n  addEventListener(doc, "readystatechange", processReadyStateChange);\n  processReadyStateChange();\n}';
 
 var import_bmp = __toESM(require_bmp(), 1);
 
@@ -6162,7 +6190,7 @@ var image_size_runtime_default = "<style>\n  [data-qwik-cls] {\n    outline: 2px
 
 var perf_warning_default = "<script>\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug(\n      '%c⭐️ Qwik Dev SSR Mode',\n      'background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;',\n      \"App is running in SSR development mode!\\n - Additional JS is loaded by Vite for debugging and live reloading\\n - Rendering performance might not be optimal\\n - Delayed interactivity because prefetching is disabled\\n - Vite dev bundles do not represent production output\\n\\nProduction build can be tested running 'npm run preview'\"\n    );\n  }\n<\/script>\n";
 
-var VITE_ERROR_OVERLAY_STYLES = "\nvite-error-overlay {\n  --color-bright: rgba(255, 255, 255, 0.8);\n  --color-yellow: rgba(255,246,85,0.8);\n  --qwik-dark-blue: #006ce9;\n  --qwik-light-blue: #3ec2f7;\n  --qwik-light-purple: #ac7ff4;\n  --qwik-dark-purple: #713fc2;\n  --yellow: #fff;                   /* override vite yellow */\n  --purple: var(--color-bright);    /* override vite purple */\n  --red: var(--qwik-light-blue);    /* override vite red */\n\n  --vertical-box-spacing: 15px;\n  --box-padding: 20px;\n  --box-margin: 0 0 var(--vertical-box-spacing) 0;\n  --box-background: rgba(0, 0, 0, 0.5);\n  --box-border-radius: 8px;\n}\n\nvite-error-overlay::part(backdrop) {\n  background: rgb(2 11 17 / 60%);\n  backdrop-filter: blur(20px) brightness(0.4) saturate(3);\n}\n\nvite-error-overlay::part(window) {\n  background: transparent;\n  border: none;\n  box-shadow: none;\n  box-sizing: border-box;\n  margin: 50px auto;\n  max-width: 1200px;\n  padding: var(--box-padding);\n  width: 90%;\n}\n\nvite-error-overlay::part(message) {\n  display: flex;\n  flex-direction: column;\n  font-size: 1.6rem;\n  line-height: 1.7;\n  margin-bottom: 30px;\n}\n\nvite-error-overlay::part(plugin) {\n  font-size: 0.8rem;\n  font-weight: 100;\n}\n\nvite-error-overlay::part(file),\nvite-error-overlay::part(frame),\nvite-error-overlay::part(stack),\nvite-error-overlay::part(tip) {\n  background: var(--box-background);\n  border-left: 5px solid transparent;\n  border-radius: var(--box-border-radius);\n  margin: var(--box-margin);\n  min-height: 50px;\n  padding: var(--box-padding);\n  position: relative;\n}\n\nvite-error-overlay::part(file) {\n  border-left-color: rgb(25 182 246);\n  color: var(--color-bright);\n}\n\nvite-error-overlay::part(frame) {\n  border-left-color: var(--color-yellow);\n  color: var(--color-yellow);\n}\n\nvite-error-overlay::part(stack) {\n  border-left-color: #FF5722;\n}\n\n\nvite-error-overlay::part(tip) {\n  border-top: none;\n  border-left-color: rgb(172, 127, 244);\n}\n\nvite-error-overlay::part(file):before,\nvite-error-overlay::part(frame):before,\nvite-error-overlay::part(stack):before {\n  border-bottom: 1px solid #222;\n  color: var(--color-bright);\n  display: block;\n  margin-bottom: 15px;\n  padding-bottom: 5px;\n  padding-left: 30px; /* space for icon */\n  font-size: .8rem;\n}\n\nvite-error-overlay::part(file):before {\n  content: 'File';\n}\n\nvite-error-overlay::part(frame):before {\n  content: 'Frame';\n}\n\nvite-error-overlay::part(stack):before {\n  content: 'Stack Trace';\n}\n\nvite-error-overlay::part(file):after,\nvite-error-overlay::part(frame):after,\nvite-error-overlay::part(stack):after {\n  content: '';\n  display: block;\n  height: 20px;\n  position: absolute;\n  left: var(--box-padding);\n  top: var(--box-padding);\n  width: 20px;\n}\n\nvite-error-overlay::part(file):after {\n  background-image: url(\"data:image/svg+xml,%3Csvg width='20px' height='20px' viewBox='0 0 24 24' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3EFile-Generic%3C/title%3E%3Cg id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cg id='File-Generic'%3E%3Crect id='Rectangle' fill-rule='nonzero' x='0' y='0' width='24' height='24'%3E%3C/rect%3E%3Cpath d='M4 5 C4 3.89543 4.89543 3 6 3 L15.1716 3 C15.702 3 16.2107 3.21071 16.5858 3.58579 L19.4142 6.41421 C19.7893 6.78929 20 7.29799 20 7.82843 L20 19 C20 20.1046 19.1046 21 18 21 L6 21 C4.89543 21 4 20.1046 4 19 L4 5 Z' id='Path' stroke='rgba(255,255,255,0.7)' stroke-width='1' stroke-linecap='round'%3E%3C/path%3E%3Cpath d='M15 4 L15 6 C15 7.10457 15.8954 8 17 8 L19 8' id='Path' stroke='rgba(255,255,255,0.7)' stroke-width='1' stroke-linecap='round'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E\");\n}\n\nvite-error-overlay::part(frame):after {\n  background-image: url(\"data:image/svg+xml,%3Csvg width='20px' height='20px' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M15.6602 2.84952H19.1516C20.2555 2.84952 21.1504 3.74444 21.1504 4.84839V8.3398' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3Cpath d='M2.84949 8.33981L2.84949 4.8484C2.84949 3.74446 3.74441 2.84953 4.84836 2.84953L8.33977 2.84953' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3Cpath d='M21.1505 15.6602L21.1505 19.1516C21.1505 20.2555 20.2556 21.1505 19.1516 21.1505L15.6602 21.1505' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3Cpath d='M8.33984 21.1505L4.84843 21.1505C3.74449 21.1505 2.84956 20.2555 2.84956 19.1516L2.84956 15.6602' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3C/svg%3E\");\n}\n\nvite-error-overlay::part(stack):after {\n  background-image: url(\"data:image/svg+xml,%3Csvg width='20px' height='20px' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14.78 20H9.78C7.98 20 4.58 19.09 4.58 15.64C4.58 12.19 7.98 11.28 9.78 11.28H14.22C14.37 11.28 17.92 11.23 17.92 8.42C17.92 5.61 14.37 5.56 14.22 5.56H9.22C9.02109 5.56 8.83032 5.48098 8.68967 5.34033C8.54902 5.19968 8.47 5.00891 8.47 4.81C8.47 4.61109 8.54902 4.42032 8.68967 4.27967C8.83032 4.13902 9.02109 4.06 9.22 4.06H14.22C16.02 4.06 19.42 4.97 19.42 8.42C19.42 11.87 16.02 12.78 14.22 12.78H9.78C9.63 12.78 6.08 12.83 6.08 15.64C6.08 18.45 9.63 18.5 9.78 18.5H14.78C14.9789 18.5 15.1697 18.579 15.3103 18.7197C15.451 18.8603 15.53 19.0511 15.53 19.25C15.53 19.4489 15.451 19.6397 15.3103 19.7803C15.1697 19.921 14.9789 20 14.78 20Z' fill='rgba(255,255,255,0.7)'/%3E%3Cpath d='M6.44 8.31C5.74314 8.30407 5.06363 8.09202 4.48708 7.70056C3.91054 7.30909 3.46276 6.75573 3.20018 6.11021C2.93759 5.46469 2.87195 4.75589 3.01153 4.07312C3.1511 3.39036 3.48965 2.76418 3.9845 2.2735C4.47935 1.78281 5.10837 1.44958 5.79229 1.31579C6.47622 1.182 7.18444 1.25363 7.82771 1.52167C8.47099 1.78971 9.02054 2.24215 9.40711 2.82199C9.79368 3.40182 9.99998 4.08311 10 4.78C10 5.2461 9.90773 5.70759 9.72846 6.13783C9.54919 6.56808 9.28648 6.95856 8.95551 7.28675C8.62453 7.61494 8.23184 7.87433 7.80009 8.04995C7.36834 8.22558 6.90609 8.31396 6.44 8.31ZM6.44 2.75C6.04444 2.75 5.65776 2.86729 5.32886 3.08706C4.99996 3.30682 4.74362 3.61918 4.59224 3.98463C4.44087 4.35008 4.40126 4.75221 4.47843 5.14018C4.5556 5.52814 4.74609 5.8845 5.02579 6.16421C5.3055 6.44391 5.66186 6.6344 6.04982 6.71157C6.43779 6.78874 6.83992 6.74913 7.20537 6.59776C7.57082 6.44638 7.88318 6.19003 8.10294 5.86114C8.32271 5.53224 8.44 5.14556 8.44 4.75C8.44 4.48735 8.38827 4.22728 8.28776 3.98463C8.18725 3.74198 8.03993 3.5215 7.85422 3.33578C7.6685 3.15007 7.44802 3.00275 7.20537 2.90224C6.96272 2.80173 6.70265 2.75 6.44 2.75Z' fill='rgba(255,255,255,0.7)'/%3E%3Cpath d='M17.56 22.75C16.8614 22.752 16.1779 22.5466 15.5961 22.1599C15.0143 21.7733 14.5603 21.2227 14.2916 20.5778C14.0229 19.933 13.9515 19.2229 14.0866 18.5375C14.2217 17.8521 14.5571 17.2221 15.0504 16.7275C15.5437 16.2328 16.1726 15.8956 16.8577 15.7586C17.5427 15.6215 18.253 15.6909 18.8986 15.9577C19.5442 16.2246 20.0961 16.6771 20.4844 17.2578C20.8727 17.8385 21.08 18.5214 21.08 19.22C21.08 20.1545 20.7095 21.0508 20.0496 21.7125C19.3898 22.3743 18.4945 22.7473 17.56 22.75ZM17.56 17.19C17.1644 17.19 16.7778 17.3073 16.4489 17.5271C16.12 17.7468 15.8636 18.0592 15.7122 18.4246C15.5609 18.7901 15.5213 19.1922 15.5984 19.5802C15.6756 19.9681 15.8661 20.3245 16.1458 20.6042C16.4255 20.8839 16.7819 21.0744 17.1698 21.1516C17.5578 21.2287 17.9599 21.1891 18.3254 21.0377C18.6908 20.8864 19.0032 20.63 19.2229 20.3011C19.4427 19.9722 19.56 19.5856 19.56 19.19C19.56 18.6596 19.3493 18.1508 18.9742 17.7758C18.5991 17.4007 18.0904 17.19 17.56 17.19Z' fill='rgba(255,255,255,0.7)'/%3E%3C/svg%3E\");\n}\n\nvite-error-overlay::part(tip):before {\n  content: \"Not sure how to solve this? Visit https://qwik.dev or connect with the community on Discord.\";\n  display: block;\n  margin-bottom: 1em;\n}\n";
+var VITE_ERROR_OVERLAY_STYLES = "\nvite-error-overlay {\n  --color-bright: rgba(255, 255, 255, 0.8);\n  --color-yellow: rgba(255,246,85,0.8);\n  --qwik-dark-blue: #006ce9;\n  --qwik-light-blue: #3ec2f7;\n  --qwik-light-purple: #ac7ff4;\n  --qwik-dark-purple: #713fc2;\n  --yellow: #fff;                   /* override vite yellow */\n  --purple: var(--color-bright);    /* override vite purple */\n  --red: var(--qwik-light-blue);    /* override vite red */\n\n  --vertical-box-spacing: 15px;\n  --box-padding: 20px;\n  --box-margin: 0 0 var(--vertical-box-spacing) 0;\n  --box-background: rgba(0, 0, 0, 0.5);\n  --box-border-radius: 8px;\n}\n\nvite-error-overlay::part(backdrop) {\n  background: rgb(2 11 17 / 60%);\n}\n\nvite-error-overlay::part(window) {\n  background: transparent;\n  border: none;\n  box-shadow: none;\n  box-sizing: border-box;\n  margin: 50px auto;\n  max-width: 1200px;\n  padding: var(--box-padding);\n  width: 90%;\n}\n\nvite-error-overlay::part(message) {\n  display: flex;\n  flex-direction: column;\n  font-size: 1.6rem;\n  line-height: 1.7;\n  margin-bottom: 30px;\n}\n\nvite-error-overlay::part(plugin) {\n  font-size: 0.8rem;\n  font-weight: 100;\n}\n\nvite-error-overlay::part(file),\nvite-error-overlay::part(frame),\nvite-error-overlay::part(stack),\nvite-error-overlay::part(tip) {\n  background: var(--box-background);\n  border-left: 5px solid transparent;\n  border-radius: var(--box-border-radius);\n  margin: var(--box-margin);\n  min-height: 50px;\n  padding: var(--box-padding);\n  position: relative;\n}\n\nvite-error-overlay::part(file) {\n  border-left-color: rgb(25 182 246);\n  color: var(--color-bright);\n}\n\nvite-error-overlay::part(frame) {\n  border-left-color: var(--color-yellow);\n  color: var(--color-yellow);\n}\n\nvite-error-overlay::part(stack) {\n  border-left-color: #FF5722;\n}\n\n\nvite-error-overlay::part(tip) {\n  border-top: none;\n  border-left-color: rgb(172, 127, 244);\n}\n\nvite-error-overlay::part(file):before,\nvite-error-overlay::part(frame):before,\nvite-error-overlay::part(stack):before {\n  border-bottom: 1px solid #222;\n  color: var(--color-bright);\n  display: block;\n  margin-bottom: 15px;\n  padding-bottom: 5px;\n  padding-left: 30px; /* space for icon */\n  font-size: .8rem;\n}\n\nvite-error-overlay::part(file):before {\n  content: 'File';\n}\n\nvite-error-overlay::part(frame):before {\n  content: 'Frame';\n}\n\nvite-error-overlay::part(stack):before {\n  content: 'Stack Trace';\n}\n\nvite-error-overlay::part(file):after,\nvite-error-overlay::part(frame):after,\nvite-error-overlay::part(stack):after {\n  content: '';\n  display: block;\n  height: 20px;\n  position: absolute;\n  left: var(--box-padding);\n  top: var(--box-padding);\n  width: 20px;\n}\n\nvite-error-overlay::part(file):after {\n  background-image: url(\"data:image/svg+xml,%3Csvg width='20px' height='20px' viewBox='0 0 24 24' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3EFile-Generic%3C/title%3E%3Cg id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cg id='File-Generic'%3E%3Crect id='Rectangle' fill-rule='nonzero' x='0' y='0' width='24' height='24'%3E%3C/rect%3E%3Cpath d='M4 5 C4 3.89543 4.89543 3 6 3 L15.1716 3 C15.702 3 16.2107 3.21071 16.5858 3.58579 L19.4142 6.41421 C19.7893 6.78929 20 7.29799 20 7.82843 L20 19 C20 20.1046 19.1046 21 18 21 L6 21 C4.89543 21 4 20.1046 4 19 L4 5 Z' id='Path' stroke='rgba(255,255,255,0.7)' stroke-width='1' stroke-linecap='round'%3E%3C/path%3E%3Cpath d='M15 4 L15 6 C15 7.10457 15.8954 8 17 8 L19 8' id='Path' stroke='rgba(255,255,255,0.7)' stroke-width='1' stroke-linecap='round'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E\");\n}\n\nvite-error-overlay::part(frame):after {\n  background-image: url(\"data:image/svg+xml,%3Csvg width='20px' height='20px' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M15.6602 2.84952H19.1516C20.2555 2.84952 21.1504 3.74444 21.1504 4.84839V8.3398' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3Cpath d='M2.84949 8.33981L2.84949 4.8484C2.84949 3.74446 3.74441 2.84953 4.84836 2.84953L8.33977 2.84953' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3Cpath d='M21.1505 15.6602L21.1505 19.1516C21.1505 20.2555 20.2556 21.1505 19.1516 21.1505L15.6602 21.1505' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3Cpath d='M8.33984 21.1505L4.84843 21.1505C3.74449 21.1505 2.84956 20.2555 2.84956 19.1516L2.84956 15.6602' stroke='rgba(255,255,255,0.7)' stroke-width='1.69904' stroke-linecap='round'/%3E%3C/svg%3E\");\n}\n\nvite-error-overlay::part(stack):after {\n  background-image: url(\"data:image/svg+xml,%3Csvg width='20px' height='20px' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14.78 20H9.78C7.98 20 4.58 19.09 4.58 15.64C4.58 12.19 7.98 11.28 9.78 11.28H14.22C14.37 11.28 17.92 11.23 17.92 8.42C17.92 5.61 14.37 5.56 14.22 5.56H9.22C9.02109 5.56 8.83032 5.48098 8.68967 5.34033C8.54902 5.19968 8.47 5.00891 8.47 4.81C8.47 4.61109 8.54902 4.42032 8.68967 4.27967C8.83032 4.13902 9.02109 4.06 9.22 4.06H14.22C16.02 4.06 19.42 4.97 19.42 8.42C19.42 11.87 16.02 12.78 14.22 12.78H9.78C9.63 12.78 6.08 12.83 6.08 15.64C6.08 18.45 9.63 18.5 9.78 18.5H14.78C14.9789 18.5 15.1697 18.579 15.3103 18.7197C15.451 18.8603 15.53 19.0511 15.53 19.25C15.53 19.4489 15.451 19.6397 15.3103 19.7803C15.1697 19.921 14.9789 20 14.78 20Z' fill='rgba(255,255,255,0.7)'/%3E%3Cpath d='M6.44 8.31C5.74314 8.30407 5.06363 8.09202 4.48708 7.70056C3.91054 7.30909 3.46276 6.75573 3.20018 6.11021C2.93759 5.46469 2.87195 4.75589 3.01153 4.07312C3.1511 3.39036 3.48965 2.76418 3.9845 2.2735C4.47935 1.78281 5.10837 1.44958 5.79229 1.31579C6.47622 1.182 7.18444 1.25363 7.82771 1.52167C8.47099 1.78971 9.02054 2.24215 9.40711 2.82199C9.79368 3.40182 9.99998 4.08311 10 4.78C10 5.2461 9.90773 5.70759 9.72846 6.13783C9.54919 6.56808 9.28648 6.95856 8.95551 7.28675C8.62453 7.61494 8.23184 7.87433 7.80009 8.04995C7.36834 8.22558 6.90609 8.31396 6.44 8.31ZM6.44 2.75C6.04444 2.75 5.65776 2.86729 5.32886 3.08706C4.99996 3.30682 4.74362 3.61918 4.59224 3.98463C4.44087 4.35008 4.40126 4.75221 4.47843 5.14018C4.5556 5.52814 4.74609 5.8845 5.02579 6.16421C5.3055 6.44391 5.66186 6.6344 6.04982 6.71157C6.43779 6.78874 6.83992 6.74913 7.20537 6.59776C7.57082 6.44638 7.88318 6.19003 8.10294 5.86114C8.32271 5.53224 8.44 5.14556 8.44 4.75C8.44 4.48735 8.38827 4.22728 8.28776 3.98463C8.18725 3.74198 8.03993 3.5215 7.85422 3.33578C7.6685 3.15007 7.44802 3.00275 7.20537 2.90224C6.96272 2.80173 6.70265 2.75 6.44 2.75Z' fill='rgba(255,255,255,0.7)'/%3E%3Cpath d='M17.56 22.75C16.8614 22.752 16.1779 22.5466 15.5961 22.1599C15.0143 21.7733 14.5603 21.2227 14.2916 20.5778C14.0229 19.933 13.9515 19.2229 14.0866 18.5375C14.2217 17.8521 14.5571 17.2221 15.0504 16.7275C15.5437 16.2328 16.1726 15.8956 16.8577 15.7586C17.5427 15.6215 18.253 15.6909 18.8986 15.9577C19.5442 16.2246 20.0961 16.6771 20.4844 17.2578C20.8727 17.8385 21.08 18.5214 21.08 19.22C21.08 20.1545 20.7095 21.0508 20.0496 21.7125C19.3898 22.3743 18.4945 22.7473 17.56 22.75ZM17.56 17.19C17.1644 17.19 16.7778 17.3073 16.4489 17.5271C16.12 17.7468 15.8636 18.0592 15.7122 18.4246C15.5609 18.7901 15.5213 19.1922 15.5984 19.5802C15.6756 19.9681 15.8661 20.3245 16.1458 20.6042C16.4255 20.8839 16.7819 21.0744 17.1698 21.1516C17.5578 21.2287 17.9599 21.1891 18.3254 21.0377C18.6908 20.8864 19.0032 20.63 19.2229 20.3011C19.4427 19.9722 19.56 19.5856 19.56 19.19C19.56 18.6596 19.3493 18.1508 18.9742 17.7758C18.5991 17.4007 18.0904 17.19 17.56 17.19Z' fill='rgba(255,255,255,0.7)'/%3E%3C/svg%3E\");\n}\n\nvite-error-overlay::part(tip):before {\n  content: \"Not sure how to solve this? Visit https://qwik.dev or connect with the community on Discord.\";\n  display: block;\n  margin-bottom: 1em;\n}\n";
 
 function getOrigin(req) {
   const {PROTOCOL_HEADER: PROTOCOL_HEADER, HOST_HEADER: HOST_HEADER} = process.env;
@@ -6548,7 +6576,7 @@ function qwikVite(qwikViteOpts = {}) {
         } else {
           "object" === typeof viteConfig.build?.lib && (pluginOpts.input = viteConfig.build?.lib.entry);
         }
-        if ("node" === sys.env) {
+        if ("node" === sys.env || "bun" === sys.env) {
           const fs = await sys.dynamicImport("node:fs");
           try {
             const rootDir2 = pluginOpts.rootDir ?? sys.cwd();
@@ -6775,7 +6803,7 @@ function qwikVite(qwikViteOpts = {}) {
             }
           });
           const sys = qwikPlugin.getSys();
-          if (tmpClientManifestPath && "node" === sys.env) {
+          if (tmpClientManifestPath && ("node" === sys.env || "bun" === sys.env)) {
             const fs = await sys.dynamicImport("node:fs");
             await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
           }
@@ -6786,7 +6814,7 @@ function qwikVite(qwikViteOpts = {}) {
       const opts = qwikPlugin.getOptions();
       if ("ssr" === opts.target) {
         const sys = qwikPlugin.getSys();
-        if ("node" === sys.env) {
+        if ("node" === sys.env || "bun" === sys.env) {
           const outputs = Object.keys(rollupBundle);
           const patchModuleFormat = async bundeName => {
             try {
@@ -6911,7 +6939,7 @@ async function findDepPkgJsonPath(sys, dep, parent) {
 
 var findQwikRoots = async (sys, packageJsonDir) => {
   const paths = new Map;
-  if ("node" === sys.env) {
+  if ("node" === sys.env || "bun" === sys.env) {
     const fs = await sys.dynamicImport("node:fs");
     let prevPackageJsonDir;
     do {
