@@ -8,11 +8,11 @@
 
 ### Patch Changes
 
-- 🐛 Fix(#7697): Use correct working directory for Deno environment (by [@siguici](https://github.com/siguici) in [#7699](https://github.com/QwikDev/qwik/pull/7699))
+- 🐞🩹 Use correct working directory for Deno environment (by [@siguici](https://github.com/siguici) in [#7699](https://github.com/QwikDev/qwik/pull/7699))
 
 - :zap: the qwikloader is no longer embedded in the SSR results. Instead, the same techniques are used as for the preloader to ensure that the qwikloader is active as soon as possible, loaded from a separate bundle. This reduces SSR page size by several kB end ensures that subsequent qwikloader loads are nearly instant. (by [@wmertens](https://github.com/wmertens) in [#7613](https://github.com/QwikDev/qwik/pull/7613))
 
-- Removed backdrop-filter of vite-error-overlay to prevent perf issues with multiple errors (by [@intellix](https://github.com/intellix) in [#7676](https://github.com/QwikDev/qwik/pull/7676))
+- 🐞🩹 Removed backdrop-filter of vite-error-overlay to prevent perf issues with multiple errors (by [@intellix](https://github.com/intellix) in [#7676](https://github.com/QwikDev/qwik/pull/7676))
 
 - 🐞🩹 assetsDir and debug:true will no longer break your application. (by [@maiieul](https://github.com/maiieul) in [#7638](https://github.com/QwikDev/qwik/pull/7638))
 
@@ -22,7 +22,7 @@
 
 - ✨ q-manifest.json now also includes the generated assets (by [@wmertens](https://github.com/wmertens) in [#7650](https://github.com/QwikDev/qwik/pull/7650))
 
-- fix(ssr): support q-manifest resolution under Bun runtime (#7565) (by [@siguici](https://github.com/siguici) in [#7669](https://github.com/QwikDev/qwik/pull/7669))
+- 🐞🩹 support q-manifest resolution under Bun runtime (#7565) (by [@siguici](https://github.com/siguici) in [#7669](https://github.com/QwikDev/qwik/pull/7669))
 
 - 🐞🩹 set correct script type for qwik loader (by [@Varixo](https://github.com/Varixo) in [#7710](https://github.com/QwikDev/qwik/pull/7710))
 
