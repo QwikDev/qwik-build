@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+1cd73f1
+ * @builder.io/qwik/optimizer 1.15.0-dev+4a86c3a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.15.0-dev+1cd73f1"
+  qwik: "1.15.0-dev+4a86c3a"
 };
 
 async function getSystem() {
@@ -5916,7 +5916,7 @@ var preloadOne = e => {
 };
 
 var adjustProbabilities = (e, t, o) => {
-  if (null == o ? void 0 : o.has(e)) {
+  if (o?.has(e)) {
     return;
   }
   const n = e.u;
@@ -5965,7 +5965,7 @@ var handleBundle = (e, t) => {
 var depsCount;
 
 var preload = (e, t) => {
-  if (!(null == e ? void 0 : e.length)) {
+  if (!e?.length) {
     return;
   }
   depsCount = 0;
