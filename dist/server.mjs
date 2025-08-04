@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.15.0-dev+4a86c3a
+ * @builder.io/qwik/server 1.15.0-dev+047e7dc
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -492,12 +492,13 @@ var preloaderPre = (base2, resolvedManifest, options, beforeContent, nonce) => {
        * We add modulepreloads even when the script is at the top because they already fire during
        * html download
        */
-      jsx("link", { rel: "modulepreload", href: preloaderPath }),
+      jsx("link", { rel: "modulepreload", href: preloaderPath, nonce }),
       jsx("link", {
         rel: "preload",
         href: bundleGraphPath,
         as: "fetch",
-        crossorigin: "anonymous"
+        crossorigin: "anonymous",
+        nonce
       }),
       jsx("script", {
         type: "module",
@@ -509,7 +510,7 @@ var preloaderPre = (base2, resolvedManifest, options, beforeContent, nonce) => {
   }
   const corePath = simplifyPath(base2, resolvedManifest?.manifest.core);
   if (corePath) {
-    beforeContent.push(jsx("link", { rel: "modulepreload", href: corePath }));
+    beforeContent.push(jsx("link", { rel: "modulepreload", href: corePath, nonce }));
   }
 };
 var includePreloader = (base2, resolvedManifest, options, referencedBundles, nonce) => {
@@ -651,7 +652,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL || "/"}build/`;
 }
 var versions = {
-  qwik: "1.15.0-dev+4a86c3a",
+  qwik: "1.15.0-dev+047e7dc",
   qwikDom: "2.1.19"
 };
 
@@ -677,6 +678,7 @@ async function renderToStream(rootNode, opts) {
   const firstFlushTimer = createTimer();
   const buildBase = getBuildBase(opts);
   const resolvedManifest = resolveManifest(opts.manifest);
+  const nonce = opts.serverData?.nonce;
   function flush() {
     if (buffer) {
       nativeStream.write(buffer);
@@ -746,16 +748,21 @@ async function renderToStream(rootNode, opts) {
   let didAddQwikLoader = false;
   if (includeMode !== "never" && qwikLoaderChunk) {
     beforeContent.unshift(
-      jsx2("link", { rel: "modulepreload", href: `${buildBase}${qwikLoaderChunk}` }),
+      jsx2("link", {
+        rel: "modulepreload",
+        href: `${buildBase}${qwikLoaderChunk}`,
+        nonce
+      }),
       jsx2("script", {
         type: "module",
         async: true,
-        src: `${buildBase}${qwikLoaderChunk}`
+        src: `${buildBase}${qwikLoaderChunk}`,
+        nonce
       })
     );
     didAddQwikLoader = true;
   }
-  preloaderPre(buildBase, resolvedManifest, opts.preloader, beforeContent, opts.serverData?.nonce);
+  preloaderPre(buildBase, resolvedManifest, opts.preloader, beforeContent, nonce);
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
@@ -778,7 +785,7 @@ async function renderToStream(rootNode, opts) {
         jsx2("script", {
           type: "qwik/json",
           dangerouslySetInnerHTML: escapeText(jsonData),
-          nonce: opts.serverData?.nonce
+          nonce
         })
       );
       if (snapshotResult.funcs.length > 0) {
@@ -787,7 +794,7 @@ async function renderToStream(rootNode, opts) {
           jsx2("script", {
             "q:func": "qwik/json",
             dangerouslySetInnerHTML: serializeFunctions(hash2, snapshotResult.funcs),
-            nonce: opts.serverData?.nonce
+            nonce
           })
         );
       }
@@ -804,7 +811,7 @@ async function renderToStream(rootNode, opts) {
             async: true,
             type: "module",
             dangerouslySetInnerHTML: qwikLoaderScript,
-            nonce: opts.serverData?.nonce
+            nonce
           })
         );
       }
@@ -814,7 +821,7 @@ async function renderToStream(rootNode, opts) {
         children.push(
           jsx2("script", {
             dangerouslySetInnerHTML: content,
-            nonce: opts.serverData?.nonce
+            nonce
           })
         );
       }
