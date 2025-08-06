@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.15.0-dev+4199268
+ * @builder.io/qwik 1.15.0-dev+47035a9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.15.0-dev+4199268";
+    const version = "1.15.0-dev+47035a9";
 
     /**
      * @internal
@@ -9928,6 +9928,17 @@ Task Symbol: ${task.$qrl$.$symbol$}
                     }
                 });
             });
+        }
+        if ('caches' in window) {
+            caches
+                .keys()
+                .then((names) => {
+                const cacheName = names.find((name) => name.startsWith('QwikBundles'));
+                if (cacheName) {
+                    caches.delete(cacheName).catch(console.error);
+                }
+            })
+                .catch(console.error);
         }
     }).toString();
     /**
