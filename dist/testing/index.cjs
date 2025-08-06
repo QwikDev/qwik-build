@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.14.1-dev+7843e78
+ * @builder.io/qwik/testing 1.15.0-dev+9bcb4ee
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22829,7 +22829,7 @@ var adjustProbabilities = (e, t, o) => {
     queueDirty = 1;
   }
   if (e.h) {
-    o || (o = /* @__PURE__ */ new Set());
+    o ||= /* @__PURE__ */ new Set();
     o.add(e);
     const t2 = 1 - e.u;
     for (const n2 of e.h) {

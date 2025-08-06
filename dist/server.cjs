@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.14.1-dev+7843e78
+ * @builder.io/qwik/server 1.15.0-dev+9bcb4ee
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -543,12 +543,13 @@ var preloaderPre = (base2, resolvedManifest, options, beforeContent, nonce) => {
        * We add modulepreloads even when the script is at the top because they already fire during
        * html download
        */
-      (0, import_qwik3.jsx)("link", { rel: "modulepreload", href: preloaderPath }),
+      (0, import_qwik3.jsx)("link", { rel: "modulepreload", href: preloaderPath, nonce }),
       (0, import_qwik3.jsx)("link", {
         rel: "preload",
         href: bundleGraphPath,
         as: "fetch",
-        crossorigin: "anonymous"
+        crossorigin: "anonymous",
+        nonce
       }),
       (0, import_qwik3.jsx)("script", {
         type: "module",
@@ -560,7 +561,7 @@ var preloaderPre = (base2, resolvedManifest, options, beforeContent, nonce) => {
   }
   const corePath = simplifyPath(base2, resolvedManifest == null ? void 0 : resolvedManifest.manifest.core);
   if (corePath) {
-    beforeContent.push((0, import_qwik3.jsx)("link", { rel: "modulepreload", href: corePath }));
+    beforeContent.push((0, import_qwik3.jsx)("link", { rel: "modulepreload", href: corePath, nonce }));
   }
 };
 var includePreloader = (base2, resolvedManifest, options, referencedBundles, nonce) => {
@@ -703,7 +704,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.14.1-dev+7843e78",
+  qwik: "1.15.0-dev+9bcb4ee",
   qwikDom: "2.1.19"
 };
 
@@ -730,6 +731,7 @@ async function renderToStream(rootNode, opts) {
   const firstFlushTimer = createTimer();
   const buildBase = getBuildBase(opts);
   const resolvedManifest = resolveManifest(opts.manifest);
+  const nonce = (_b = opts.serverData) == null ? void 0 : _b.nonce;
   function flush() {
     if (buffer) {
       nativeStream.write(buffer);
@@ -794,21 +796,26 @@ async function renderToStream(rootNode, opts) {
   await setServerPlatform(opts, resolvedManifest);
   const injections = resolvedManifest == null ? void 0 : resolvedManifest.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => (0, import_qwik4.jsx)(injection.tag, injection.attributes ?? {})) : [];
-  const includeMode = ((_b = opts.qwikLoader) == null ? void 0 : _b.include) ?? "auto";
+  const includeMode = ((_c = opts.qwikLoader) == null ? void 0 : _c.include) ?? "auto";
   const qwikLoaderChunk = resolvedManifest == null ? void 0 : resolvedManifest.manifest.qwikLoader;
   let didAddQwikLoader = false;
   if (includeMode !== "never" && qwikLoaderChunk) {
     beforeContent.unshift(
-      (0, import_qwik4.jsx)("link", { rel: "modulepreload", href: `${buildBase}${qwikLoaderChunk}` }),
+      (0, import_qwik4.jsx)("link", {
+        rel: "modulepreload",
+        href: `${buildBase}${qwikLoaderChunk}`,
+        nonce
+      }),
       (0, import_qwik4.jsx)("script", {
         type: "module",
         async: true,
-        src: `${buildBase}${qwikLoaderChunk}`
+        src: `${buildBase}${qwikLoaderChunk}`,
+        nonce
       })
     );
     didAddQwikLoader = true;
   }
-  preloaderPre(buildBase, resolvedManifest, opts.preloader, beforeContent, (_c = opts.serverData) == null ? void 0 : _c.nonce);
+  preloaderPre(buildBase, resolvedManifest, opts.preloader, beforeContent, nonce);
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
@@ -821,7 +828,6 @@ async function renderToStream(rootNode, opts) {
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState, _dynamic, textNodes) => {
-      var _a2, _b2, _c2, _d;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       snapshotResult = await (0, import_qwik4._pauseFromContexts)(contexts, containerState, void 0, textNodes);
@@ -832,7 +838,7 @@ async function renderToStream(rootNode, opts) {
         (0, import_qwik4.jsx)("script", {
           type: "qwik/json",
           dangerouslySetInnerHTML: escapeText(jsonData),
-          nonce: (_a2 = opts.serverData) == null ? void 0 : _a2.nonce
+          nonce
         })
       );
       if (snapshotResult.funcs.length > 0) {
@@ -841,7 +847,7 @@ async function renderToStream(rootNode, opts) {
           (0, import_qwik4.jsx)("script", {
             "q:func": "qwik/json",
             dangerouslySetInnerHTML: serializeFunctions(hash2, snapshotResult.funcs),
-            nonce: (_b2 = opts.serverData) == null ? void 0 : _b2.nonce
+            nonce
           })
         );
       }
@@ -858,7 +864,7 @@ async function renderToStream(rootNode, opts) {
             async: true,
             type: "module",
             dangerouslySetInnerHTML: qwikLoaderScript,
-            nonce: (_c2 = opts.serverData) == null ? void 0 : _c2.nonce
+            nonce
           })
         );
       }
@@ -868,7 +874,7 @@ async function renderToStream(rootNode, opts) {
         children.push(
           (0, import_qwik4.jsx)("script", {
             dangerouslySetInnerHTML: content,
-            nonce: (_d = opts.serverData) == null ? void 0 : _d.nonce
+            nonce
           })
         );
       }

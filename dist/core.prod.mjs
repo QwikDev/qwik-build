@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.14.1-dev+7843e78
+ * @builder.io/qwik 1.15.0-dev+9bcb4ee
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.14.1-dev+7843e78";
+const version = "1.15.0-dev+9bcb4ee";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -5956,7 +5956,7 @@ const PrefetchServiceWorker = opts => {
         ...opts
     };
     resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-    let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
+    let code = PREFETCH_CODE.replace('"_URL_"', JSON.stringify(resolvedOpts.path.split("/").pop()));
     isDev || (code = code.replaceAll(/\s\s+/gm, ""));
     const props = {
         dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),
@@ -5970,7 +5970,10 @@ const PREFETCH_CODE = /*#__PURE__*/ (c => {
         registrations.forEach((registration => {
             registration.active && registration.active.scriptURL.endsWith("_URL_") && registration.unregister().catch(console.error);
         }));
-    }));
+    })), "caches" in window && caches.keys().then((names => {
+        const cacheName = names.find((name => name.startsWith("QwikBundles")));
+        cacheName && caches.delete(cacheName).catch(console.error);
+    })).catch(console.error);
 }).toString();
 
 const PrefetchGraph = () => null;
