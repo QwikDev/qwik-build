@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.15.0-dev+047e7dc
+ * @builder.io/qwik 1.15.0-dev+4199268
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.15.0-dev+047e7dc";
+    const version = "1.15.0-dev+4199268";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4720,7 +4720,7 @@
             ...opts
         };
         resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-        let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
+        let code = PREFETCH_CODE.replace('"_URL_"', JSON.stringify(resolvedOpts.path.split("/").pop()));
         build.isDev || (code = code.replaceAll(/\s\s+/gm, ""));
         const props = {
             dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),

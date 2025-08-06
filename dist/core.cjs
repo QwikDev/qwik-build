@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.15.0-dev+047e7dc
+ * @builder.io/qwik 1.15.0-dev+4199268
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.15.0-dev+047e7dc";
+    const version = "1.15.0-dev+4199268";
 
     /**
      * @internal
@@ -9899,7 +9899,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             // the file 'qwik-prefetch-service-worker.js' is not located in /build/
             resolvedOpts.path = baseUrl + resolvedOpts.path;
         }
-        let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
+        let code = PREFETCH_CODE.replace('"_URL_"', JSON.stringify(resolvedOpts.path.split('/').pop()));
         if (!build.isDev) {
             // consecutive spaces are indentation
             code = code.replaceAll(/\s\s+/gm, '');
