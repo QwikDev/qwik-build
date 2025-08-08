@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+30cb4f3
+ * @builder.io/qwik/optimizer 1.15.0-dev+f704aed
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -54,7 +54,7 @@ globalThis.qwikOptimizer = function(module) {
       var decoder = new TextDecoder;
       var toUTF8String = (input, start = 0, end = input.length) => decoder.decode(input.slice(start, end));
       exports2.toUTF8String = toUTF8String;
-      var toHexString = (input, start = 0, end = input.length) => input.slice(start, end).reduce(((memo, i) => memo + ("0" + i.toString(16)).slice(-2)), "");
+      var toHexString = (input, start = 0, end = input.length) => input.slice(start, end).reduce((memo, i) => memo + ("0" + i.toString(16)).slice(-2), "");
       exports2.toHexString = toHexString;
       var readInt16LE = (input, offset = 0) => {
         const val = input[offset] + 256 * input[offset + 1];
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.15.0-dev+30cb4f3"
+    qwik: "1.15.0-dev+f704aed"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1288,27 +1288,27 @@ globalThis.qwikOptimizer = function(module) {
           const flatted = [];
           if (stats.isDirectory()) {
             const dirItems = await fs.promises.readdir(dir);
-            const files = await Promise.all(dirItems.map((async subdir => {
+            const files = await Promise.all(dirItems.map(async subdir => {
               const resolvedPath = sys.path.resolve(dir, subdir);
               const stats2 = await fs.promises.stat(resolvedPath);
               return stats2.isDirectory() ? getChildFilePaths(resolvedPath) : [ resolvedPath ];
-            })));
+            }));
             for (const file of files) {
               flatted.push(...file);
             }
           } else {
             flatted.push(dir);
           }
-          return flatted.filter((a => sys.path.extname(a).toLowerCase() in extensions));
+          return flatted.filter(a => sys.path.extname(a).toLowerCase() in extensions);
         };
         const filePaths = await getChildFilePaths(rootDir);
-        const inputs = (await Promise.all(filePaths.map((async filePath => {
+        const inputs = (await Promise.all(filePaths.map(async filePath => {
           const input = {
             code: await fs.promises.readFile(filePath, "utf8"),
             path: filePath
           };
           return input;
-        })))).sort(((a, b) => {
+        }))).sort((a, b) => {
           if (a.path < b.path) {
             return -1;
           }
@@ -1316,7 +1316,7 @@ globalThis.qwikOptimizer = function(module) {
             return 1;
           }
           return 0;
-        }));
+        });
         return inputs;
       };
     }
@@ -1345,11 +1345,11 @@ globalThis.qwikOptimizer = function(module) {
       const wasmPath = sys.path.join(__dirname, "..", "bindings", "qwik_wasm_bg.wasm");
       const mod = await sys.dynamicImport("../bindings/qwik.wasm.cjs");
       const fs = await sys.dynamicImport("node:fs");
-      return new Promise(((resolve, reject) => {
-        fs.readFile(wasmPath, ((err, buf) => {
+      return new Promise((resolve, reject) => {
+        fs.readFile(wasmPath, (err, buf) => {
           null != err ? reject(err) : resolve(buf);
-        }));
-      })).then((buf => WebAssembly.compile(buf))).then((wasm => mod.default(wasm))).then((() => mod));
+        });
+      }).then(buf => WebAssembly.compile(buf)).then(wasm => mod.default(wasm)).then(() => mod);
     }
     if ("webworker" === sysEnv || "browsermain" === sysEnv) {
       let version2 = versions.qwik;
@@ -1439,9 +1439,9 @@ globalThis.qwikOptimizer = function(module) {
         const rootFiles = await getInputFiles(root);
         input.push(...rootFiles);
       }
-      input.forEach((file => {
+      input.forEach(file => {
         file.path = sys.path.relative(fsOpts.srcDir, file.path);
-      }));
+      });
       const modulesOpts = {
         srcDir: fsOpts.srcDir,
         rootDir: fsOpts.rootDir,
@@ -1484,9 +1484,9 @@ globalThis.qwikOptimizer = function(module) {
       stripCtxName: void 0,
       isServer: void 0
     };
-    Object.entries(opts).forEach((([key, value]) => {
+    Object.entries(opts).forEach(([key, value]) => {
       null != value && (output[key] = value);
-    }));
+    });
     output.entryStrategy = (null == (_a = opts.entryStrategy) ? void 0 : _a.type) ?? "smart";
     output.manualChunks = (null == (_b = opts.entryStrategy) ? void 0 : _b.manual) ?? void 0;
     return output;
@@ -1501,7 +1501,7 @@ globalThis.qwikOptimizer = function(module) {
   };
   function prioritizeSymbolNames(manifest) {
     const symbols = manifest.symbols;
-    return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
+    return Object.keys(symbols).sort((symbolNameA, symbolNameB) => {
       const a = symbols[symbolNameA];
       const b = symbols[symbolNameB];
       if ("eventHandler" === a.ctxKind && "eventHandler" !== b.ctxKind) {
@@ -1560,10 +1560,10 @@ globalThis.qwikOptimizer = function(module) {
         return 1;
       }
       return 0;
-    }));
+    });
   }
-  var EVENT_PRIORITY = (() => [ "click", "dblclick", "contextmenu", "auxclick", "pointerdown", "pointerup", "pointermove", "pointerover", "pointerenter", "pointerleave", "pointerout", "pointercancel", "gotpointercapture", "lostpointercapture", "touchstart", "touchend", "touchmove", "touchcancel", "mousedown", "mouseup", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "wheel", "gesturestart", "gesturechange", "gestureend", "keydown", "keyup", "keypress", "input", "change", "search", "invalid", "beforeinput", "select", "focusin", "focusout", "focus", "blur", "submit", "reset", "scroll" ].map((n => `on${n.toLowerCase()}$`)))();
-  var FUNCTION_PRIORITY = (() => [ "useTask$", "useVisibleTask$", "component$", "useStyles$", "useStylesScoped$" ].map((n => n.toLowerCase())))();
+  var EVENT_PRIORITY = (() => [ "click", "dblclick", "contextmenu", "auxclick", "pointerdown", "pointerup", "pointermove", "pointerover", "pointerenter", "pointerleave", "pointerout", "pointercancel", "gotpointercapture", "lostpointercapture", "touchstart", "touchend", "touchmove", "touchcancel", "mousedown", "mouseup", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "wheel", "gesturestart", "gesturechange", "gestureend", "keydown", "keyup", "keypress", "input", "change", "search", "invalid", "beforeinput", "select", "focusin", "focusout", "focus", "blur", "submit", "reset", "scroll" ].map(n => `on${n.toLowerCase()}$`))();
+  var FUNCTION_PRIORITY = (() => [ "useTask$", "useVisibleTask$", "component$", "useStyles$", "useStylesScoped$" ].map(n => n.toLowerCase()))();
   function sortBundleNames(manifest) {
     return Object.keys(manifest.bundles).sort(sortAlphabetical);
   }
@@ -1669,14 +1669,14 @@ globalThis.qwikOptimizer = function(module) {
       idx.has(v) || strongConnect(v);
     }
     const sccIndex = new Map;
-    sccList.forEach(((comp, i) => {
+    sccList.forEach((comp, i) => {
       for (const v of comp) {
         sccIndex.set(v, i);
       }
-    }));
+    });
     const sccDAG = Array.from({
       length: sccList.length
-    }, (() => new Set));
+    }, () => new Set);
     for (const v of Object.keys(graph2)) {
       const i = sccIndex.get(v);
       for (const w of graph2[v].imports || []) {
@@ -1749,7 +1749,7 @@ globalThis.qwikOptimizer = function(module) {
       }
       return canonPath(bundle.fileName);
     };
-    const qrlNames = new Set(segments.map((h => h.name)));
+    const qrlNames = new Set(segments.map(h => h.name));
     for (const outputBundle of Object.values(outputBundles)) {
       if ("asset" === outputBundle.type) {
         outputBundle.fileName.endsWith("js.map") || (manifest.assets[outputBundle.fileName] = {
@@ -1767,17 +1767,17 @@ globalThis.qwikOptimizer = function(module) {
       for (const symbol of outputBundle.exports) {
         qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
       }
-      const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
+      const bundleImports = outputBundle.imports.filter(i => outputBundle.code.includes(path.basename(i))).map(i => getBundleName(i)).filter(Boolean);
       bundleImports.length > 0 && (bundle.imports = bundleImports);
-      const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
+      const bundleDynamicImports = outputBundle.dynamicImports.filter(i => outputBundle.code.includes(path.basename(i))).map(i => getBundleName(i)).filter(Boolean);
       bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
       const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
-      const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
+      const modulePaths = ids.filter(m => !m.startsWith("\0")).map(m => path.relative(opts.rootDir, m));
       if (modulePaths.length > 0) {
         bundle.origins = modulePaths;
-        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m))) && (manifest.preloader = bundleFileName);
-        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m))) && (manifest.core = bundleFileName);
-        modulePaths.some((m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m))) && (manifest.qwikLoader = bundleFileName);
+        modulePaths.some(m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m)) && (manifest.preloader = bundleFileName);
+        modulePaths.some(m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m)) && (manifest.core = bundleFileName);
+        modulePaths.some(m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m)) && (manifest.qwikLoader = bundleFileName);
       }
       manifest.bundles[bundleFileName] = bundle;
     }
@@ -1844,7 +1844,7 @@ globalThis.qwikOptimizer = function(module) {
           const report = await eslint.lintText(code, {
             filePath: filePath
           });
-          report.forEach((file => {
+          report.forEach(file => {
             for (const message of file.messages) {
               if (null != message.ruleId && !message.ruleId.startsWith("qwik/")) {
                 continue;
@@ -1852,7 +1852,7 @@ globalThis.qwikOptimizer = function(module) {
               const err = createRollupError(file.filePath, message);
               ctx.warn(err);
             }
-          }));
+          });
         } catch (err) {
           console.warn(err);
         }
@@ -1898,7 +1898,7 @@ globalThis.qwikOptimizer = function(module) {
   var findLocation = e => {
     const stack = e.stack;
     if ("string" === typeof stack) {
-      const lines = stack.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
+      const lines = stack.split("\n").filter(l => !l.includes("/node_modules/") && !l.includes("(node:"));
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].replace("file:///", "/");
         if (/^\s+at/.test(line)) {
@@ -2042,11 +2042,11 @@ globalThis.qwikOptimizer = function(module) {
     }
     for (const bundleName of Object.keys(graph2)) {
       const bundle = graph2[bundleName];
-      const imports = (null == (_a = bundle.imports) ? void 0 : _a.filter((dep => graph2[dep]))) || [];
-      const dynamicImports = (null == (_b = bundle.dynamicImports) ? void 0 : _b.filter((dep => {
+      const imports = (null == (_a = bundle.imports) ? void 0 : _a.filter(dep => graph2[dep])) || [];
+      const dynamicImports = (null == (_b = bundle.dynamicImports) ? void 0 : _b.filter(dep => {
         var _a2;
-        return graph2[dep] && (graph2[dep].symbols || (null == (_a2 = graph2[dep].origins) ? void 0 : _a2.some((o => !o.includes("node_modules")))));
-      }))) || [];
+        return graph2[dep] && (graph2[dep].symbols || (null == (_a2 = graph2[dep].origins) ? void 0 : _a2.some(o => !o.includes("node_modules"))));
+      })) || [];
       graph2[bundleName] = {
         ...bundle,
         imports: imports,
@@ -2093,7 +2093,7 @@ globalThis.qwikOptimizer = function(module) {
         probability += .08 * (dep.interactivity || 0);
         if (bundle.origins && dep.origins) {
           for (const origin of bundle.origins) {
-            if (dep.origins.some((o => o.startsWith(origin)))) {
+            if (dep.origins.some(o => o.startsWith(origin))) {
               probability += .25;
               break;
             }
@@ -2104,7 +2104,7 @@ globalThis.qwikOptimizer = function(module) {
         depProbability.set(depName, Math.min(probability, .99));
       }
       if (dynDeps.size > 0) {
-        const sorted = Array.from(dynDeps).sort(((a, b) => depProbability.get(b) - depProbability.get(a)));
+        const sorted = Array.from(dynDeps).sort((a, b) => depProbability.get(b) - depProbability.get(a));
         let lastProbability = -1;
         for (const depName of sorted) {
           if (depProbability.get(depName) !== lastProbability) {
@@ -2247,9 +2247,9 @@ globalThis.qwikOptimizer = function(module) {
         opts.srcDir ||= srcDir;
       }
       Array.isArray(updatedOpts.tsconfigFileNames) && updatedOpts.tsconfigFileNames.length > 0 && (opts.tsconfigFileNames = updatedOpts.tsconfigFileNames);
-      Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
+      Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach(i => {
         i.path = normalizePath(path.resolve(opts.rootDir, i.path));
-      })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
+      }) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
       if (!updatedOpts.csr) {
         if (Array.isArray(updatedOpts.input)) {
           opts.input = [ ...updatedOpts.input ];
@@ -2279,12 +2279,12 @@ globalThis.qwikOptimizer = function(module) {
         } else {
           opts.input ||= [];
         }
-        Array.isArray(opts.input) && (opts.input = opts.input.reduce(((inputs, i) => {
+        Array.isArray(opts.input) && (opts.input = opts.input.reduce((inputs, i) => {
           let input = i;
           i.startsWith("@") || i.startsWith("~") || i.startsWith("#") || (input = normalizePath(path.resolve(opts.rootDir, i)));
           inputs.includes(input) || inputs.push(input);
           return inputs;
-        }), []));
+        }, []));
         "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : opts.outDir || ("ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : "lib" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, LIB_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR)));
       }
       "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
@@ -2343,13 +2343,13 @@ globalThis.qwikOptimizer = function(module) {
       }
       const path = getPath();
       if (Array.isArray(opts.srcInputs)) {
-        optimizer.sys.getInputFiles = async rootDir => opts.srcInputs.map((i => {
+        optimizer.sys.getInputFiles = async rootDir => opts.srcInputs.map(i => {
           const relInput = {
             path: normalizePath(path.relative(rootDir, i.path)),
             code: i.code
           };
           return relInput;
-        }));
+        });
         debug(`buildStart() opts.srcInputs (${opts.srcInputs.length} files)`);
       }
       debug("transformedOutputs.clear()");
@@ -2530,13 +2530,13 @@ globalThis.qwikOptimizer = function(module) {
         const strip = "client" === opts.target || "ssr" === opts.target;
         debug(`transform(${count})`, `Transforming ${id2} (for: ${isServer2 ? "server" : "client"}${strip ? ", strip" : ""})`);
         const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
-        "lib" !== mode && (code = code.replaceAll(/__EXPERIMENTAL__\.(\w+)/g, ((_, feature) => {
+        "lib" !== mode && (code = code.replaceAll(/__EXPERIMENTAL__\.(\w+)/g, (_, feature) => {
           var _a2;
           if (null == (_a2 = opts.experimental) ? void 0 : _a2[feature]) {
             return "true";
           }
           return "false";
-        })));
+        }));
         let filePath = base2;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
         filePath = normalizePath(filePath);
@@ -2576,7 +2576,7 @@ globalThis.qwikOptimizer = function(module) {
           }
         }
         const newOutput = optimizer2.transformModulesSync(transformOpts2);
-        const module2 = newOutput.modules.find((mod => !isAdditionalFile(mod)));
+        const module2 = newOutput.modules.find(mod => !isAdditionalFile(mod));
         diagnosticsCallback(newOutput.diagnostics, optimizer2, srcDir);
         isServer2 ? 0 === newOutput.diagnostics.length && linter && linter.lint(ctx, code, id2) : clientResults.set(id2, newOutput);
         const deps = new Set;
@@ -2623,17 +2623,17 @@ globalThis.qwikOptimizer = function(module) {
         const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
         const canonPath = p => path.relative(buildPath, path.resolve(opts.rootDir, opts.outDir, p));
         outputAnalyzer.canonPath = canonPath;
-        const segments = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.segment)).filter((h => !!h));
+        const segments = Array.from(clientResults.values()).flatMap(r => r.modules).map(mod => mod.segment).filter(h => !!h);
         const manifest = generateManifestFromBundles(path, segments, injections, rollupBundle, opts, debug, canonPath);
         extra && Object.assign(manifest, extra);
         for (const symbol of Object.values(manifest.symbols)) {
           symbol.origin && (symbol.origin = normalizePath(symbol.origin));
         }
         for (const bundle of Object.values(manifest.bundles)) {
-          bundle.origins && (bundle.origins = bundle.origins.map((abs => {
+          bundle.origins && (bundle.origins = bundle.origins.map(abs => {
             const relPath = path.relative(opts.rootDir, abs);
             return normalizePath(relPath);
-          })).sort());
+          }).sort());
         }
         manifest.manifestHash = hashCode(JSON.stringify(manifest));
         return manifest;
@@ -2641,7 +2641,7 @@ globalThis.qwikOptimizer = function(module) {
       return outputAnalyzer;
     };
     const getOptions = () => opts;
-    const getTransformedOutputs = () => Array.from(clientTransformedOutputs.values()).map((t => t[0]));
+    const getTransformedOutputs = () => Array.from(clientTransformedOutputs.values()).map(t => t[0]);
     const debug = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
     };
@@ -2851,12 +2851,12 @@ globalThis.qwikOptimizer = function(module) {
       },
       outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, false),
       async buildStart() {
-        qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
-          diagnostics.forEach((d => {
+        qwikPlugin.onDiagnostics((diagnostics, optimizer, srcDir) => {
+          diagnostics.forEach(d => {
             const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
             "error" === d.category ? this.error(createRollupError2(id, d)) : this.warn(createRollupError2(id, d));
-          }));
-        }));
+          });
+        });
         await qwikPlugin.buildStart(this);
       },
       resolveId(id, importer) {
@@ -2887,10 +2887,10 @@ globalThis.qwikOptimizer = function(module) {
   function normalizeRollupOutputOptions(qwikPlugin, rollupOutputOpts, useAssetsDir, outDir) {
     if (Array.isArray(rollupOutputOpts)) {
       rollupOutputOpts.length || rollupOutputOpts.push({});
-      return rollupOutputOpts.map((outputOptsObj => ({
+      return rollupOutputOpts.map(outputOptsObj => ({
         ...normalizeRollupOutputOptionsObject(qwikPlugin, outputOptsObj, useAssetsDir),
         dir: outDir || outputOptsObj.dir
-      })));
+      }));
     }
     return {
       ...normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, useAssetsDir),
@@ -2912,10 +2912,10 @@ globalThis.qwikOptimizer = function(module) {
       let fileName;
       fileName = "production" !== opts.buildMode || opts.debug ? chunkInfo => {
         var _a, _b;
-        if (null == (_a = chunkInfo.moduleIds) ? void 0 : _a.some((id => id.endsWith("core.prod.mjs")))) {
+        if (null == (_a = chunkInfo.moduleIds) ? void 0 : _a.some(id => id.endsWith("core.prod.mjs"))) {
           return "build/core.js";
         }
-        if (null == (_b = chunkInfo.moduleIds) ? void 0 : _b.some((id => id.endsWith("qwik-city/lib/index.qwik.mjs")))) {
+        if (null == (_b = chunkInfo.moduleIds) ? void 0 : _b.some(id => id.endsWith("qwik-city/lib/index.qwik.mjs"))) {
           return "build/qwik-city.js";
         }
         const path = optimizer.sys.path;
@@ -2955,7 +2955,7 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   }
-  var QWIK_LOADER_DEFAULT_MINIFIED = 'const t=document,e=window,n=new Set,o=new Set([t]);let r;const s=(t,e)=>Array.from(t.querySelectorAll(e)),i=t=>{const e=[];return o.forEach((n=>e.push(...s(n,t)))),e},a=t=>{g(t),s(t,"[q\\\\:shadowroot]").forEach((t=>{const e=t.shadowRoot;e&&a(e)}))},c=t=>t&&"function"==typeof t.then;let l=!0;const f=(t,e,n=e.type)=>{let o=l;i("[on"+t+"\\\\:"+n+"]").forEach((r=>{o=!0,b(r,t,e,n)})),o||window[t.slice(1)].removeEventListener(n,"-window"===t?d:_)},p=e=>{if(void 0===e._qwikjson_){let n=(e===t.documentElement?t.body:e).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===n.getAttribute("type")){e._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/gi,"<$1"));break}n=n.previousElementSibling}}},u=(t,e)=>new CustomEvent(t,{detail:e}),b=async(e,n,o,r=o.type)=>{const s="on"+n+":"+r;e.hasAttribute("preventdefault:"+r)&&o.preventDefault(),e.hasAttribute("stoppropagation:"+r)&&o.stopPropagation();const i=e._qc_,a=i&&i.li.filter((t=>t[0]===s));if(a&&a.length>0){for(const t of a){const n=t[1].getFn([e,o],(()=>e.isConnected))(o,e),r=o.cancelBubble;c(n)&&await n,r&&o.stopPropagation()}return}const l=e.getAttribute(s);if(l){const n=e.closest("[q\\\\:container]"),r=n.getAttribute("q:base"),s=n.getAttribute("q:version")||"unknown",i=n.getAttribute("q:manifest-hash")||"dev",a=new URL(r,t.baseURI);for(const f of l.split("\\n")){const l=new URL(f,a),u=l.href,b=l.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",q=performance.now();let _,d,w;const m=f.startsWith("#"),y={qBase:r,qManifest:i,qVersion:s,href:u,symbol:b,element:e,reqTime:q};if(m){const e=n.getAttribute("q:instance");_=(t["qFuncs_"+e]||[])[Number.parseInt(b)],_||(d="sync",w=Error("sym:"+b))}else{h("qsymbol",y);const t=l.href.split("#")[0];try{const e=import(t);p(n),_=(await e)[b],_||(d="no-symbol",w=Error(`${b} not in ${t}`))}catch(t){d||(d="async"),w=t}}if(!_){h("qerror",{importError:d,error:w,...y}),console.error(w);break}const g=t.__q_context__;if(e.isConnected)try{t.__q_context__=[e,o,l];const n=_(o,e);c(n)&&await n}catch(t){h("qerror",{error:t,...y})}finally{t.__q_context__=g}}}},h=(e,n)=>{t.dispatchEvent(u(e,n))},q=t=>t.replace(/([A-Z])/g,(t=>"-"+t.toLowerCase())),_=async t=>{let e=q(t.type),n=t.target;for(f("-document",t,e);n&&n.getAttribute;){const o=b(n,"",t,e);let r=t.cancelBubble;c(o)&&await o,r||(r=r||t.cancelBubble||n.hasAttribute("stoppropagation:"+t.type)),n=t.bubbles&&!0!==r?n.parentElement:null}},d=t=>{f("-window",t,q(t.type))},w=()=>{var s;const c=t.readyState;if(!r&&("interactive"==c||"complete"==c)&&(o.forEach(a),r=1,h("qinit"),(null!=(s=e.requestIdleCallback)?s:e.setTimeout).bind(e)((()=>h("qidle"))),n.has("qvisible"))){const t=i("[on\\\\:qvisible]"),e=new IntersectionObserver((t=>{for(const n of t)n.isIntersecting&&(e.unobserve(n.target),b(n.target,"",u("qvisible",n)))}));t.forEach((t=>e.observe(t)))}},m=(t,e,n,o=!1)=>{t.addEventListener(e,n,{capture:o,passive:!1})};let y;const g=(...t)=>{l=!0,clearTimeout(y),y=setTimeout((()=>l=!1),2e4);for(const r of t)"string"==typeof r?n.has(r)||(o.forEach((t=>m(t,r,_,!0))),m(e,r,d,!0),n.add(r)):o.has(r)||(n.forEach((t=>m(r,t,_,!0))),o.add(r))};if(!("__q_context__"in t)){t.__q_context__=0;const r=e.qwikevents;r&&(Array.isArray(r)?g(...r):g("click","input")),e.qwikevents={events:n,roots:o,push:g},m(t,"readystatechange",w),w()}';
+  var QWIK_LOADER_DEFAULT_MINIFIED = 'const t=document,e=window,n=new Set,o=new Set([t]);let r;const s=(t,e)=>Array.from(t.querySelectorAll(e)),i=t=>{const e=[];return o.forEach(n=>e.push(...s(n,t))),e},a=t=>{g(t),s(t,"[q\\\\:shadowroot]").forEach(t=>{const e=t.shadowRoot;e&&a(e)})},c=t=>t&&"function"==typeof t.then;let l=!0;const f=(t,e,n=e.type)=>{let o=l;i("[on"+t+"\\\\:"+n+"]").forEach(r=>{o=!0,b(r,t,e,n)}),o||window[t.slice(1)].removeEventListener(n,"-window"===t?d:_)},p=e=>{if(void 0===e._qwikjson_){let n=(e===t.documentElement?t.body:e).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===n.getAttribute("type")){e._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/gi,"<$1"));break}n=n.previousElementSibling}}},u=(t,e)=>new CustomEvent(t,{detail:e}),b=async(e,n,o,r=o.type)=>{const s="on"+n+":"+r;e.hasAttribute("preventdefault:"+r)&&o.preventDefault(),e.hasAttribute("stoppropagation:"+r)&&o.stopPropagation();const i=e._qc_,a=i&&i.li.filter(t=>t[0]===s);if(a&&a.length>0){for(const t of a){const n=t[1].getFn([e,o],()=>e.isConnected)(o,e),r=o.cancelBubble;c(n)&&await n,r&&o.stopPropagation()}return}const l=e.getAttribute(s);if(l){const n=e.closest("[q\\\\:container]"),r=n.getAttribute("q:base"),s=n.getAttribute("q:version")||"unknown",i=n.getAttribute("q:manifest-hash")||"dev",a=new URL(r,t.baseURI);for(const f of l.split("\\n")){const l=new URL(f,a),u=l.href,b=l.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",q=performance.now();let _,d,w;const m=f.startsWith("#"),y={qBase:r,qManifest:i,qVersion:s,href:u,symbol:b,element:e,reqTime:q};if(m){const e=n.getAttribute("q:instance");_=(t["qFuncs_"+e]||[])[Number.parseInt(b)],_||(d="sync",w=Error("sym:"+b))}else{h("qsymbol",y);const t=l.href.split("#")[0];try{const e=import(t);p(n),_=(await e)[b],_||(d="no-symbol",w=Error(`${b} not in ${t}`))}catch(t){d||(d="async"),w=t}}if(!_){h("qerror",{importError:d,error:w,...y}),console.error(w);break}const g=t.__q_context__;if(e.isConnected)try{t.__q_context__=[e,o,l];const n=_(o,e);c(n)&&await n}catch(t){h("qerror",{error:t,...y})}finally{t.__q_context__=g}}}},h=(e,n)=>{t.dispatchEvent(u(e,n))},q=t=>t.replace(/([A-Z])/g,t=>"-"+t.toLowerCase()),_=async t=>{let e=q(t.type),n=t.target;for(f("-document",t,e);n&&n.getAttribute;){const o=b(n,"",t,e);let r=t.cancelBubble;c(o)&&await o,r||(r=r||t.cancelBubble||n.hasAttribute("stoppropagation:"+t.type)),n=t.bubbles&&!0!==r?n.parentElement:null}},d=t=>{f("-window",t,q(t.type))},w=()=>{var s;const c=t.readyState;if(!r&&("interactive"==c||"complete"==c)&&(o.forEach(a),r=1,h("qinit"),(null!=(s=e.requestIdleCallback)?s:e.setTimeout).bind(e)(()=>h("qidle")),n.has("qvisible"))){const t=i("[on\\\\:qvisible]"),e=new IntersectionObserver(t=>{for(const n of t)n.isIntersecting&&(e.unobserve(n.target),b(n.target,"",u("qvisible",n)))});t.forEach(t=>e.observe(t))}},m=(t,e,n,o=!1)=>{t.addEventListener(e,n,{capture:o,passive:!1})};let y;const g=(...t)=>{l=!0,clearTimeout(y),y=setTimeout(()=>l=!1,2e4);for(const r of t)"string"==typeof r?n.has(r)||(o.forEach(t=>m(t,r,_,!0)),m(e,r,d,!0),n.add(r)):o.has(r)||(n.forEach(t=>m(r,t,_,!0)),o.add(r))};if(!("__q_context__"in t)){t.__q_context__=0;const r=e.qwikevents;r&&(Array.isArray(r)?g(...r):g("click","input")),e.qwikevents={events:n,roots:o,push:g},m(t,"readystatechange",w),w()}';
   var QWIK_LOADER_DEFAULT_DEBUG = 'const doc = document;\nconst win = window;\nconst events = /* @__PURE__ */ new Set();\nconst roots = /* @__PURE__ */ new Set([doc]);\nlet hasInitialized;\nconst nativeQuerySelectorAll = (root, selector) => Array.from(root.querySelectorAll(selector));\nconst querySelectorAll = (query) => {\n  const elements = [];\n  roots.forEach((root) => elements.push(...nativeQuerySelectorAll(root, query)));\n  return elements;\n};\nconst findShadowRoots = (fragment) => {\n  processEventOrNode(fragment);\n  nativeQuerySelectorAll(fragment, "[q\\\\:shadowroot]").forEach((parent) => {\n    const shadowRoot = parent.shadowRoot;\n    shadowRoot && findShadowRoots(shadowRoot);\n  });\n};\nconst isPromise = (promise) => promise && typeof promise.then === "function";\nlet doNotClean = true;\nconst broadcast = (infix, ev, type = ev.type) => {\n  let found = doNotClean;\n  querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((el) => {\n    found = true;\n    dispatch(el, infix, ev, type);\n  });\n  if (!found) {\n    window[infix.slice(1)].removeEventListener(\n      type,\n      infix === "-window" ? processWindowEvent : processDocumentEvent\n    );\n  }\n};\nconst resolveContainer = (containerEl) => {\n  if (containerEl._qwikjson_ === void 0) {\n    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;\n    let script = parentJSON.lastElementChild;\n    while (script) {\n      if (script.tagName === "SCRIPT" && script.getAttribute("type") === "qwik/json") {\n        containerEl._qwikjson_ = JSON.parse(\n          script.textContent.replace(/\\\\x3C(\\/?script)/gi, "<$1")\n        );\n        break;\n      }\n      script = script.previousElementSibling;\n    }\n  }\n};\nconst createEvent = (eventName, detail) => new CustomEvent(eventName, {\n  detail\n});\nconst dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n  const attrName = "on" + onPrefix + ":" + eventName;\n  if (element.hasAttribute("preventdefault:" + eventName)) {\n    ev.preventDefault();\n  }\n  if (element.hasAttribute("stoppropagation:" + eventName)) {\n    ev.stopPropagation();\n  }\n  const ctx = element._qc_;\n  const relevantListeners = ctx && ctx.li.filter((li) => li[0] === attrName);\n  if (relevantListeners && relevantListeners.length > 0) {\n    for (const listener of relevantListeners) {\n      const results = listener[1].getFn([element, ev], () => element.isConnected)(ev, element);\n      const cancelBubble = ev.cancelBubble;\n      if (isPromise(results)) {\n        await results;\n      }\n      if (cancelBubble) {\n        ev.stopPropagation();\n      }\n    }\n    return;\n  }\n  const attrValue = element.getAttribute(attrName);\n  if (attrValue) {\n    const container = element.closest("[q\\\\:container]");\n    const qBase = container.getAttribute("q:base");\n    const qVersion = container.getAttribute("q:version") || "unknown";\n    const qManifest = container.getAttribute("q:manifest-hash") || "dev";\n    const base = new URL(qBase, doc.baseURI);\n    for (const qrl of attrValue.split("\\n")) {\n      const url = new URL(qrl, base);\n      const href = url.href;\n      const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n      const reqTime = performance.now();\n      let handler;\n      let importError;\n      let error;\n      const isSync = qrl.startsWith("#");\n      const eventData = {\n        qBase,\n        qManifest,\n        qVersion,\n        href,\n        symbol,\n        element,\n        reqTime\n      };\n      if (isSync) {\n        const hash = container.getAttribute("q:instance");\n        handler = (doc["qFuncs_" + hash] || [])[Number.parseInt(symbol)];\n        if (!handler) {\n          importError = "sync";\n          error = new Error("sym:" + symbol);\n        }\n      } else {\n        emitEvent("qsymbol", eventData);\n        const uri = url.href.split("#")[0];\n        try {\n          const module = import(\n                        uri\n          );\n          resolveContainer(container);\n          handler = (await module)[symbol];\n          if (!handler) {\n            importError = "no-symbol";\n            error = new Error(`${symbol} not in ${uri}`);\n          }\n        } catch (err) {\n          importError || (importError = "async");\n          error = err;\n        }\n      }\n      if (!handler) {\n        emitEvent("qerror", {\n          importError,\n          error,\n          ...eventData\n        });\n        console.error(error);\n        break;\n      }\n      const previousCtx = doc.__q_context__;\n      if (element.isConnected) {\n        try {\n          doc.__q_context__ = [element, ev, url];\n          const results = handler(ev, element);\n          if (isPromise(results)) {\n            await results;\n          }\n        } catch (error2) {\n          emitEvent("qerror", { error: error2, ...eventData });\n        } finally {\n          doc.__q_context__ = previousCtx;\n        }\n      }\n    }\n  }\n};\nconst emitEvent = (eventName, detail) => {\n  doc.dispatchEvent(createEvent(eventName, detail));\n};\nconst camelToKebab = (str) => str.replace(/([A-Z])/g, (a) => "-" + a.toLowerCase());\nconst processDocumentEvent = async (ev) => {\n  let type = camelToKebab(ev.type);\n  let element = ev.target;\n  broadcast("-document", ev, type);\n  while (element && element.getAttribute) {\n    const results = dispatch(element, "", ev, type);\n    let cancelBubble = ev.cancelBubble;\n    if (isPromise(results)) {\n      await results;\n    }\n    cancelBubble || (cancelBubble = cancelBubble || ev.cancelBubble || element.hasAttribute("stoppropagation:" + ev.type));\n    element = ev.bubbles && cancelBubble !== true ? element.parentElement : null;\n  }\n};\nconst processWindowEvent = (ev) => {\n  broadcast("-window", ev, camelToKebab(ev.type));\n};\nconst processReadyStateChange = () => {\n  var _a;\n  const readyState = doc.readyState;\n  if (!hasInitialized && (readyState == "interactive" || readyState == "complete")) {\n    roots.forEach(findShadowRoots);\n    hasInitialized = 1;\n    emitEvent("qinit");\n    const riC = (_a = win.requestIdleCallback) != null ? _a : win.setTimeout;\n    riC.bind(win)(() => emitEvent("qidle"));\n    if (events.has("qvisible")) {\n      const results = querySelectorAll("[on\\\\:qvisible]");\n      const observer = new IntersectionObserver((entries) => {\n        for (const entry of entries) {\n          if (entry.isIntersecting) {\n            observer.unobserve(entry.target);\n            dispatch(entry.target, "", createEvent("qvisible", entry));\n          }\n        }\n      });\n      results.forEach((el) => observer.observe(el));\n    }\n  }\n};\nconst addEventListener = (el, eventName, handler, capture = false) => {\n  el.addEventListener(eventName, handler, { capture, passive: false });\n};\nlet cleanTimer;\nconst processEventOrNode = (...eventNames) => {\n  doNotClean = true;\n  clearTimeout(cleanTimer);\n  cleanTimer = setTimeout(() => doNotClean = false, 2e4);\n  for (const eventNameOrNode of eventNames) {\n    if (typeof eventNameOrNode === "string") {\n      if (!events.has(eventNameOrNode)) {\n        roots.forEach(\n          (root) => addEventListener(root, eventNameOrNode, processDocumentEvent, true)\n        );\n        addEventListener(win, eventNameOrNode, processWindowEvent, true);\n        events.add(eventNameOrNode);\n      }\n    } else {\n      if (!roots.has(eventNameOrNode)) {\n        events.forEach(\n          (eventName) => addEventListener(eventNameOrNode, eventName, processDocumentEvent, true)\n        );\n        roots.add(eventNameOrNode);\n      }\n    }\n  }\n};\nif (!("__q_context__" in doc)) {\n  doc.__q_context__ = 0;\n  const qwikevents = win.qwikevents;\n  if (qwikevents) {\n    if (Array.isArray(qwikevents)) {\n      processEventOrNode(...qwikevents);\n    } else {\n      processEventOrNode("click", "input");\n    }\n  }\n  win.qwikevents = {\n    events,\n    roots,\n    push: processEventOrNode\n  };\n  addEventListener(doc, "readystatechange", processReadyStateChange);\n  processReadyStateChange();\n}';
   var import_bmp = __toESM(require_bmp(), 1);
   var import_cur = __toESM(require_cur(), 1);
@@ -3010,7 +3010,7 @@ globalThis.qwikOptimizer = function(module) {
     if (type && types[type].validate(buffer)) {
       return type;
     }
-    return keys.find((key => types[key].validate(buffer)));
+    return keys.find(key => types[key].validate(buffer));
   }
   function lookup(buffer) {
     const type = detector(buffer);
@@ -3170,7 +3170,7 @@ globalThis.qwikOptimizer = function(module) {
     return `Img${toPascalCase(value)}`;
   }
   function toPascalCase(string) {
-    return `${string}`.toLowerCase().replace(new RegExp(/[-_]+/, "g"), " ").replace(new RegExp(/[^\w\s]/, "g"), "").replace(new RegExp(/\s+(.)(\w*)/, "g"), (($1, $22, $3) => `${$22.toUpperCase() + $3}`)).replace(new RegExp(/\w/), (s => s.toUpperCase()));
+    return `${string}`.toLowerCase().replace(new RegExp(/[-_]+/, "g"), " ").replace(new RegExp(/[^\w\s]/, "g"), "").replace(new RegExp(/\s+(.)(\w*)/, "g"), ($1, $22, $3) => `${$22.toUpperCase() + $3}`).replace(new RegExp(/\w/), s => s.toUpperCase());
   }
   var FORCE_COLOR;
   var NODE_DISABLE_COLORS;
@@ -3270,12 +3270,12 @@ globalThis.qwikOptimizer = function(module) {
   var tryGetContext = element => element._qc_;
   var printParams = optionalParams => {
     if (qDev) {
-      return optionalParams.map((p => {
+      return optionalParams.map(p => {
         if (isNode(p) && isElement(p)) {
           return printElement(p);
         }
         return p;
-      }));
+      });
     }
     return optionalParams;
   };
@@ -3293,9 +3293,9 @@ globalThis.qwikOptimizer = function(module) {
   var createAndLogError = (asyncThrow, message, ...optionalParams) => {
     const err = message instanceof Error ? message : new Error(message);
     console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
-    asyncThrow && !qTest && setTimeout((() => {
+    asyncThrow && !qTest && setTimeout(() => {
       throw err;
-    }), 0);
+    }, 0);
     return err;
   };
   var ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
@@ -3352,11 +3352,11 @@ globalThis.qwikOptimizer = function(module) {
     if (qDev) {
       const MAP = [ "Error while serializing class or style attributes", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property {{0}}", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules", "Container is already paused. Skipping", "", "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", 'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", 'The provided Context reference "{{0}}" is not a valid context created by createContextId()', "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ];
       let text = MAP[code] ?? "";
-      parts.length && (text = text.replaceAll(/{{(\d+)}}/g, ((_, index) => {
+      parts.length && (text = text.replaceAll(/{{(\d+)}}/g, (_, index) => {
         let v = parts[index];
         v && "object" === typeof v && v.constructor === Object && (v = JSON.stringify(v).slice(0, 50));
         return v;
-      })));
+      }));
       return `Code(${code}): ${text}`;
     }
     return `Code(${code}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
@@ -3394,18 +3394,18 @@ globalThis.qwikOptimizer = function(module) {
       const urlCopy = new URL(urlDoc);
       urlCopy.hash = "";
       const importURL = urlCopy.href;
-      return import(importURL).then((mod => mod[symbolName]));
+      return import(importURL).then(mod => mod[symbolName]);
     },
-    raf: fn => new Promise((resolve => {
-      requestAnimationFrame((() => {
+    raf: fn => new Promise(resolve => {
+      requestAnimationFrame(() => {
         resolve(fn());
-      }));
-    })),
-    nextTick: fn => new Promise((resolve => {
-      setTimeout((() => {
+      });
+    }),
+    nextTick: fn => new Promise(resolve => {
+      setTimeout(() => {
         resolve(fn());
-      }));
-    })),
+      });
+    }),
     chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
   });
   var toUrl = (doc2, containerEl, url) => {
@@ -3580,16 +3580,16 @@ globalThis.qwikOptimizer = function(module) {
       return {};
     }
     const attributes = str.split(" ");
-    return Object.fromEntries(attributes.map((attr => {
+    return Object.fromEntries(attributes.map(attr => {
       const index = attr.indexOf("=");
       return index >= 0 ? [ attr.slice(0, index), unescape(attr.slice(index + 1)) ] : [ attr, "" ];
-    })));
+    }));
   };
   var serializeVirtualAttributes = map => {
     const attributes = [];
-    Object.entries(map).forEach((([key, value]) => {
+    Object.entries(map).forEach(([key, value]) => {
       value ? attributes.push(`${key}=${escape(value)}`) : attributes.push(`${key}`);
-    }));
+    });
     return attributes.join(" ");
   };
   var escape = s => s.replace(/ /g, "+");
@@ -3689,12 +3689,12 @@ globalThis.qwikOptimizer = function(module) {
     querySelectorAll(query) {
       const result = [];
       const ch = getChildren(this, isNodeElement);
-      ch.forEach((el => {
+      ch.forEach(el => {
         if (isQwikElement(el)) {
           el.matches(query) && result.push(el);
           result.concat(Array.from(el.querySelectorAll(query)));
         }
-      }));
+      });
       return result;
     }
     querySelector(query) {
@@ -3717,7 +3717,7 @@ globalThis.qwikOptimizer = function(module) {
     set innerHTML(html) {
       const parent = this.parentElement;
       if (parent) {
-        this.childNodes.forEach((a => this.removeChild(a)));
+        this.childNodes.forEach(a => this.removeChild(a));
         this.$template$.innerHTML = html;
         parent.insertBefore(this.$template$.content, this.close);
       } else {
@@ -3884,21 +3884,21 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var PROMISE_VALUE = Symbol();
-  var resolvePromise = promise => promise.then((value => {
+  var resolvePromise = promise => promise.then(value => {
     const v = {
       resolved: true,
       value: value
     };
     promise[PROMISE_VALUE] = v;
     return value;
-  }), (value => {
+  }, value => {
     const v = {
       resolved: false,
       value: value
     };
     promise[PROMISE_VALUE] = v;
     return value;
-  }));
+  });
   var collectValue = (obj, collector, leaks) => {
     if (null != obj) {
       const objType = typeof obj;
@@ -3932,9 +3932,9 @@ globalThis.qwikOptimizer = function(module) {
             return;
           }
           if (isPromise(obj)) {
-            collector.$promises$.push(resolvePromise(obj).then((value => {
+            collector.$promises$.push(resolvePromise(obj).then(value => {
               collectValue(value, collector, leaks);
-            })));
+            }));
             return;
           }
           if ("object" === objType) {
@@ -4027,12 +4027,12 @@ globalThis.qwikOptimizer = function(module) {
   };
   var inflateQrl = (qrl, elCtx) => {
     assertDefined(qrl.$capture$, "invoke: qrl capture must be defined inside useLexicalScope()", qrl);
-    return qrl.$captureRef$ = qrl.$capture$.map((idx => {
+    return qrl.$captureRef$ = qrl.$capture$.map(idx => {
       const int = parseInt(idx, 10);
       const obj = elCtx.$refMap$[int];
       assertTrue(elCtx.$refMap$.length > int, "out of bounds inflate access", idx);
       return obj;
-    }));
+    });
   };
   var getDomListeners = (elCtx, containerEl) => {
     const attributes = elCtx.$element$.attributes;
@@ -4305,7 +4305,7 @@ globalThis.qwikOptimizer = function(module) {
       if (isArray(target)) {
         return Reflect.ownKeys(target);
       }
-      return Reflect.ownKeys(target).map((a => "string" === typeof a && a.startsWith(_IMMUTABLE_PREFIX) ? a.slice(_IMMUTABLE_PREFIX.length) : a));
+      return Reflect.ownKeys(target).map(a => "string" === typeof a && a.startsWith(_IMMUTABLE_PREFIX) ? a.slice(_IMMUTABLE_PREFIX.length) : a);
     }
     getOwnPropertyDescriptor(target, prop) {
       const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
@@ -4376,10 +4376,10 @@ globalThis.qwikOptimizer = function(module) {
     const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | TaskFlagsIsComputed, 0, elCtx.$element$, qrl, signal);
     qrl.$resolveLazy$(containerState.$containerEl$);
     (elCtx.$tasks$ ||= []).push(task);
-    waitAndRun(iCtx, (() => runComputed(task, containerState, iCtx.$renderCtx$)));
+    waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$));
     return signal;
   };
-  var useComputedQrl = qrl => useConstant((() => createComputedQrl(qrl)));
+  var useComputedQrl = qrl => useConstant(() => createComputedQrl(qrl));
   implicit$FirstArg(useComputedQrl);
   implicit$FirstArg(createComputedQrl);
   var runComputed = (task, containerState, rCtx) => {
@@ -4391,22 +4391,22 @@ globalThis.qwikOptimizer = function(module) {
     iCtx.$subscriber$ = [ 0, task ];
     iCtx.$renderCtx$ = rCtx;
     const {$subsManager$: subsManager} = containerState;
-    const taskFn = task.$qrl$.getFn(iCtx, (() => {
+    const taskFn = task.$qrl$.getFn(iCtx, () => {
       subsManager.$clearSub$(task);
-    }));
+    });
     const ok = returnValue => {
-      untrack((() => {
+      untrack(() => {
         const signal = task.$state$;
         signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
         signal.untrackedValue = returnValue;
         signal[QObjectManagerSymbol].$notifySubs$();
-      }));
+      });
     };
     const fail = reason => {
       handleError(reason, hostElement, rCtx);
     };
     try {
-      return maybeThen(task.$qrl$.$resolveLazy$(containerState.$containerEl$), (() => {
+      return maybeThen(task.$qrl$.$resolveLazy$(containerState.$containerEl$), () => {
         const result = taskFn();
         if (isPromise(result)) {
           const warningMessage = "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.";
@@ -4420,7 +4420,7 @@ globalThis.qwikOptimizer = function(module) {
           return result.then(ok, fail);
         }
         ok(result);
-      }));
+      });
     } catch (reason) {
       fail(reason);
     }
@@ -4553,7 +4553,7 @@ globalThis.qwikOptimizer = function(module) {
     return ctx;
   };
   function setLocale(locale) {
-    locale;
+    0;
   }
   var _context;
   var tryGetInvokeContext = () => {
@@ -4680,24 +4680,24 @@ globalThis.qwikOptimizer = function(module) {
   var validateJSXNode = node => {
     if (qDev) {
       const {type: type, props: props, immutableProps: immutableProps, children: children} = node;
-      invoke(void 0, (() => {
+      invoke(void 0, () => {
         const isQwikC = isQwikComponent(type);
         if (!isString(type) && !isFunction(type)) {
           throw new Error(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`);
         }
         if (children) {
           const flatChildren = isArray(children) ? children.flat() : [ children ];
-          (isString(type) || isQwikC) && flatChildren.forEach((child => {
+          (isString(type) || isQwikC) && flatChildren.forEach(child => {
             if (!isValidJSXChild(child)) {
               const typeObj = typeof child;
               let explanation = "";
               "object" === typeObj ? explanation = (null == child ? void 0 : child.constructor) ? `it's an instance of "${null == child ? void 0 : child.constructor.name}".` : `it's a object literal: ${printObjectLiteral(child)} ` : "function" === typeObj ? explanation += `it's a function named "${child.name}".` : explanation = `it's a "${typeObj}": ${String(child)}.`;
               throw new Error(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`);
             }
-          }));
+          });
           if (isBrowser && (isFunction(type) || immutableProps)) {
             const keys2 = {};
-            flatChildren.forEach((child => {
+            flatChildren.forEach(child => {
               if (isJSXNode(child) && null != child.key) {
                 const key = String(child.type) + ":" + child.key;
                 if (keys2[key]) {
@@ -4707,7 +4707,7 @@ globalThis.qwikOptimizer = function(module) {
                   keys2[key] = true;
                 }
               }
-            }));
+            });
           }
         }
         const allProps = [ ...Object.entries(props), ...immutableProps ? Object.entries(immutableProps) : [] ];
@@ -4720,21 +4720,21 @@ globalThis.qwikOptimizer = function(module) {
           }
         }
         if (isString(type)) {
-          const hasSetInnerHTML = allProps.some((a => "dangerouslySetInnerHTML" === a[0]));
+          const hasSetInnerHTML = allProps.some(a => "dangerouslySetInnerHTML" === a[0]);
           if (hasSetInnerHTML && children) {
             const err = createJSXError(`The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`, node);
             logError(err);
           }
-          if (allProps.some((a => "children" === a[0]))) {
+          if (allProps.some(a => "children" === a[0])) {
             throw new Error(`The JSX element <${type}> can not have both 'children' as a property.`);
           }
           "style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.dev/docs/components/styles/#usestyles for more information.");
           "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'");
         }
-      }));
+      });
     }
   };
-  var printObjectLiteral = obj => `{ ${Object.keys(obj).map((key => `"${key}"`)).join(", ")} }`;
+  var printObjectLiteral = obj => `{ ${Object.keys(obj).map(key => `"${key}"`).join(", ")} }`;
   var isJSXNode = n => {
     if (qDev) {
       if (n instanceof JSXNodeImpl) {
@@ -4828,7 +4828,7 @@ globalThis.qwikOptimizer = function(module) {
       result.loading = false;
     } else if ("1" === first) {
       result._state = "pending";
-      result.value = new Promise((() => {}));
+      result.value = new Promise(() => {});
       result.loading = true;
     } else if ("2" === first) {
       result._state = "rejected";
@@ -4908,7 +4908,7 @@ globalThis.qwikOptimizer = function(module) {
         resource.value = Promise.resolve(resource._resolved);
       } else if ("rejected" === resource._state) {
         const p = Promise.reject(resource._error);
-        p.catch((() => null));
+        p.catch(() => null);
         resource._error = getObject(resource._error);
         resource.value = p;
       }
@@ -5064,9 +5064,9 @@ globalThis.qwikOptimizer = function(module) {
     $test$: v => "undefined" !== typeof FormData && v instanceof globalThis.FormData,
     $serialize$: formData => {
       const array = [];
-      formData.forEach(((value, key) => {
+      formData.forEach((value, key) => {
         "string" === typeof value ? array.push([ key, value ]) : array.push([ key, value.name ]);
-      }));
+      });
       return JSON.stringify(array);
     },
     $prepare$: data => {
@@ -5140,7 +5140,7 @@ globalThis.qwikOptimizer = function(module) {
     $prefix$: "",
     $test$: v => v instanceof Set,
     $collect$: (set, collector, leaks) => {
-      set.forEach((value => collectValue(value, collector, leaks)));
+      set.forEach(value => collectValue(value, collector, leaks));
     },
     $serialize$: (v, getObjID) => Array.from(v).map(getObjID).join(" "),
     $prepare$: data => {
@@ -5162,16 +5162,16 @@ globalThis.qwikOptimizer = function(module) {
     $prefix$: "",
     $test$: v => v instanceof Map,
     $collect$: (map, collector, leaks) => {
-      map.forEach(((value, key) => {
+      map.forEach((value, key) => {
         collectValue(value, collector, leaks);
         collectValue(key, collector, leaks);
-      }));
+      });
     },
     $serialize$: (map, getObjID) => {
       const result = [];
-      map.forEach(((value, key) => {
+      map.forEach((value, key) => {
         result.push(getObjID(key) + " " + getObjID(value));
-      }));
+      });
       return result.join(" ");
     },
     $prepare$: data => {
@@ -5199,13 +5199,13 @@ globalThis.qwikOptimizer = function(module) {
   var serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, SetSerializer, MapSerializer, StringSerializer, Uint8ArraySerializer ];
   var serializerByPrefix = (() => {
     const serializerByPrefix2 = [];
-    serializers.forEach((s => {
+    serializers.forEach(s => {
       const prefix = s.$prefixCode$;
       while (serializerByPrefix2.length < prefix) {
         serializerByPrefix2.push(void 0);
       }
       serializerByPrefix2.push(s);
-    }));
+    });
     return serializerByPrefix2;
   })();
   function getSerializer(obj) {
@@ -5217,7 +5217,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     return;
   }
-  var collectorSerializers = serializers.filter((a => a.$collect$));
+  var collectorSerializers = serializers.filter(a => a.$collect$);
   var canSerialize = obj => {
     for (const s of serializers) {
       if (s.$test$(obj)) {
@@ -5285,13 +5285,13 @@ globalThis.qwikOptimizer = function(module) {
         }
         if (isArray(unwrapped)) {
           let expectIndex = 0;
-          unwrapped.forEach(((v, i) => {
+          unwrapped.forEach((v, i) => {
             if (i !== expectIndex) {
               throw qError(QError_verifySerializable, unwrapped);
             }
             _verifySerializable(v, seen, ctx + "[" + i + "]");
             expectIndex = i + 1;
-          }));
+          });
           return value;
         }
         if (isSerializableObject(unwrapped)) {
@@ -5360,7 +5360,7 @@ globalThis.qwikOptimizer = function(module) {
   };
   var sortQueue = () => {
     if (queueDirty) {
-      queue.sort(((e, t) => e.u - t.u));
+      queue.sort((e, t) => e.u - t.u);
       queueDirty = 0;
     }
   };
@@ -5381,9 +5381,9 @@ globalThis.qwikOptimizer = function(module) {
       preloadOne(e);
     }
     if (config.t && !queue.length) {
-      const e = [ ...bundles.values() ].filter((e2 => e2.i > BundleImportState_None));
-      const t = e.reduce(((e2, t2) => e2 + t2.p), 0);
-      const o = e.reduce(((e2, t2) => e2 + t2.$), 0);
+      const e = [ ...bundles.values() ].filter(e2 => e2.i > BundleImportState_None);
+      const t = e.reduce((e2, t2) => e2 + t2.p, 0);
+      const o = e.reduce((e2, t2) => e2 + t2.$, 0);
       log(`>>>> done ${e.length}/${bundles.size} total: ${t}ms waited, ${o}ms loaded`);
     }
   };
@@ -5473,13 +5473,13 @@ globalThis.qwikOptimizer = function(module) {
     }
     isBrowser && trigger();
   };
-  isBrowser && document.addEventListener("qsymbol", (e => {
+  isBrowser && document.addEventListener("qsymbol", e => {
     const {symbol: t, href: o} = e.detail;
     if (o) {
       const e2 = t.slice(t.lastIndexOf("_") + 1);
       preload(e2, 1);
     }
-  }));
+  });
   var base;
   var graph;
   var makeBundle = (e, t) => ({
@@ -5566,20 +5566,20 @@ globalThis.qwikOptimizer = function(module) {
       const start = now();
       const ctx = tryGetInvokeContext();
       if (null !== symbolFn) {
-        symbolRef = symbolFn().then((module2 => qrl.resolved = symbolRef = wrapFn(module2[symbol])));
+        symbolRef = symbolFn().then(module2 => qrl.resolved = symbolRef = wrapFn(module2[symbol]));
       } else {
         const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
-        symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
+        symbolRef = maybeThen(imported, ref => qrl.resolved = symbolRef = wrapFn(ref));
       }
-      "object" === typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, null == ctx ? void 0 : ctx.$element$, start)), (err => {
+      "object" === typeof symbolRef && isPromise(symbolRef) && symbolRef.then(() => emitUsedSymbol(symbol, null == ctx ? void 0 : ctx.$element$, start), err => {
         console.error(`qrl ${symbol} failed to load`, err);
         symbolRef = null;
-      }));
+      });
       return symbolRef;
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
     function invokeFn(currentCtx, beforeFn) {
-      return (...args) => maybeThen(resolveLazy(), (f => {
+      return (...args) => maybeThen(resolveLazy(), f => {
         if (!isFunction(f)) {
           throw qError(QError_qrlIsNotFunction);
         }
@@ -5588,7 +5588,7 @@ globalThis.qwikOptimizer = function(module) {
         }
         const context = createOrReuseInvocationContext(currentCtx);
         return invoke.call(this, context, f, ...args);
-      }));
+      });
     }
     const createOrReuseInvocationContext = invoke2 => null == invoke2 ? newInvokeContext() : isArray(invoke2) ? newInvokeContextFromTuple(invoke2) : invoke2;
     const resolvedSymbol = refSymbol ?? symbol;
@@ -5610,7 +5610,7 @@ globalThis.qwikOptimizer = function(module) {
       dev: null,
       resolved: void 0
     });
-    symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved))));
+    symbolRef && (symbolRef = maybeThen(symbolRef, resolved => qrl.resolved = symbolRef = wrapFn(resolved)));
     qDev && seal(qrl);
     isBrowser && resolvedSymbol && preload(resolvedSymbol, .8);
     return qrl;
@@ -5696,9 +5696,9 @@ globalThis.qwikOptimizer = function(module) {
     if (!devSsrServer) {
       return;
     }
-    const hasQwikCity = null == (_a = server.config.plugins) ? void 0 : _a.some((plugin => "vite-plugin-qwik-city" === plugin.name));
+    const hasQwikCity = null == (_a = server.config.plugins) ? void 0 : _a.some(plugin => "vite-plugin-qwik-city" === plugin.name);
     const cssImportedByCSS = new Set;
-    server.middlewares.use((async (req, res, next) => {
+    server.middlewares.use(async (req, res, next) => {
       try {
         const {ORIGIN: ORIGIN} = process.env;
         const domain = ORIGIN ?? getOrigin(req);
@@ -5743,26 +5743,26 @@ globalThis.qwikOptimizer = function(module) {
             const added = new Set;
             const CSS_EXTENSIONS = [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ];
             const JS_EXTENSIONS = /\.[mc]?[tj]sx?$/;
-            Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
-              entry[1].forEach((v => {
+            Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach(entry => {
+              entry[1].forEach(v => {
                 var _a2, _b;
                 const segment = null == (_b = null == (_a2 = v.info) ? void 0 : _a2.meta) ? void 0 : _b.segment;
                 let url2 = v.url;
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));
                 const {pathId: pathId, query: query} = parseId(v.url);
-                if ("" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
+                if ("" === query && CSS_EXTENSIONS.some(ext => pathId.endsWith(ext))) {
                   const isEntryCSS = 0 === v.importers.size;
-                  const hasCSSImporter = Array.from(v.importers).some((importer => {
+                  const hasCSSImporter = Array.from(v.importers).some(importer => {
                     const importerPath = importer.url || importer.file;
-                    const isCSS = importerPath && CSS_EXTENSIONS.some((ext => importerPath.endsWith(ext)));
+                    const isCSS = importerPath && CSS_EXTENSIONS.some(ext => importerPath.endsWith(ext));
                     isCSS && v.url && cssImportedByCSS.add(v.url);
                     return isCSS;
-                  }));
-                  const hasJSImporter = Array.from(v.importers).some((importer => {
+                  });
+                  const hasJSImporter = Array.from(v.importers).some(importer => {
                     const importerPath = importer.url || importer.file;
                     return importerPath && JS_EXTENSIONS.test(importerPath);
-                  }));
+                  });
                   if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url) && !added.has(v.url)) {
                     added.add(v.url);
                     manifest.injections.push({
@@ -5775,8 +5775,8 @@ globalThis.qwikOptimizer = function(module) {
                     });
                   }
                 }
-              }));
-            }));
+              });
+            });
             const renderOpts = {
               debug: true,
               locale: serverData.locale,
@@ -5796,28 +5796,28 @@ globalThis.qwikOptimizer = function(module) {
             res.writeHead(status);
             const result = await render(renderOpts);
             "html" in result && res.write(result.html);
-            Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
-              entry[1].forEach((v => {
+            Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach(entry => {
+              entry[1].forEach(v => {
                 const {pathId: pathId, query: query} = parseId(v.url);
-                if (!added.has(v.url) && "" === query && CSS_EXTENSIONS.some((ext => pathId.endsWith(ext)))) {
+                if (!added.has(v.url) && "" === query && CSS_EXTENSIONS.some(ext => pathId.endsWith(ext))) {
                   const isEntryCSS = 0 === v.importers.size;
-                  const hasCSSImporter = Array.from(v.importers).some((importer => {
+                  const hasCSSImporter = Array.from(v.importers).some(importer => {
                     const importerPath = importer.url || importer.file;
-                    const isCSS = importerPath && CSS_EXTENSIONS.some((ext => importerPath.endsWith(ext)));
+                    const isCSS = importerPath && CSS_EXTENSIONS.some(ext => importerPath.endsWith(ext));
                     isCSS && v.url && cssImportedByCSS.add(v.url);
                     return isCSS;
-                  }));
-                  const hasJSImporter = Array.from(v.importers).some((importer => {
+                  });
+                  const hasJSImporter = Array.from(v.importers).some(importer => {
                     const importerPath = importer.url || importer.file;
                     return importerPath && JS_EXTENSIONS.test(importerPath);
-                  }));
+                  });
                   if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
                     res.write(`<link rel="stylesheet" href="${base2}${v.url.slice(1)}">`);
                     added.add(v.url);
                   }
                 }
-              }));
-            }));
+              });
+            });
             res.write(END_SSR_SCRIPT(opts, opts.srcDir ? opts.srcDir : path.join(opts.rootDir, "src")));
             res.end();
           } else {
@@ -5835,20 +5835,20 @@ globalThis.qwikOptimizer = function(module) {
       } finally {
         "function" === typeof res._qwikRenderResolve && res._qwikRenderResolve();
       }
-    }));
-    server.middlewares.use((function(err, _req, res, next) {
+    });
+    server.middlewares.use(function(err, _req, res, next) {
       res.writableEnded || res.write(`<style>${VITE_ERROR_OVERLAY_STYLES}</style>`);
       return next(err);
-    }));
-    setTimeout((() => {
+    });
+    setTimeout(() => {
       console.log(`\n  🚧 ${magenta("Please note that development mode is slower than production.")}`);
-    }), 1e3);
+    }, 1e3);
   }
   async function configurePreviewServer(middlewares, ssrOutDir, sys, path) {
     const fs = await sys.dynamicImport("node:fs");
     const url = await sys.dynamicImport("node:url");
-    const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(ssrOutDir, `entry.preview.${ext}`)));
-    const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
+    const entryPreviewPaths = [ "mjs", "cjs", "js" ].map(ext => path.join(ssrOutDir, `entry.preview.${ext}`));
+    const entryPreviewModulePath = entryPreviewPaths.find(p => fs.existsSync(p));
     if (!entryPreviewModulePath) {
       return invalidPreviewMessage(middlewares, `Unable to find output "${ssrOutDir}/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.`);
     }
@@ -5876,12 +5876,12 @@ globalThis.qwikOptimizer = function(module) {
   }
   function invalidPreviewMessage(middlewares, msg) {
     console.log(`\n❌ ${msg}\n`);
-    middlewares.use(((_, res) => {
+    middlewares.use((_, res) => {
       res.writeHead(400, {
         "Content-Type": "text/plain"
       });
       res.end(msg);
-    }));
+    });
   }
   var CYPRESS_DEV_SERVER_PATH = "/__cypress/src";
   var FS_PREFIX = "/@fs/";
@@ -5913,7 +5913,7 @@ globalThis.qwikOptimizer = function(module) {
       return false;
     }
     const acceptHeader = req.headers.accept || "";
-    const accepts = acceptHeader.split(",").map((accept => accept.split(";")[0]));
+    const accepts = acceptHeader.split(",").map(accept => accept.split(";")[0]);
     if (1 == accepts.length && accepts.includes("*/*")) {
       return true;
     }
@@ -6064,7 +6064,7 @@ globalThis.qwikOptimizer = function(module) {
           clientDevInput = qwikPlugin.normalizePath(clientDevInput);
         }
         const vendorRoots = shouldFindVendors ? await findQwikRoots(sys, sys.cwd()) : [];
-        const vendorIds = vendorRoots.map((v => v.id));
+        const vendorIds = vendorRoots.map(v => v.id);
         const isDevelopment = "development" === buildMode;
         const qDevKey = "globalThis.qDev";
         const qTestKey = "globalThis.qTest";
@@ -6162,12 +6162,12 @@ globalThis.qwikOptimizer = function(module) {
       async buildStart() {
         const resolver = this.resolve.bind(this);
         await qwikPlugin.validateSource(resolver);
-        qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir2) => {
-          diagnostics.forEach((d => {
+        qwikPlugin.onDiagnostics((diagnostics, optimizer, srcDir2) => {
+          diagnostics.forEach(d => {
             const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir2, d.file));
             "error" === d.category ? this.error(createRollupError2(id, d)) : this.warn(createRollupError2(id, d));
-          }));
-        }));
+          });
+        });
         await qwikPlugin.buildStart(this);
       },
       resolveId(id, importer, resolveIdOpts) {
@@ -6217,7 +6217,7 @@ globalThis.qwikOptimizer = function(module) {
             for (const [fileName, b] of Object.entries(rollupBundle)) {
               if ("asset" === b.type) {
                 const baseFilename = basePathname + fileName;
-                if (STYLING.some((ext => fileName.endsWith(ext)))) {
+                if (STYLING.some(ext => fileName.endsWith(ext))) {
                   "string" === typeof b.source && b.source.length < opts.inlineStylesUpToBytes ? injections.push({
                     tag: "style",
                     location: "head",
@@ -6234,7 +6234,7 @@ globalThis.qwikOptimizer = function(module) {
                     }
                   });
                 } else {
-                  const selectedFont = FONTS.find((ext => fileName.endsWith(ext)));
+                  const selectedFont = FONTS.find(ext => fileName.endsWith(ext));
                   selectedFont && !disableFontPreload && injections.unshift({
                     tag: "link",
                     location: "head",
@@ -6278,7 +6278,7 @@ globalThis.qwikOptimizer = function(module) {
                   const extlessName = sys.path.basename(bundleFileName, ext);
                   const js = `${extlessName}.js`;
                   const moduleName = extlessName + ext;
-                  const hasJsScript = outputs.some((f => sys.path.basename(f) === js));
+                  const hasJsScript = outputs.some(f => sys.path.basename(f) === js);
                   if (!hasJsScript) {
                     const bundleOutDir = sys.path.dirname(bundeName);
                     const fs = await sys.dynamicImport("node:fs");
@@ -6328,7 +6328,7 @@ globalThis.qwikOptimizer = function(module) {
         var _a, _b, _c;
         if ("vite-plugin-qwik" == log2.plugin) {
           const color = LOG_COLOR[level] || ANSI_COLOR.White;
-          const frames = (log2.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+          const frames = (log2.frame || "").split("\n").map(line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line);
           console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log2.plugin}](${level}): ${log2.message}\n`, `  ${null == (_a = null == log2 ? void 0 : log2.loc) ? void 0 : _a.file}:${null == (_b = null == log2 ? void 0 : log2.loc) ? void 0 : _b.line}:${null == (_c = null == log2 ? void 0 : log2.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
           return false;
         }
@@ -6403,7 +6403,7 @@ globalThis.qwikOptimizer = function(module) {
             "object" === typeof dependencies && packages.push(...Object.keys(dependencies));
             "object" === typeof devDependencies && packages.push(...Object.keys(devDependencies));
             const basedir = sys.cwd();
-            await Promise.all(packages.map((async id => {
+            await Promise.all(packages.map(async id => {
               const pkgJsonPath = await findDepPkgJsonPath(sys, id, basedir);
               if (pkgJsonPath) {
                 const pkgJsonContent = await fs.promises.readFile(pkgJsonPath, "utf-8");
@@ -6417,7 +6417,7 @@ globalThis.qwikOptimizer = function(module) {
                   paths.set(await fs.promises.realpath(sys.path.resolve(sys.path.dirname(pkgJsonPath), p)), id);
                 }
               }
-            })));
+            }));
           } catch (e) {
             console.error(e);
           }
@@ -6426,10 +6426,10 @@ globalThis.qwikOptimizer = function(module) {
         packageJsonDir = sys.path.dirname(packageJsonDir);
       } while (packageJsonDir !== prevPackageJsonDir);
     }
-    return Array.from(paths).map((([path, id]) => ({
+    return Array.from(paths).map(([path, id]) => ({
       path: path,
       id: id
-    })));
+    }));
   };
   var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
   var CLIENT_DEV_INPUT = "entry.dev";
