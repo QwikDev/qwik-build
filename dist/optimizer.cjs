@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+49ceeb0
+ * @builder.io/qwik/optimizer 1.15.0-dev+536bdc3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.15.0-dev+49ceeb0"
+    qwik: "1.15.0-dev+536bdc3"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1720,9 +1720,6 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
   }
-  var preloaderRegex = /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/;
-  var coreRegex = /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/;
-  var qwikLoaderRegex = /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/;
   function generateManifestFromBundles(path, segments, injections, outputBundles, opts, debug, canonPath) {
     const manifest = {
       version: "1",
@@ -1774,14 +1771,13 @@ globalThis.qwikOptimizer = function(module) {
       bundleImports.length > 0 && (bundle.imports = bundleImports);
       const bundleDynamicImports = outputBundle.dynamicImports.filter(i => outputBundle.code.includes(path.basename(i))).map(i => getBundleName(i)).filter(Boolean);
       bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
-      outputBundle.facadeModuleId && (preloaderRegex.test(outputBundle.facadeModuleId) ? manifest.preloader = bundleFileName : coreRegex.test(outputBundle.facadeModuleId) ? manifest.core = bundleFileName : qwikLoaderRegex.test(outputBundle.facadeModuleId) && (manifest.qwikLoader = bundleFileName));
       const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
       const modulePaths = ids.filter(m => !m.startsWith("\0")).map(m => path.relative(opts.rootDir, m));
       if (modulePaths.length > 0) {
         bundle.origins = modulePaths;
-        !manifest.preloader && modulePaths.some(m => preloaderRegex.test(m)) && (manifest.preloader = bundleFileName);
-        !manifest.core && modulePaths.some(m => coreRegex.test(m)) && (manifest.core = bundleFileName);
-        !manifest.qwikLoader && modulePaths.some(m => qwikLoaderRegex.test(m)) && (manifest.qwikLoader = bundleFileName);
+        modulePaths.some(m => /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(m)) && (manifest.preloader = bundleFileName);
+        modulePaths.some(m => /[/\\]qwik[/\\]dist[/\\]core\.[^/]*js$/.test(m)) && (manifest.core = bundleFileName);
+        modulePaths.some(m => /[/\\]qwik[/\\]dist[/\\]qwikloader(\.debug)?\.[^/]*js$/.test(m)) && (manifest.qwikLoader = bundleFileName);
       }
       manifest.bundles[bundleFileName] = bundle;
     }
@@ -2707,14 +2703,12 @@ globalThis.qwikOptimizer = function(module) {
         }
       }
       const module2 = getModuleInfo(id2);
-      if (module2) {
-        const segment = module2.meta.segment;
-        if (segment) {
-          const {hash: hash} = segment;
-          const chunkName = (null == (_a = opts.entryStrategy.manual) ? void 0 : _a[hash]) || segment.entry;
-          if (chunkName) {
-            return chunkName;
-          }
+      const segment = module2.meta.segment;
+      if (segment) {
+        const {hash: hash} = segment;
+        const chunkName = (null == (_a = opts.entryStrategy.manual) ? void 0 : _a[hash]) || segment.entry;
+        if (chunkName) {
+          return chunkName;
         }
       }
       return null;
