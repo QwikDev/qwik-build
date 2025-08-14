@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.15.0-dev+9bcb4ee
+ * @builder.io/qwik 1.15.0-dev+49ceeb0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.15.0-dev+9bcb4ee";
+    const version = "1.15.0-dev+49ceeb0";
 
     /**
      * @internal
@@ -1320,7 +1320,7 @@
     };
 
     const executeComponent = (rCtx, elCtx, attempt) => {
-        elCtx.$flags$ &= -2;
+        elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
         elCtx.$flags$ |= HOST_FLAG_MOUNTED;
         elCtx.$slots$ = [];
         elCtx.li.length = 0;
@@ -1761,7 +1761,7 @@
                     const placeholderCtx = createMockQContext(1);
                     const listeners = placeholderCtx.li;
                     listeners.push(...elCtx.li);
-                    elCtx.$flags$ &= -3;
+                    elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
                     placeholderCtx.$id$ = getNextIndex(rCtx);
                     const attributes = {
                         type: 'placeholder',
@@ -1931,7 +1931,7 @@
                 }
                 if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                     listeners.push(...hostCtx.li);
-                    hostCtx.$flags$ &= -3;
+                    hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
                 }
             }
             // Reset HOST flags
@@ -1949,7 +1949,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                     if (flags & IS_TABLE && !(tagName in tableContent)) {
                         throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                     }
-                    flags &= -257;
+                    flags &= ~IS_TABLE;
                 }
                 if (tagName === 'button') {
                     if (flags & IS_BUTTON) {
@@ -2050,7 +2050,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 flags |= IS_HTML;
             }
             else {
-                flags &= -5;
+                flags &= ~IS_HTML;
             }
             if (node.flags & static_subtree) {
                 flags |= IS_IMMUTABLE$1;
@@ -4105,7 +4105,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
     };
     const runResource = (task, containerState, rCtx, waitOn) => {
-        task.$flags$ &= -17;
+        task.$flags$ &= ~TaskFlagsIsDirty;
         cleanupTask(task);
         const el = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, TaskEvent);
@@ -4216,7 +4216,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return promise;
     };
     const runTask = (task, containerState, rCtx) => {
-        task.$flags$ &= -17;
+        task.$flags$ &= ~TaskFlagsIsDirty;
         cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, TaskEvent);
@@ -4268,7 +4268,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const runComputed = (task, containerState, rCtx) => {
         assertSignal(task.$state$);
-        task.$flags$ &= -17;
+        task.$flags$ &= ~TaskFlagsIsDirty;
         cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, ComputedEvent);
@@ -4281,7 +4281,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const ok = (returnValue) => {
             untrack(() => {
                 const signal = task.$state$;
-                signal[QObjectSignalFlags] &= -3;
+                signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
                 signal.untrackedValue = returnValue;
                 signal[QObjectManagerSymbol].$notifySubs$();
             });
@@ -4327,7 +4327,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const destroyTask = (task) => {
         if (task.$flags$ & TaskFlagsIsCleanup) {
-            task.$flags$ &= -33;
+            task.$flags$ &= ~TaskFlagsIsCleanup;
             const cleanup = task.$qrl$;
             cleanup();
         }
@@ -5251,7 +5251,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 return;
             }
             if (isSvg && tag === 'foreignObject') {
-                flags &= -2;
+                flags &= ~IS_SVG;
             }
             const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
             if (setsInnerHTML) {
@@ -5341,7 +5341,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             slotRctx.$slotCtx$ = slotCtx;
             slotCtx.$vdom$ = newVdom;
             newVdom.$elm$ = slotEl;
-            let newFlags = flags & -2;
+            let newFlags = flags & ~IS_SVG;
             if (slotEl.isSvg) {
                 newFlags |= IS_SVG;
             }
@@ -5455,7 +5455,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         else {
             elm = createElement(doc, tag, isSvg);
-            flags &= -3;
+            flags &= ~IS_HEAD;
         }
         if (vnode.$flags$ & static_subtree) {
             flags |= IS_IMMUTABLE;
@@ -5494,7 +5494,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             if (isSvg && tag === 'foreignObject') {
                 isSvg = false;
-                flags &= -2;
+                flags &= ~IS_SVG;
             }
             if (currentComponent) {
                 const scopedIds = currentComponent.$scopeIds$;
@@ -5505,7 +5505,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
                 if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                     elCtx.li.push(...currentComponent.li);
-                    currentComponent.$flags$ &= -3;
+                    currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
                 }
             }
             for (const listener of elCtx.li) {
@@ -5520,7 +5520,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             if (isSvg && tag === 'foreignObject') {
                 isSvg = false;
-                flags &= -2;
+                flags &= ~IS_SVG;
             }
         }
         else if (OnRenderProp in props) {
@@ -5569,7 +5569,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     slotRctx.$slotCtx$ = slotCtx;
                     slotCtx.$vdom$ = newVnode;
                     newVnode.$elm$ = slotEl;
-                    let newFlags = flags & -2;
+                    let newFlags = flags & ~IS_SVG;
                     if (slotEl.isSvg) {
                         newFlags |= IS_SVG;
                     }

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.15.0-dev+9bcb4ee
+ * @builder.io/qwik 1.15.0-dev+49ceeb0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.15.0-dev+9bcb4ee";
+const version = "1.15.0-dev+49ceeb0";
 
 /**
  * @internal
@@ -1318,7 +1318,7 @@ const isUnitlessNumber = (name) => {
 };
 
 const executeComponent = (rCtx, elCtx, attempt) => {
-    elCtx.$flags$ &= -2;
+    elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
     elCtx.$flags$ |= HOST_FLAG_MOUNTED;
     elCtx.$slots$ = [];
     elCtx.li.length = 0;
@@ -1759,7 +1759,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
                 const placeholderCtx = createMockQContext(1);
                 const listeners = placeholderCtx.li;
                 listeners.push(...elCtx.li);
-                elCtx.$flags$ &= -3;
+                elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
                 placeholderCtx.$id$ = getNextIndex(rCtx);
                 const attributes = {
                     type: 'placeholder',
@@ -1929,7 +1929,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             }
             if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 listeners.push(...hostCtx.li);
-                hostCtx.$flags$ &= -3;
+                hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
             }
         }
         // Reset HOST flags
@@ -1947,7 +1947,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 if (flags & IS_TABLE && !(tagName in tableContent)) {
                     throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                 }
-                flags &= -257;
+                flags &= ~IS_TABLE;
             }
             if (tagName === 'button') {
                 if (flags & IS_BUTTON) {
@@ -2048,7 +2048,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             flags |= IS_HTML;
         }
         else {
-            flags &= -5;
+            flags &= ~IS_HTML;
         }
         if (node.flags & static_subtree) {
             flags |= IS_IMMUTABLE$1;
@@ -4103,7 +4103,7 @@ const runSubscriber = async (task, containerState, rCtx) => {
     }
 };
 const runResource = (task, containerState, rCtx, waitOn) => {
-    task.$flags$ &= -17;
+    task.$flags$ &= ~TaskFlagsIsDirty;
     cleanupTask(task);
     const el = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, TaskEvent);
@@ -4214,7 +4214,7 @@ const runResource = (task, containerState, rCtx, waitOn) => {
     return promise;
 };
 const runTask = (task, containerState, rCtx) => {
-    task.$flags$ &= -17;
+    task.$flags$ &= ~TaskFlagsIsDirty;
     cleanupTask(task);
     const hostElement = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, TaskEvent);
@@ -4266,7 +4266,7 @@ const runTask = (task, containerState, rCtx) => {
 };
 const runComputed = (task, containerState, rCtx) => {
     assertSignal(task.$state$);
-    task.$flags$ &= -17;
+    task.$flags$ &= ~TaskFlagsIsDirty;
     cleanupTask(task);
     const hostElement = task.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, ComputedEvent);
@@ -4279,7 +4279,7 @@ const runComputed = (task, containerState, rCtx) => {
     const ok = (returnValue) => {
         untrack(() => {
             const signal = task.$state$;
-            signal[QObjectSignalFlags] &= -3;
+            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
             signal.untrackedValue = returnValue;
             signal[QObjectManagerSymbol].$notifySubs$();
         });
@@ -4325,7 +4325,7 @@ const cleanupTask = (task) => {
 };
 const destroyTask = (task) => {
     if (task.$flags$ & TaskFlagsIsCleanup) {
-        task.$flags$ &= -33;
+        task.$flags$ &= ~TaskFlagsIsCleanup;
         const cleanup = task.$qrl$;
         cleanup();
     }
@@ -5249,7 +5249,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
             return;
         }
         if (isSvg && tag === 'foreignObject') {
-            flags &= -2;
+            flags &= ~IS_SVG;
         }
         const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
         if (setsInnerHTML) {
@@ -5339,7 +5339,7 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         slotRctx.$slotCtx$ = slotCtx;
         slotCtx.$vdom$ = newVdom;
         newVdom.$elm$ = slotEl;
-        let newFlags = flags & -2;
+        let newFlags = flags & ~IS_SVG;
         if (slotEl.isSvg) {
             newFlags |= IS_SVG;
         }
@@ -5453,7 +5453,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
     }
     else {
         elm = createElement(doc, tag, isSvg);
-        flags &= -3;
+        flags &= ~IS_HEAD;
     }
     if (vnode.$flags$ & static_subtree) {
         flags |= IS_IMMUTABLE;
@@ -5492,7 +5492,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         }
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
-            flags &= -2;
+            flags &= ~IS_SVG;
         }
         if (currentComponent) {
             const scopedIds = currentComponent.$scopeIds$;
@@ -5503,7 +5503,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
             }
             if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 elCtx.li.push(...currentComponent.li);
-                currentComponent.$flags$ &= -3;
+                currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
             }
         }
         for (const listener of elCtx.li) {
@@ -5518,7 +5518,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         }
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
-            flags &= -2;
+            flags &= ~IS_SVG;
         }
     }
     else if (OnRenderProp in props) {
@@ -5567,7 +5567,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 slotRctx.$slotCtx$ = slotCtx;
                 slotCtx.$vdom$ = newVnode;
                 newVnode.$elm$ = slotEl;
-                let newFlags = flags & -2;
+                let newFlags = flags & ~IS_SVG;
                 if (slotEl.isSvg) {
                     newFlags |= IS_SVG;
                 }

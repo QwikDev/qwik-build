@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.15.0-dev+9bcb4ee
+ * @builder.io/qwik/cli 1.15.0-dev+49ceeb0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -988,9 +988,9 @@ var require_path_key = __commonJS({
   }
 });
 
-// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/resolveCommand.js
+// node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/resolveCommand.js
 var require_resolveCommand = __commonJS({
-  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/resolveCommand.js"(exports2, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/resolveCommand.js"(exports2, module2) {
     "use strict";
     var path3 = require("path");
     var which = require_which();
@@ -1030,9 +1030,9 @@ var require_resolveCommand = __commonJS({
   }
 });
 
-// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/escape.js
+// node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/escape.js
 var require_escape = __commonJS({
-  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/escape.js"(exports2, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/escape.js"(exports2, module2) {
     "use strict";
     var metaCharsRegExp = /([()\][%!^"`<>&|;, *?])/g;
     function escapeCommand(arg) {
@@ -1041,8 +1041,8 @@ var require_escape = __commonJS({
     }
     function escapeArgument(arg, doubleEscapeMetaChars) {
       arg = `${arg}`;
-      arg = arg.replace(/(\\*)"/g, '$1$1\\"');
-      arg = arg.replace(/(\\*)$/, "$1$1");
+      arg = arg.replace(/(?=(\\+?)?)\1"/g, '$1$1\\"');
+      arg = arg.replace(/(?=(\\+?)?)\1$/, "$1$1");
       arg = `"${arg}"`;
       arg = arg.replace(metaCharsRegExp, "^$1");
       if (doubleEscapeMetaChars) {
@@ -1083,9 +1083,9 @@ var require_shebang_command = __commonJS({
   }
 });
 
-// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/readShebang.js
+// node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/readShebang.js
 var require_readShebang = __commonJS({
-  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/readShebang.js"(exports2, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/readShebang.js"(exports2, module2) {
     "use strict";
     var fs8 = require("fs");
     var shebangCommand = require_shebang_command();
@@ -1105,9 +1105,9 @@ var require_readShebang = __commonJS({
   }
 });
 
-// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/parse.js
+// node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/parse.js
 var require_parse = __commonJS({
-  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/parse.js"(exports2, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/parse.js"(exports2, module2) {
     "use strict";
     var path3 = require("path");
     var resolveCommand = require_resolveCommand();
@@ -1167,9 +1167,9 @@ var require_parse = __commonJS({
   }
 });
 
-// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/enoent.js
+// node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/enoent.js
 var require_enoent = __commonJS({
-  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/enoent.js"(exports2, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/enoent.js"(exports2, module2) {
     "use strict";
     var isWin = process.platform === "win32";
     function notFoundError(original, syscall) {
@@ -1188,7 +1188,7 @@ var require_enoent = __commonJS({
       const originalEmit = cp.emit;
       cp.emit = function(name, arg1) {
         if (name === "exit") {
-          const err = verifyENOENT(arg1, parsed, "spawn");
+          const err = verifyENOENT(arg1, parsed);
           if (err) {
             return originalEmit.call(cp, "error", err);
           }
@@ -1217,9 +1217,9 @@ var require_enoent = __commonJS({
   }
 });
 
-// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/index.js
+// node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/index.js
 var require_cross_spawn = __commonJS({
-  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/index.js"(exports2, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/index.js"(exports2, module2) {
     "use strict";
     var cp = require("child_process");
     var parse = require_parse();
@@ -5326,7 +5326,7 @@ async function installTsMorph() {
   }
   const loading = de();
   loading.start("Fetching migration tools..");
-  (packageJson.devDependencies ??= {})["ts-morph"] = "latest";
+  (packageJson.devDependencies ??= {})["ts-morph"] = "23";
   await writePackageJson(process.cwd(), packageJson);
   await runInstall();
   loading.stop("Migration tools have been loaded");
@@ -5541,7 +5541,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.15.0-dev+9bcb4ee");
+  console.log("1.15.0-dev+49ceeb0");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
