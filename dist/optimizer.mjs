@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+23b917f
+ * @builder.io/qwik/optimizer 1.15.0-dev+0d4725e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.15.0-dev+23b917f"
+  qwik: "1.15.0-dev+0d4725e"
 };
 
 async function getSystem() {
@@ -2622,11 +2622,9 @@ function createQwikPlugin(optimizerOptions = {}) {
           });
         }
       }
-      for (const id3 of deps.values()) {
-        await ctx.load({
-          id: id3
-        });
-      }
+      await Promise.all([ ...deps.values() ].map(id3 => ctx.load({
+        id: id3
+      })));
       ctx.addWatchFile(id2);
       return {
         code: module.code,

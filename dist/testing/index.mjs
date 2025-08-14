@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.15.0-dev+23b917f
+ * @builder.io/qwik/testing 1.15.0-dev+0d4725e
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
