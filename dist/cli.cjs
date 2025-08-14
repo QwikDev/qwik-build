@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.15.0-dev+0d4725e
+ * @builder.io/qwik/cli 1.15.0-dev+49ceeb0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -5326,7 +5326,7 @@ async function installTsMorph() {
   }
   const loading = de();
   loading.start("Fetching migration tools..");
-  (packageJson.devDependencies ??= {})["ts-morph"] = "latest";
+  (packageJson.devDependencies ??= {})["ts-morph"] = "23";
   await writePackageJson(process.cwd(), packageJson);
   await runInstall();
   loading.stop("Migration tools have been loaded");
@@ -5541,7 +5541,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.15.0-dev+0d4725e");
+  console.log("1.15.0-dev+49ceeb0");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
