@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.15.0-dev+536bdc3
+ * @builder.io/qwik/cli 1.15.0-dev+63655cf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -752,8 +752,8 @@ var require_windows = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js"(exports2, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs8 = require("fs");
-    function checkPathExt(path3, options) {
+    var fs9 = require("fs");
+    function checkPathExt(path4, options) {
       var pathext = options.pathExt !== void 0 ? options.pathExt : process.env.PATHEXT;
       if (!pathext) {
         return true;
@@ -764,25 +764,25 @@ var require_windows = __commonJS({
       }
       for (var i = 0; i < pathext.length; i++) {
         var p = pathext[i].toLowerCase();
-        if (p && path3.substr(-p.length).toLowerCase() === p) {
+        if (p && path4.substr(-p.length).toLowerCase() === p) {
           return true;
         }
       }
       return false;
     }
-    function checkStat(stat, path3, options) {
+    function checkStat(stat, path4, options) {
       if (!stat.isSymbolicLink() && !stat.isFile()) {
         return false;
       }
-      return checkPathExt(path3, options);
+      return checkPathExt(path4, options);
     }
-    function isexe(path3, options, cb) {
-      fs8.stat(path3, function(er, stat) {
-        cb(er, er ? false : checkStat(stat, path3, options));
+    function isexe(path4, options, cb) {
+      fs9.stat(path4, function(er, stat) {
+        cb(er, er ? false : checkStat(stat, path4, options));
       });
     }
-    function sync(path3, options) {
-      return checkStat(fs8.statSync(path3), path3, options);
+    function sync(path4, options) {
+      return checkStat(fs9.statSync(path4), path4, options);
     }
   }
 });
@@ -792,14 +792,14 @@ var require_mode = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/mode.js"(exports2, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs8 = require("fs");
-    function isexe(path3, options, cb) {
-      fs8.stat(path3, function(er, stat) {
+    var fs9 = require("fs");
+    function isexe(path4, options, cb) {
+      fs9.stat(path4, function(er, stat) {
         cb(er, er ? false : checkStat(stat, options));
       });
     }
-    function sync(path3, options) {
-      return checkStat(fs8.statSync(path3), options);
+    function sync(path4, options) {
+      return checkStat(fs9.statSync(path4), options);
     }
     function checkStat(stat, options) {
       return stat.isFile() && checkMode(stat, options);
@@ -823,7 +823,7 @@ var require_mode = __commonJS({
 // node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/index.js
 var require_isexe = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/index.js"(exports2, module2) {
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var core;
     if (process.platform === "win32" || global.TESTING_WINDOWS) {
       core = require_windows();
@@ -832,7 +832,7 @@ var require_isexe = __commonJS({
     }
     module2.exports = isexe;
     isexe.sync = sync;
-    function isexe(path3, options, cb) {
+    function isexe(path4, options, cb) {
       if (typeof options === "function") {
         cb = options;
         options = {};
@@ -842,7 +842,7 @@ var require_isexe = __commonJS({
           throw new TypeError("callback not provided");
         }
         return new Promise(function(resolve2, reject) {
-          isexe(path3, options || {}, function(er, is) {
+          isexe(path4, options || {}, function(er, is) {
             if (er) {
               reject(er);
             } else {
@@ -851,7 +851,7 @@ var require_isexe = __commonJS({
           });
         });
       }
-      core(path3, options || {}, function(er, is) {
+      core(path4, options || {}, function(er, is) {
         if (er) {
           if (er.code === "EACCES" || options && options.ignoreErrors) {
             er = null;
@@ -861,9 +861,9 @@ var require_isexe = __commonJS({
         cb(er, is);
       });
     }
-    function sync(path3, options) {
+    function sync(path4, options) {
       try {
-        return core.sync(path3, options || {});
+        return core.sync(path4, options || {});
       } catch (er) {
         if (options && options.ignoreErrors || er.code === "EACCES") {
           return false;
@@ -879,7 +879,7 @@ var require_isexe = __commonJS({
 var require_which = __commonJS({
   "node_modules/.pnpm/which@2.0.2/node_modules/which/which.js"(exports2, module2) {
     var isWindows = process.platform === "win32" || process.env.OSTYPE === "cygwin" || process.env.OSTYPE === "msys";
-    var path3 = require("path");
+    var path4 = require("path");
     var COLON = isWindows ? ";" : ":";
     var isexe = require_isexe();
     var getNotFoundError = (cmd) => Object.assign(new Error(`not found: ${cmd}`), { code: "ENOENT" });
@@ -917,7 +917,7 @@ var require_which = __commonJS({
           return opt.all && found.length ? resolve2(found) : reject(getNotFoundError(cmd));
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
-        const pCmd = path3.join(pathPart, cmd);
+        const pCmd = path4.join(pathPart, cmd);
         const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
         resolve2(subStep(p, i, 0));
       });
@@ -944,7 +944,7 @@ var require_which = __commonJS({
       for (let i = 0; i < pathEnv.length; i++) {
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
-        const pCmd = path3.join(pathPart, cmd);
+        const pCmd = path4.join(pathPart, cmd);
         const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
         for (let j2 = 0; j2 < pathExt.length; j2++) {
           const cur = p + pathExt[j2];
@@ -992,7 +992,7 @@ var require_path_key = __commonJS({
 var require_resolveCommand = __commonJS({
   "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/resolveCommand.js"(exports2, module2) {
     "use strict";
-    var path3 = require("path");
+    var path4 = require("path");
     var which = require_which();
     var getPathKey = require_path_key();
     function resolveCommandAttempt(parsed, withoutPathExt) {
@@ -1010,7 +1010,7 @@ var require_resolveCommand = __commonJS({
       try {
         resolved = which.sync(parsed.command, {
           path: env[getPathKey({ env })],
-          pathExt: withoutPathExt ? path3.delimiter : void 0
+          pathExt: withoutPathExt ? path4.delimiter : void 0
         });
       } catch (e2) {
       } finally {
@@ -1019,7 +1019,7 @@ var require_resolveCommand = __commonJS({
         }
       }
       if (resolved) {
-        resolved = path3.resolve(hasCustomCwd ? parsed.options.cwd : "", resolved);
+        resolved = path4.resolve(hasCustomCwd ? parsed.options.cwd : "", resolved);
       }
       return resolved;
     }
@@ -1073,8 +1073,8 @@ var require_shebang_command = __commonJS({
       if (!match) {
         return null;
       }
-      const [path3, argument] = match[0].replace(/#! ?/, "").split(" ");
-      const binary = path3.split("/").pop();
+      const [path4, argument] = match[0].replace(/#! ?/, "").split(" ");
+      const binary = path4.split("/").pop();
       if (binary === "env") {
         return argument;
       }
@@ -1087,16 +1087,16 @@ var require_shebang_command = __commonJS({
 var require_readShebang = __commonJS({
   "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/util/readShebang.js"(exports2, module2) {
     "use strict";
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var shebangCommand = require_shebang_command();
     function readShebang(command) {
       const size = 150;
       const buffer = Buffer.alloc(size);
       let fd;
       try {
-        fd = fs8.openSync(command, "r");
-        fs8.readSync(fd, buffer, 0, size, 0);
-        fs8.closeSync(fd);
+        fd = fs9.openSync(command, "r");
+        fs9.readSync(fd, buffer, 0, size, 0);
+        fs9.closeSync(fd);
       } catch (e2) {
       }
       return shebangCommand(buffer.toString());
@@ -1109,7 +1109,7 @@ var require_readShebang = __commonJS({
 var require_parse = __commonJS({
   "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn/lib/parse.js"(exports2, module2) {
     "use strict";
-    var path3 = require("path");
+    var path4 = require("path");
     var resolveCommand = require_resolveCommand();
     var escape = require_escape();
     var readShebang = require_readShebang();
@@ -1134,7 +1134,7 @@ var require_parse = __commonJS({
       const needsShell = !isExecutableRegExp.test(commandFile);
       if (parsed.options.forceShell || needsShell) {
         const needsDoubleEscapeMetaChars = isCmdShimRegExp.test(commandFile);
-        parsed.command = path3.normalize(parsed.command);
+        parsed.command = path4.normalize(parsed.command);
         parsed.command = escape.command(parsed.command);
         parsed.args = parsed.args.map((arg) => escape.argument(arg, needsDoubleEscapeMetaChars));
         const shellCommand = [parsed.command].concat(parsed.args).join(" ");
@@ -1325,11 +1325,11 @@ __export(rename_import_exports, {
 });
 function replaceImportInFiles(changes, library) {
   const project = new import_ts_morph.Project();
-  visitNotIgnoredFiles(".", (path3) => {
-    if (!path3.endsWith(".ts") && !path3.endsWith(".tsx")) {
+  visitNotIgnoredFiles(".", (path4) => {
+    if (!path4.endsWith(".ts") && !path4.endsWith(".tsx")) {
       return;
     }
-    project.addSourceFileAtPath(path3);
+    project.addSourceFileAtPath(path4);
   });
   project.getSourceFiles().forEach((sourceFile) => {
     let hasChanges = false;
@@ -1539,13 +1539,13 @@ function runCommand(cmd, args, cwd) {
   return { abort, install };
 }
 async function readPackageJson(dir) {
-  const path3 = (0, import_node_path2.join)(dir, "package.json");
-  const pkgJson = JSON.parse(await import_node_fs2.default.promises.readFile(path3, "utf-8"));
+  const path4 = (0, import_node_path2.join)(dir, "package.json");
+  const pkgJson = JSON.parse(await import_node_fs2.default.promises.readFile(path4, "utf-8"));
   return pkgJson;
 }
 async function writePackageJson(dir, pkgJson) {
-  const path3 = (0, import_node_path2.join)(dir, "package.json");
-  await import_node_fs2.default.promises.writeFile(path3, JSON.stringify(pkgJson, null, 2) + "\n");
+  const path4 = (0, import_node_path2.join)(dir, "package.json");
+  await import_node_fs2.default.promises.writeFile(path4, JSON.stringify(pkgJson, null, 2) + "\n");
 }
 function dashToTitleCase(str) {
   return str.toLocaleLowerCase().split("-").map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1)).join(" ");
@@ -2686,10 +2686,10 @@ async function readTemplates(rootDir) {
     mdx: mdx.map((m2) => parseTemplatePath(m2, "mdx"))
   };
 }
-function parseTemplatePath(path3, type) {
-  const parts = path3.split(import_node_path7.sep + type + import_node_path7.sep);
+function parseTemplatePath(path4, type) {
+  const parts = path4.split(import_node_path7.sep + type + import_node_path7.sep);
   return {
-    absolute: path3,
+    absolute: path4,
     relative: parts[1]
   };
 }
@@ -5185,17 +5185,17 @@ var binaryExtensions = /* @__PURE__ */ new Set([
   ".zip",
   ".zipx"
 ]);
-function isBinaryPath(path3) {
-  return binaryExtensions.has((0, import_path3.extname)(path3).toLowerCase());
+function isBinaryPath(path4) {
+  return binaryExtensions.has((0, import_path3.extname)(path4).toLowerCase());
 }
 
 // packages/qwik/src/cli/migrate-v2/replace-package.ts
 init_visit_not_ignored_files();
 var import_fs3 = require("fs");
 init_dist2();
-function updateFileContent(path3, content) {
-  (0, import_fs3.writeFileSync)(path3, content);
-  f2.info(`"${path3}" has been updated`);
+function updateFileContent(path4, content) {
+  (0, import_fs3.writeFileSync)(path4, content);
+  f2.info(`"${path4}" has been updated`);
 }
 function replacePackage(oldPackageName, newPackageName, skipDependencies = false) {
   if (!skipDependencies) {
@@ -5204,12 +5204,12 @@ function replacePackage(oldPackageName, newPackageName, skipDependencies = false
   replaceMentions(oldPackageName, newPackageName);
 }
 function replacePackageInDependencies(oldPackageName, newPackageName) {
-  visitNotIgnoredFiles(".", (path3) => {
-    if ((0, import_path5.basename)(path3) !== "package.json") {
+  visitNotIgnoredFiles(".", (path4) => {
+    if ((0, import_path5.basename)(path4) !== "package.json") {
       return;
     }
     try {
-      const packageJson = JSON.parse((0, import_fs3.readFileSync)(path3, "utf-8"));
+      const packageJson = JSON.parse((0, import_fs3.readFileSync)(path4, "utf-8"));
       for (const deps of [
         packageJson.dependencies ?? {},
         packageJson.devDependencies ?? {},
@@ -5221,15 +5221,15 @@ function replacePackageInDependencies(oldPackageName, newPackageName) {
           delete deps[oldPackageName];
         }
       }
-      updateFileContent(path3, JSON.stringify(packageJson, null, 2));
+      updateFileContent(path4, JSON.stringify(packageJson, null, 2));
     } catch (e2) {
-      console.warn(`Could not replace ${oldPackageName} with ${newPackageName} in ${path3}.`);
+      console.warn(`Could not replace ${oldPackageName} with ${newPackageName} in ${path4}.`);
     }
   });
 }
 function replaceMentions(oldPackageName, newPackageName) {
-  visitNotIgnoredFiles(".", (path3) => {
-    if (isBinaryPath(path3)) {
+  visitNotIgnoredFiles(".", (path4) => {
+    if (isBinaryPath(path4)) {
       return;
     }
     const ignoredFiles = [
@@ -5239,18 +5239,18 @@ function replaceMentions(oldPackageName, newPackageName) {
       "bun.lockb",
       "CHANGELOG.md"
     ];
-    if (ignoredFiles.includes((0, import_path5.basename)(path3))) {
+    if (ignoredFiles.includes((0, import_path5.basename)(path4))) {
       return;
     }
     try {
-      const contents = (0, import_fs3.readFileSync)(path3, "utf-8");
+      const contents = (0, import_fs3.readFileSync)(path4, "utf-8");
       if (!contents.includes(oldPackageName)) {
         return;
       }
-      updateFileContent(path3, contents.replace(new RegExp(oldPackageName, "g"), newPackageName));
+      updateFileContent(path4, contents.replace(new RegExp(oldPackageName, "g"), newPackageName));
     } catch {
       f2.warn(
-        `An error was thrown when trying to update ${path3}. If you believe the migration should have updated it, be sure to review the file and open an issue.`
+        `An error was thrown when trying to update ${path4}. If you believe the migration should have updated it, be sure to review the file and open an issue.`
       );
     }
   });
@@ -5400,6 +5400,101 @@ ${bold(bgRed('Warning: migration tool is experimental and will migrate your appl
   }
 }
 
+// packages/qwik/src/cli/check-client/index.ts
+var import_promises2 = __toESM(require("fs/promises"), 1);
+var import_path6 = __toESM(require("path"), 1);
+var getDiskPath = (dist) => import_path6.default.resolve(dist);
+var getSrcPath = (src) => import_path6.default.resolve(src);
+var getManifestPath = (dist) => import_path6.default.resolve(dist, "q-manifest.json");
+async function runQwikClientCommand(app) {
+  try {
+    const src = app.args[1];
+    const dist = app.args[2];
+    await checkClientCommand(app, src, dist);
+  } catch (e2) {
+    console.error(`\u274C ${red(String(e2))}
+`);
+    process.exit(1);
+  }
+}
+async function checkClientCommand(app, src, dist) {
+  if (!await clientDirExists(dist)) {
+    await goBuild(app);
+  } else {
+    const manifest = await getManifestTs(getManifestPath(dist));
+    if (manifest === null) {
+      await goBuild(app);
+    } else {
+      if (await hasNewer(getSrcPath(src), manifest)) {
+        await goBuild(app);
+      }
+    }
+  }
+}
+async function goBuild(app) {
+  const pkgManager = getPackageManager();
+  const { install } = await runInPkg(pkgManager, ["run", "build.client"], app.rootDir);
+  if (!await install) {
+    throw new Error("Client build command reported failure.");
+  }
+}
+async function getManifestTs(manifestPath) {
+  try {
+    const stats = await import_promises2.default.stat(manifestPath);
+    return stats.mtimeMs;
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      panic(`Error accessing manifest file ${manifestPath}: ${err.message}`);
+    }
+    return null;
+  }
+}
+async function clientDirExists(path4) {
+  try {
+    await import_promises2.default.access(getDiskPath(path4));
+    return true;
+  } catch (err) {
+    if (!(err.code === "ENOENT")) {
+      panic(`Error accessing disk directory ${path4}: ${err.message}`);
+    }
+    return false;
+  }
+}
+async function hasNewer(srcPath, timestamp) {
+  let returnValue = false;
+  async function traverse(dir) {
+    if (returnValue) {
+      return;
+    }
+    let items;
+    try {
+      items = await import_promises2.default.readdir(dir, { withFileTypes: true });
+    } catch (err) {
+      return;
+    }
+    for (const item of items) {
+      if (returnValue) {
+        return;
+      }
+      const fullPath = import_path6.default.join(dir, item.name);
+      try {
+        if (item.isDirectory()) {
+          await traverse(fullPath);
+        } else if (item.isFile()) {
+          const stats = await import_promises2.default.stat(fullPath);
+          if (stats.mtimeMs > timestamp) {
+            returnValue = true;
+            return;
+          }
+        }
+      } catch (err) {
+      }
+    }
+  }
+  await traverse(srcPath);
+  return returnValue;
+}
+
 // packages/qwik/src/cli/run.ts
 var SPACE_TO_HINT2 = 18;
 var COMMANDS = [
@@ -5444,6 +5539,13 @@ var COMMANDS = [
     hint: "Rescopes the application from @builder.io/* namespace to @qwik.dev/*",
     run: (app) => runV2Migration(app),
     showInHelp: false
+  },
+  {
+    value: "check-client",
+    label: "check-client",
+    hint: "Make sure the client bundle is up-to-date with the source code",
+    run: (app) => runQwikClientCommand(app),
+    showInHelp: true
   },
   {
     value: "help",
@@ -5499,6 +5601,10 @@ async function runCommand2(app) {
       await runV2Migration(app);
       return;
     }
+    case "check-client": {
+      await runQwikClientCommand(app);
+      return;
+    }
     case "version": {
       printVersion();
       return;
@@ -5541,7 +5647,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.15.0-dev+536bdc3");
+  console.log("1.15.0-dev+63655cf");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
