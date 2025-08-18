@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.15.0-dev+bc835b0
+ * @builder.io/qwik/server 1.15.0-dev+bda6339
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -353,7 +353,7 @@ var adjustProbabilities = (bundle, newInverseProbability, seen) => {
   }
   if (
     // don't queue until we have initialized the preloader
-    base != null && bundle.$state$ < BundleImportState_Preload && bundle.$inverseProbability$ < config.$invPreloadProbability$
+    base != null && bundle.$state$ < BundleImportState_Preload
   ) {
     if (bundle.$state$ === BundleImportState_None) {
       bundle.$state$ = BundleImportState_Queued;
@@ -704,7 +704,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.15.0-dev+bc835b0",
+  qwik: "1.15.0-dev+bda6339",
   qwikDom: "2.1.19"
 };
 

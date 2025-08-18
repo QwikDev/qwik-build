@@ -79,7 +79,7 @@ const adjustProbabilities = (e, t, o) => {
   if (n - e.u < 0.01) return;
   if (
     // don't queue until we have initialized the preloader
-    base != null && e.i < BundleImportState_Preload && e.u < config.l
+    base != null && e.i < BundleImportState_Preload
   ) {
     if (e.i === BundleImportState_None) {
       e.i = BundleImportState_Queued;

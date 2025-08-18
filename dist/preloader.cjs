@@ -103,7 +103,7 @@ const adjustProbabilities = (bundle, newInverseProbability, seen) => {
   }
   if (
     // don't queue until we have initialized the preloader
-    base != null && bundle.$state$ < BundleImportState_Preload && bundle.$inverseProbability$ < config.$invPreloadProbability$
+    base != null && bundle.$state$ < BundleImportState_Preload
   ) {
     if (bundle.$state$ === BundleImportState_None) {
       bundle.$state$ = BundleImportState_Queued;

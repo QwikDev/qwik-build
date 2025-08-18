@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.15.0-dev+bc835b0
+ * @builder.io/qwik/testing 1.15.0-dev+bda6339
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22806,7 +22806,7 @@ var adjustProbabilities = (e, t, o) => {
   if (n - e.u < 0.01) return;
   if (
     // don't queue until we have initialized the preloader
-    base != null && e.i < BundleImportState_Preload && e.u < config.l
+    base != null && e.i < BundleImportState_Preload
   ) {
     if (e.i === BundleImportState_None) {
       e.i = BundleImportState_Queued;
