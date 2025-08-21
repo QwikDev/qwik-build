@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.15.0-dev+c8e8e6b
+ * @builder.io/qwik/server 1.15.0-dev+e81b0aa
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -324,7 +324,7 @@ var adjustProbabilities = (bundle, newInverseProbability, seen) => {
         continue;
       }
       let newInverseProbability2;
-      if (dep.$importProbability$ > 0.5 && (probability === 1 || probability >= 0.99 && depsCount < 100)) {
+      if (probability === 1 || probability >= 0.99 && depsCount < 100) {
         depsCount++;
         newInverseProbability2 = Math.min(0.01, 1 - dep.$importProbability$);
       } else {
@@ -612,6 +612,7 @@ var PreLoaderOptionsDefault = {
   debug: false,
   maxIdlePreloads: 25,
   preloadProbability: 0.35
+  // deprecated
 };
 
 // packages/qwik/src/server/scripts.ts
@@ -652,7 +653,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL || "/"}build/`;
 }
 var versions = {
-  qwik: "1.15.0-dev+c8e8e6b",
+  qwik: "1.15.0-dev+e81b0aa",
   qwikDom: "2.1.19"
 };
 

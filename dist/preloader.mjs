@@ -96,7 +96,7 @@ const adjustProbabilities = (e, t, o) => {
       const e2 = getBundle(n2.B);
       if (e2.u === 0) continue;
       let r;
-      if (n2.S > 0.5 && (t2 === 1 || t2 >= 0.99 && depsCount < 100)) {
+      if (t2 === 1 || t2 >= 0.99 && depsCount < 100) {
         depsCount++;
         r = Math.min(0.01, 1 - n2.S);
       } else {

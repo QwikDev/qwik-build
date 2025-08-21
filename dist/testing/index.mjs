@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.15.0-dev+c8e8e6b
+ * @builder.io/qwik/testing 1.15.0-dev+e81b0aa
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22115,7 +22115,7 @@ var adjustProbabilities = (e, t, o) => {
       const e2 = getBundle(n2.B);
       if (e2.u === 0) continue;
       let r;
-      if (n2.S > 0.5 && (t2 === 1 || t2 >= 0.99 && depsCount < 100)) {
+      if (t2 === 1 || t2 >= 0.99 && depsCount < 100) {
         depsCount++;
         r = Math.min(0.01, 1 - n2.S);
       } else {

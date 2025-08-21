@@ -122,7 +122,7 @@ const adjustProbabilities = (bundle, newInverseProbability, seen) => {
         continue;
       }
       let newInverseProbability2;
-      if (dep.$importProbability$ > 0.5 && (probability === 1 || probability >= 0.99 && depsCount < 100)) {
+      if (probability === 1 || probability >= 0.99 && depsCount < 100) {
         depsCount++;
         newInverseProbability2 = Math.min(0.01, 1 - dep.$importProbability$);
       } else {
