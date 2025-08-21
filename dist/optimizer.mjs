@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+a83f9ed
+ * @builder.io/qwik/optimizer 1.15.0-dev+c8e8e6b
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.15.0-dev+a83f9ed"
+  qwik: "1.15.0-dev+c8e8e6b"
 };
 
 async function getSystem() {
@@ -2987,6 +2987,7 @@ function normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOptsObj, use
   }
   outputOpts.dir || (outputOpts.dir = opts.outDir);
   "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
+  outputOpts.hoistTransitiveImports = false;
   return outputOpts;
 }
 
@@ -6647,10 +6648,7 @@ function qwikVite(qwikViteOpts = {}) {
             exclude: [ /./ ]
           },
           rollupOptions: {
-            maxParallelFileOps: 1,
-            output: {
-              manualChunks: qwikPlugin.manualChunks
-            }
+            maxParallelFileOps: 1
           }
         },
         define: {
