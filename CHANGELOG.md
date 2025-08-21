@@ -1,5 +1,23 @@
 # @builder.io/qwik
 
+## 1.16.0
+
+### Minor Changes
+
+- ✨ bump Vite to v7 (by [@gioboa](https://github.com/gioboa) in [#7762](https://github.com/QwikDev/qwik/pull/7762))
+
+### Patch Changes
+
+- 🐞🩹 Keeping the service worker components now properly unregisters them. (by [@maiieul](https://github.com/maiieul) in [#7781](https://github.com/QwikDev/qwik/pull/7781))
+
+- 🛠 remove a grace period before unregistering events from qwikloader (by [@Varixo](https://github.com/Varixo) in [#7818](https://github.com/QwikDev/qwik/pull/7818))
+
+- 🐞🩹 Keeping the service worker components now also removes their associated Cache storage. (by [@maiieul](https://github.com/maiieul) in [#7782](https://github.com/QwikDev/qwik/pull/7782))
+
+- 🐞🩹 fix up open in editor feature (by [@LazyClicks](https://github.com/LazyClicks) in [#7785](https://github.com/QwikDev/qwik/pull/7785))
+
+- 🐞🩹 SSR was missing some places with nonce for CSP. Now CSP should work even when strict-dynamic (by [@wmertens](https://github.com/wmertens) in [#7776](https://github.com/QwikDev/qwik/pull/7776))
+
 ## 1.15.0
 
 ### Minor Changes
@@ -35,7 +53,6 @@
 ### Minor Changes
 
 - ✨ Major improvements to prefetching with automatic bundle preloading (by [@wmertens](https://github.com/wmertens) in [#7453](https://github.com/QwikDev/qwik/pull/7453))
-
   - This removes the need for service workers, and instead utilize `modulepreload` link tags for better browser integration.
   - Improves initial load performance by including dynamic imports in the prefetch
   - Reduces complexity while maintaining similar (and even better) functionality
@@ -47,7 +64,6 @@
   ***
 
   ⚠️ **ATTENTION:**
-
   - **Keep** your service worker code as is (either `<ServiceWorkerRegister/>` or `<PrefetchServiceWorker/>`).
   - **Configure** your server to provide long caching headers.
 
@@ -195,7 +211,6 @@
 - Async functions in `useComputed` are deprecated. (by [@wmertens](https://github.com/wmertens) in [#7013](https://github.com/QwikDev/qwik/pull/7013))
 
   **Why?**
-
   - Qwik can't track used signals after the first await, which leads to subtle bugs.
   - When calculating the first time, it will see it's a promise and it will restart the render function.
   - Both `useTask` and `useResource` are available, without these problems.

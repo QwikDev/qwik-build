@@ -1,13 +1,13 @@
 /**
  * @license
- * @builder.io/qwik 1.15.0
+ * @builder.io/qwik 1.16.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 !function(global, factory) {
     "object" == typeof exports && "undefined" != typeof module ? factory(exports, require("@builder.io/qwik/build"), require("@builder.io/qwik/preloader")) : "function" == typeof define && define.amd ? define([ "exports", "@builder.io/qwik/build", "@builder.io/qwik/preloader" ], factory) : factory((global = "undefined" != typeof globalThis ? globalThis : global || self).qwikCore = {}, global.qwikBuild, global.qwikPreloader);
-}(this, (function(exports, build, preloader) {
+}(this, function(exports, build, preloader) {
     "use strict";
     const implicit$FirstArg = fn => function(first, ...rest) {
         return fn.call(null, $(first), ...rest);
@@ -48,9 +48,9 @@
     const createAndLogError = (asyncThrow, message, ...optionalParams) => {
         const err = message instanceof Error ? message : new Error(message);
         return console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
-        asyncThrow && setTimeout((() => {
+        asyncThrow && setTimeout(() => {
             throw err;
-        }), 0), err;
+        }, 0), err;
     };
     function assertDefined() {
         qDev;
@@ -100,18 +100,18 @@
             const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
             const urlCopy = new URL(urlDoc);
             urlCopy.hash = "";
-            return import(urlCopy.href).then((mod => mod[symbolName]));
+            return import(urlCopy.href).then(mod => mod[symbolName]);
         },
-        raf: fn => new Promise((resolve => {
-            requestAnimationFrame((() => {
+        raf: fn => new Promise(resolve => {
+            requestAnimationFrame(() => {
                 resolve(fn());
-            }));
-        })),
-        nextTick: fn => new Promise((resolve => {
-            setTimeout((() => {
+            });
+        }),
+        nextTick: fn => new Promise(resolve => {
+            setTimeout(() => {
                 resolve(fn());
-            }));
-        })),
+            });
+        }),
         chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
     });
     const toUrl = (doc, containerEl, url) => {
@@ -143,9 +143,9 @@
     const promiseAll = promises => promises.some(isPromise) ? Promise.all(promises) : promises;
     const promiseAllLazy = promises => promises.length > 0 ? Promise.all(promises) : promises;
     const isNotNullable = v => null != v;
-    const delay = timeout => new Promise((resolve => {
+    const delay = timeout => new Promise(resolve => {
         setTimeout(resolve, timeout);
-    }));
+    });
     const EMPTY_ARRAY = [];
     const EMPTY_OBJ = {};
     const getDocument = node => {
@@ -267,7 +267,7 @@
                 const invokeCtx = tryGetInvokeContext();
                 invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber);
             }
-            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
+            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map(a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a);
         }
         getOwnPropertyDescriptor(target, prop) {
             const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
@@ -312,12 +312,12 @@
             const eventName = listeners[i][0];
             keys.includes(eventName) || keys.push(eventName);
         }
-        return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
+        return keys.map(eventName => [ eventName, listeners.filter(l => l[0] === eventName).map(a => a[1]) ]);
     };
     const setEvent = (existingListeners, prop, input, containerEl) => {
         if (assertTrue(prop.endsWith("$")), prop = normalizeOnProp(prop.slice(0, -1)), input) {
             if (isArray(input)) {
-                const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
+                const processed = input.flat(1 / 0).filter(q => null != q).map(q => [ prop, ensureQrl(q, containerEl) ]);
                 existingListeners.push(...processed);
             } else {
                 existingListeners.push([ prop, ensureQrl(input, containerEl) ]);
@@ -435,7 +435,8 @@
     };
     const unitlessNumbers = new Set([ "animationIterationCount", "aspectRatio", "borderImageOutset", "borderImageSlice", "borderImageWidth", "boxFlex", "boxFlexGroup", "boxOrdinalGroup", "columnCount", "columns", "flex", "flexGrow", "flexShrink", "gridArea", "gridRow", "gridRowEnd", "gridRowStart", "gridColumn", "gridColumnEnd", "gridColumnStart", "fontWeight", "lineClamp", "lineHeight", "opacity", "order", "orphans", "scale", "tabSize", "widows", "zIndex", "zoom", "MozAnimationIterationCount", "MozBoxFlex", "msFlex", "msFlexPositive", "WebkitAnimationIterationCount", "WebkitBoxFlex", "WebkitBoxOrdinalGroup", "WebkitColumnCount", "WebkitColumns", "WebkitFlex", "WebkitFlexGrow", "WebkitFlexShrink", "WebkitLineClamp" ]);
     const executeComponent = (rCtx, elCtx, attempt) => {
-        elCtx.$flags$ &= -2, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], elCtx.li.length = 0;
+        elCtx.$flags$ &= ~HOST_FLAG_DIRTY, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], 
+        elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
@@ -446,7 +447,7 @@
         newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = void 0, iCtx.$subscriber$ = [ 0, hostElement ], 
         iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(iCtx);
-        return safeCall((() => componentFn(props)), (jsxNode => maybeThen(isServerPlatform() ? maybeThen(promiseAllLazy(waitOn), (() => maybeThen(executeSSRTasks(rCtx.$static$.$containerState$, rCtx), (() => promiseAllLazy(waitOn))))) : promiseAllLazy(waitOn), (() => {
+        return safeCall(() => componentFn(props), jsxNode => maybeThen(isServerPlatform() ? maybeThen(promiseAllLazy(waitOn), () => maybeThen(executeSSRTasks(rCtx.$static$.$containerState$, rCtx), () => promiseAllLazy(waitOn))) : promiseAllLazy(waitOn), () => {
             if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
                 if (!(attempt && attempt > 100)) {
                     return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
@@ -457,10 +458,10 @@
                 node: jsxNode,
                 rCtx: newCtx
             };
-        }))), (err => {
+        }), err => {
             if (err === SignalUnassignedException) {
                 if (!(attempt && attempt > 100)) {
-                    return maybeThen(promiseAllLazy(waitOn), (() => executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1)));
+                    return maybeThen(promiseAllLazy(waitOn), () => executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1));
                 }
                 logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
             }
@@ -468,7 +469,7 @@
                 node: SkipRender,
                 rCtx: newCtx
             };
-        }));
+        });
     };
     const createRenderContext = (doc, containerState) => {
         const ctx = {
@@ -585,7 +586,7 @@
             }
         }
         const promise = walkChildren(node.children, rCtx, ssrCtx, stream, flags);
-        return maybeThen(promise, (() => {
+        return maybeThen(promise, () => {
             if (!isSlot && !beforeClose) {
                 return void stream.write(CLOSE_VIRTUAL);
             }
@@ -599,11 +600,11 @@
                     newSlotRctx.$slotCtx$ = elCtx, ssrCtx.$projectedChildren$[key] = void 0, promise = processData$1(content, newSlotRctx, sCtx, stream, flags);
                 }
             }
-            return beforeClose && (promise = maybeThen(promise, (() => beforeClose(stream)))), 
-            maybeThen(promise, (() => {
+            return beforeClose && (promise = maybeThen(promise, () => beforeClose(stream))), 
+            maybeThen(promise, () => {
                 stream.write(CLOSE_VIRTUAL);
-            }));
-        }));
+            });
+        });
     };
     const CLOSE_VIRTUAL = "\x3c!--/qv--\x3e";
     const renderVirtualAttributes = attributes => {
@@ -636,7 +637,7 @@
         null != innerHTML && stream.write(innerHTML), stream.write(`</${tagName}>`);
     };
     const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose) => (setComponentProps$1(rCtx, elCtx, node.props.props), 
-    maybeThen(executeComponent(rCtx, elCtx), (res => {
+    maybeThen(executeComponent(rCtx, elCtx), res => {
         const hostElement = elCtx.$element$;
         const newRCtx = res.rCtx;
         const iCtx = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, void 0);
@@ -665,11 +666,11 @@
             [ELEMENT_ID]: newID,
             children: res.node
         }, 0, node.key);
-        return elCtx.$id$ = newID, ssrCtx.$static$.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream => {
+        return elCtx.$id$ = newID, ssrCtx.$static$.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, stream => {
             if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 const placeholderCtx = createMockQContext(1);
                 const listeners = placeholderCtx.li;
-                listeners.push(...elCtx.li), elCtx.$flags$ &= -3, placeholderCtx.$id$ = getNextIndex(rCtx);
+                listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
                 const attributes = {
                     type: "placeholder",
                     hidden: "",
@@ -687,7 +688,7 @@
             const projectedChildren = newSSrContext.$projectedChildren$;
             let missingSlotsDone;
             if (projectedChildren) {
-                const nodes = Object.keys(projectedChildren).map((slotName => {
+                const nodes = Object.keys(projectedChildren).map(slotName => {
                     const content = projectedChildren[slotName];
                     if (content) {
                         return _jsxQ("q:template", {
@@ -696,14 +697,14 @@
                             "aria-hidden": "true"
                         }, null, content, 0, null);
                     }
-                }));
+                });
                 const [_rCtx, sCtx] = newSSrContext.$projectedCtxs$;
                 const newSlotRctx = pushRenderContext(_rCtx);
                 newSlotRctx.$slotCtx$ = elCtx, missingSlotsDone = processData$1(nodes, newSlotRctx, sCtx, stream, 0, void 0);
             }
-            return beforeClose ? maybeThen(missingSlotsDone, (() => beforeClose(stream))) : missingSlotsDone;
-        }));
-    })));
+            return beforeClose ? maybeThen(missingSlotsDone, () => beforeClose(stream)) : missingSlotsDone;
+        });
+    }));
     const splitProjectedChildren = (children, ssrCtx) => {
         const flatChildren = flatVirtualChildren(children, ssrCtx);
         if (null === flatChildren) {
@@ -773,7 +774,7 @@
                     classStr = classStr ? `${extra} ${classStr}` : extra;
                 }
                 hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (listeners.push(...hostCtx.li), 
-                hostCtx.$flags$ &= -3);
+                hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
             }
             if (isHead && (flags |= 1), tagName in invisibleElements && (flags |= 16), tagName in textOnlyElements && (flags |= 8), 
             classStr && (openingElement += ' class="' + escapeHtml(classStr) + '"'), listeners.length > 0) {
@@ -801,7 +802,7 @@
             }
             "html" === tagName ? flags |= 4 : flags &= -5, 2 & node.flags && (flags |= 1024);
             const promise = processData$1(node.children, rCtx, ssrCtx, stream, flags);
-            return maybeThen(promise, (() => {
+            return maybeThen(promise, () => {
                 if (isHead) {
                     for (const node of ssrCtx.$static$.$headNodes$) {
                         renderNodeElementSync(node.type, node.props, stream);
@@ -809,12 +810,12 @@
                     ssrCtx.$static$.$headNodes$.length = 0;
                 }
                 if (beforeClose) {
-                    return maybeThen(beforeClose(stream), (() => {
+                    return maybeThen(beforeClose(stream), () => {
                         stream.write(`</${tagName}>`);
-                    }));
+                    });
                 }
                 stream.write(`</${tagName}>`);
-            }));
+            });
         }
         if (tagName === Virtual) {
             const elCtx = createMockQContext(111);
@@ -877,11 +878,11 @@
                             return stream.write(`\x3c!--t=${id}--\x3e`), processData$1(value, rCtx, ssrCtx, stream, flags, beforeClose), 
                             void stream.write("\x3c!----\x3e");
                         }
-                        value = invoke(ssrCtx.$invocationContext$, (() => node.value));
+                        value = invoke(ssrCtx.$invocationContext$, () => node.value);
                     }
                     return void stream.write(escapeHtml(jsxToString(value)));
                 }
-                return isPromise(node) ? (stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData$1(node, rCtx, ssrCtx, stream, flags, beforeClose)))) : void logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
+                return isPromise(node) ? (stream.write("\x3c!--qkssr-f--\x3e"), node.then(node => processData$1(node, rCtx, ssrCtx, stream, flags, beforeClose))) : void logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
             }
             stream.write(escapeHtml(String(node)));
         }
@@ -902,7 +903,7 @@
         }
         let currentIndex = 0;
         const buffers = [];
-        return children.reduce(((prevPromise, child, index) => {
+        return children.reduce((prevPromise, child, index) => {
             const buffer = [];
             buffers.push(buffer);
             const rendered = processData$1(child, rCtx, ssrContext, prevPromise ? {
@@ -912,12 +913,12 @@
             } : stream, flags);
             if (prevPromise || isPromise(rendered)) {
                 const next = () => {
-                    currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach((chunk => stream.write(chunk)));
+                    currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach(chunk => stream.write(chunk));
                 };
                 return isPromise(rendered) ? prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : rendered.then(next) : prevPromise.then(next);
             }
             currentIndex++;
-        }), void 0);
+        }, void 0);
     };
     const flatVirtualChildren = (children, ssrCtx) => {
         if (null == children) {
@@ -932,7 +933,7 @@
             return null;
         }
         if (isArray(children)) {
-            return children.flatMap((c => _flatVirtualChildren(c, ssrCtx)));
+            return children.flatMap(c => _flatVirtualChildren(c, ssrCtx));
         }
         if (isJSXNode(children) && isFunction(children.type) && children.type !== SSRRaw && children.type !== InternalSSRStream && children.type !== Virtual) {
             const res = invoke(ssrCtx.$invocationContext$, children.type, children.props, children.key, children.flags);
@@ -989,7 +990,7 @@
     const registerQwikEvent$1 = (prop, containerState) => {
         containerState.$events$.add(getEventName(prop));
     };
-    const escapeHtml = s => s.replace(ESCAPE_HTML, (c => {
+    const escapeHtml = s => s.replace(ESCAPE_HTML, c => {
         switch (c) {
           case "&":
             return "&amp;";
@@ -1009,10 +1010,10 @@
           default:
             return "";
         }
-    }));
+    });
     const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/;
     const isSSRUnsafeAttr = name => unsafeAttrCharRE.test(name);
-    const listenersNeedId = listeners => listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
+    const listenersNeedId = listeners => listeners.some(l => l[1].$captureRef$ && l[1].$captureRef$.length > 0);
     const addDynamicSlot = (hostCtx, elCtx) => {
         const dynamicSlots = hostCtx.$dynamicSlots$ ||= [];
         dynamicSlots.includes(elCtx) || dynamicSlots.push(elCtx);
@@ -1043,10 +1044,10 @@
     };
     const jsx = (type, props, key) => {
         const processed = null == key ? null : String(key);
-        const children = untrack((() => {
+        const children = untrack(() => {
             const c = props.children;
             return "string" == typeof type && delete props.children, c;
-        }));
+        });
         isString(type) && "className" in props && (props.class = props.className, delete props.className);
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         return validateJSXNode(node), seal(), node;
@@ -1082,7 +1083,7 @@
         const hostElement = elCtx.$element$;
         const containerState = rCtx.$static$.$containerState$;
         return containerState.$hostsStaging$.delete(elCtx), containerState.$subsManager$.$clearSub$(hostElement), 
-        maybeThen(executeComponent(rCtx, elCtx), (res => {
+        maybeThen(executeComponent(rCtx, elCtx), res => {
             const staticCtx = rCtx.$static$;
             const newCtx = res.rCtx;
             const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement);
@@ -1093,14 +1094,14 @@
                 }
             }
             const processedJSXNode = processData(res.node, iCtx);
-            return maybeThen(processedJSXNode, (processedJSXNode => {
+            return maybeThen(processedJSXNode, processedJSXNode => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 const oldVdom = getVdom(elCtx);
-                return maybeThen(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), (() => {
+                return maybeThen(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), () => {
                     elCtx.$vdom$ = newVdom;
-                }));
-            }));
-        }));
+                });
+            });
+        });
     };
     const getVdom = elCtx => (elCtx.$vdom$ || (elCtx.$vdom$ = domToVnode(elCtx.$element$)), 
     elCtx.$vdom$);
@@ -1141,11 +1142,11 @@
         }
         let convertedChildren = EMPTY_ARRAY;
         if (null != children) {
-            return maybeThen(processData(children, invocationContext), (result => {
+            return maybeThen(processData(children, invocationContext), result => {
                 void 0 !== result && (convertedChildren = isArray(result) ? result : [ result ]);
                 const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
                 return vnode;
-            }));
+            });
         }
         {
             const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
@@ -1171,10 +1172,10 @@
                 return newNode.$signal$ = node, newNode;
             }
             if (isArray(node)) {
-                const output = promiseAll(node.flatMap((n => processData(n, invocationContext))));
-                return maybeThen(output, (array => array.flat(100).filter(isNotNullable)));
+                const output = promiseAll(node.flatMap(n => processData(n, invocationContext)));
+                return maybeThen(output, array => array.flat(100).filter(isNotNullable));
             }
-            return isPromise(node) ? node.then((node => processData(node, invocationContext))) : node === SkipRender ? new ProcessedJSXNodeImpl(":skipRender", EMPTY_OBJ, null, EMPTY_ARRAY, 0, null) : void logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
+            return isPromise(node) ? node.then(node => processData(node, invocationContext)) : node === SkipRender ? new ProcessedJSXNodeImpl(":skipRender", EMPTY_OBJ, null, EMPTY_ARRAY, 0, null) : void logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
         }
     };
     const isPrimitive = obj => isString(obj) || "number" == typeof obj;
@@ -1221,7 +1222,7 @@
             "cq" === data ? container++ : "/cq" === data && container--;
         }
         const slotPath = 0 !== containerEl.getElementsByClassName("qc📦").length;
-        containerEl.querySelectorAll("[q\\:id]").forEach((el => {
+        containerEl.querySelectorAll("[q\\:id]").forEach(el => {
             if (slotPath && el.closest("[q\\:container]") !== containerEl) {
                 return;
             }
@@ -1229,7 +1230,7 @@
             assertDefined();
             const index = strToInt(id);
             elements.set(index, el);
-        }));
+        });
         const parser = createParser(containerState, doc);
         const finalized = new Map;
         const revived = new Set;
@@ -1476,7 +1477,7 @@
         void 0 !== containerState.$hostsRendering$ ? containerState.$taskStaging$.add(task) : (containerState.$taskNext$.add(task), 
         scheduleFrame(containerState));
     };
-    const scheduleFrame = containerState => (void 0 === containerState.$renderPromise$ && (containerState.$renderPromise$ = getPlatform().nextTick((() => renderMarked(containerState)))), 
+    const scheduleFrame = containerState => (void 0 === containerState.$renderPromise$ && (containerState.$renderPromise$ = getPlatform().nextTick(() => renderMarked(containerState))), 
     containerState.$renderPromise$);
     const _hW = () => {
         const [task] = useLexicalScope();
@@ -1490,17 +1491,17 @@
             const staticCtx = rCtx.$static$;
             const hostsRendering = containerState.$hostsRendering$ = new Set(containerState.$hostsNext$);
             containerState.$hostsNext$.clear(), await executeTasksBefore(containerState, rCtx), 
-            containerState.$hostsStaging$.forEach((host => {
+            containerState.$hostsStaging$.forEach(host => {
                 hostsRendering.add(host);
-            })), containerState.$hostsStaging$.clear();
+            }), containerState.$hostsStaging$.clear();
             const signalOperations = Array.from(containerState.$opsNext$);
             containerState.$opsNext$.clear();
             const renderingQueue = Array.from(hostsRendering);
             if (sortNodes(renderingQueue), !containerState.$styleMoved$ && renderingQueue.length > 0) {
                 containerState.$styleMoved$ = !0;
-                (containerEl === doc.documentElement ? doc.body : containerEl).querySelectorAll("style[q\\:style]").forEach((el => {
+                (containerEl === doc.documentElement ? doc.body : containerEl).querySelectorAll("style[q\\:style]").forEach(el => {
                     containerState.$styleIds$.add(directGetAttribute(el, "q:style")), appendChild(staticCtx, doc.head, el);
-                }));
+                });
             }
             for (const elCtx of renderingQueue) {
                 const el = elCtx.$element$;
@@ -1513,9 +1514,9 @@
                     }
                 }
             }
-            return signalOperations.forEach((op => {
+            return signalOperations.forEach(op => {
                 executeSignalOperation(rCtx, op);
-            })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(staticCtx), 
+            }), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(staticCtx), 
             void await postRendering(containerState, rCtx)) : (await executeContextWithScrollAndTransition(staticCtx), 
             printRenderStats(staticCtx), postRendering(containerState, rCtx));
         } catch (err) {
@@ -1529,30 +1530,30 @@
     };
     const postRendering = async (containerState, rCtx) => {
         const hostElements = rCtx.$static$.$hostElements$;
-        await executeTasksAfter(containerState, rCtx, ((task, stage) => !!(task.$flags$ & TaskFlagsIsVisibleTask) && (!stage || hostElements.has(task.$el$)))), 
-        containerState.$hostsStaging$.forEach((el => {
+        await executeTasksAfter(containerState, rCtx, (task, stage) => 0 !== (task.$flags$ & TaskFlagsIsVisibleTask) && (!stage || hostElements.has(task.$el$))), 
+        containerState.$hostsStaging$.forEach(el => {
             containerState.$hostsNext$.add(el);
-        })), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
+        }), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
         containerState.$renderPromise$ = void 0;
         containerState.$hostsNext$.size + containerState.$taskNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
     };
-    const isTask = task => !!(task.$flags$ & TaskFlagsIsTask);
-    const isResourceTask$1 = task => !!(task.$flags$ & TaskFlagsIsResource);
+    const isTask = task => 0 !== (task.$flags$ & TaskFlagsIsTask);
+    const isResourceTask$1 = task => 0 !== (task.$flags$ & TaskFlagsIsResource);
     const executeTasksBefore = async (containerState, rCtx) => {
         const containerEl = containerState.$containerEl$;
         const resourcesPromises = [];
         const taskPromises = [];
-        containerState.$taskNext$.forEach((task => {
-            isTask(task) && (taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
-            containerState.$taskNext$.delete(task)), isResourceTask$1(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+        containerState.$taskNext$.forEach(task => {
+            isTask(task) && (taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task)), 
+            containerState.$taskNext$.delete(task)), isResourceTask$1(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task)), 
             containerState.$taskNext$.delete(task));
-        }));
+        });
         do {
-            if (containerState.$taskStaging$.forEach((task => {
-                isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask$1(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
-            })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
+            if (containerState.$taskStaging$.forEach(task => {
+                isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task)) : isResourceTask$1(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task)) : containerState.$taskNext$.add(task);
+            }), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
                 const tasks = await Promise.all(taskPromises);
-                sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
+                sortTasks(tasks), await Promise.all(tasks.map(task => runSubscriber(task, containerState, rCtx))), 
                 taskPromises.length = 0;
             }
         } while (containerState.$taskStaging$.size > 0);
@@ -1573,16 +1574,16 @@
         const taskPromises = [];
         let tries = 20;
         const runTasks = () => {
-            if (staging.forEach((task => {
-                isTask(task) && taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task)));
-            })), staging.clear(), taskPromises.length > 0) {
-                return Promise.all(taskPromises).then((async tasks => {
-                    if (sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
+            if (staging.forEach(task => {
+                isTask(task) && taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
+            }), staging.clear(), taskPromises.length > 0) {
+                return Promise.all(taskPromises).then(async tasks => {
+                    if (sortTasks(tasks), await Promise.all(tasks.map(task => runSubscriber(task, containerState, rCtx))), 
                     taskPromises.length = 0, --tries && staging.size > 0) {
                         return runTasks();
                     }
-                    tries || logWarn(`Infinite task loop detected. Tasks:\n${Array.from(staging).map((task => `  ${task.$qrl$.$symbol$}`)).join("\n")}`);
-                }));
+                    tries || logWarn(`Infinite task loop detected. Tasks:\n${Array.from(staging).map(task => `  ${task.$qrl$.$symbol$}`).join("\n")}`);
+                });
             }
         };
         return runTasks();
@@ -1590,14 +1591,14 @@
     const executeTasksAfter = async (containerState, rCtx, taskPred) => {
         const taskPromises = [];
         const containerEl = containerState.$containerEl$;
-        containerState.$taskNext$.forEach((task => {
-            taskPred(task, !1) && (task.$el$.isConnected && taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+        containerState.$taskNext$.forEach(task => {
+            taskPred(task, !1) && (task.$el$.isConnected && taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task)), 
             containerState.$taskNext$.delete(task));
-        }));
+        });
         do {
-            if (containerState.$taskStaging$.forEach((task => {
-                task.$el$.isConnected && (taskPred(task, !0) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task));
-            })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
+            if (containerState.$taskStaging$.forEach(task => {
+                task.$el$.isConnected && (taskPred(task, !0) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task)) : containerState.$taskNext$.add(task));
+            }), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
                 const tasks = await Promise.all(taskPromises);
                 sortTasks(tasks);
                 for (const task of tasks) {
@@ -1608,11 +1609,11 @@
         } while (containerState.$taskStaging$.size > 0);
     };
     const sortNodes = elements => {
-        elements.sort(((a, b) => 2 & a.$element$.compareDocumentPosition(getRootNode(b.$element$)) ? 1 : -1));
+        elements.sort((a, b) => 2 & a.$element$.compareDocumentPosition(getRootNode(b.$element$)) ? 1 : -1);
     };
     const sortTasks = tasks => {
         const isServer = isServerPlatform();
-        tasks.sort(((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$)) ? 1 : -1));
+        tasks.sort((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$)) ? 1 : -1);
     };
     const useOn = (event, eventQrl) => {
         _useOn(createEventName(event, void 0), eventQrl);
@@ -1622,13 +1623,13 @@
     };
     const createEventName = (event, eventType) => {
         const formattedEventType = void 0 !== eventType ? eventType + ":" : "";
-        return Array.isArray(event) ? event.map((e => `${formattedEventType}on-${e}`)) : `${formattedEventType}on-${event}`;
+        return Array.isArray(event) ? event.map(e => `${formattedEventType}on-${e}`) : `${formattedEventType}on-${event}`;
     };
     const _useOn = (eventName, eventQrl) => {
         if (eventQrl) {
             const invokeCtx = useInvokeContext();
             const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
-            assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
+            assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map(name => [ normalizeOnProp(name), eventQrl ])), 
             elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
         }
     };
@@ -1654,7 +1655,7 @@
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask, i, elCtx.$element$, qrl, void 0);
         set(!0), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$tasks$ || (elCtx.$tasks$ = []), 
-        elCtx.$tasks$.push(task), waitAndRun(iCtx, (() => runTask(task, containerState, iCtx.$renderCtx$))), 
+        elCtx.$tasks$.push(task), waitAndRun(iCtx, () => runTask(task, containerState, iCtx.$renderCtx$)), 
         isServerPlatform() && useRunTask(task, opts?.eagerness);
     };
     const createComputedQrl = qrl => {
@@ -1665,9 +1666,9 @@
         const signal = _createSignal(void 0, containerState, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, void 0);
         const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | 8, 0, elCtx.$element$, qrl, signal);
         return qrl.$resolveLazy$(containerState.$containerEl$), (elCtx.$tasks$ ||= []).push(task), 
-        waitAndRun(iCtx, (() => runComputed(task, containerState, iCtx.$renderCtx$))), signal;
+        waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$)), signal;
     };
-    const useComputedQrl = qrl => useConstant((() => createComputedQrl(qrl)));
+    const useComputedQrl = qrl => useConstant(() => createComputedQrl(qrl));
     const useComputed$ = implicit$FirstArg(useComputedQrl);
     const createComputed$ = implicit$FirstArg(createComputedQrl);
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
@@ -1684,16 +1685,16 @@
         isServerPlatform() || (qrl.$resolveLazy$(containerState.$containerEl$), notifyTask(task, containerState));
     };
     const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
-    const isResourceTask = task => !!(task.$flags$ & TaskFlagsIsResource);
+    const isResourceTask = task => 0 !== (task.$flags$ & TaskFlagsIsResource);
     const runSubscriber = async (task, containerState, rCtx) => (assertEqual(), isResourceTask(task) ? runResource(task, containerState, rCtx) : (task => !!(8 & task.$flags$))(task) ? runComputed(task, containerState, rCtx) : runTask(task, containerState, rCtx));
     const runResource = (task, containerState, rCtx, waitOn) => {
-        task.$flags$ &= -17, cleanupTask(task);
+        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, task.$el$, void 0, "qTask");
         const {$subsManager$: subsManager} = containerState;
         iCtx.$renderCtx$ = rCtx;
-        const taskFn = task.$qrl$.getFn(iCtx, (() => {
+        const taskFn = task.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(task);
-        }));
+        });
         const cleanups = [];
         const resource = task.$state$;
         assertDefined();
@@ -1724,36 +1725,36 @@
         resource.loading = !1, resource._state = "resolved", resource._resolved = value, 
         resource._error = void 0, resolve(value)) : (done = !0, resource.loading = !1, resource._state = "rejected", 
         resource._error = value, reject(value)), !0);
-        invoke(iCtx, (() => {
-            resource._state = "pending", resource.loading = !isServerPlatform(), resource.value = new Promise(((r, re) => {
+        invoke(iCtx, () => {
+            resource._state = "pending", resource.loading = !isServerPlatform(), resource.value = new Promise((r, re) => {
                 resolve = r, reject = re;
-            }));
-        })), task.$destroy$ = noSerialize((() => {
-            done = !0, cleanups.forEach((fn => fn()));
-        }));
-        const promise = safeCall((() => maybeThen(waitOn, (() => taskFn(opts)))), (value => {
+            });
+        }), task.$destroy$ = noSerialize(() => {
+            done = !0, cleanups.forEach(fn => fn());
+        });
+        const promise = safeCall(() => maybeThen(waitOn, () => taskFn(opts)), value => {
             setState(!0, value);
-        }), (reason => {
+        }, reason => {
             setState(!1, reason);
-        }));
+        });
         const timeout = resourceTarget._timeout;
-        return timeout > 0 ? Promise.race([ promise, delay(timeout).then((() => {
+        return timeout > 0 ? Promise.race([ promise, delay(timeout).then(() => {
             setState(!1, new Error("timeout")) && cleanupTask(task);
-        })) ]) : promise;
+        }) ]) : promise;
     };
     const runTask = (task, containerState, rCtx) => {
-        task.$flags$ &= -17, cleanupTask(task);
+        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qTask");
         iCtx.$renderCtx$ = rCtx;
         const {$subsManager$: subsManager} = containerState;
-        const taskFn = task.$qrl$.getFn(iCtx, (() => {
+        const taskFn = task.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(task);
-        }));
+        });
         const cleanups = [];
-        task.$destroy$ = noSerialize((() => {
-            cleanups.forEach((fn => fn()));
-        }));
+        task.$destroy$ = noSerialize(() => {
+            cleanups.forEach(fn => fn());
+        });
         const opts = {
             track: (obj, prop) => {
                 if (isFunction(obj)) {
@@ -1768,32 +1769,33 @@
                 cleanups.push(callback);
             }
         };
-        return safeCall((() => taskFn(opts)), (returnValue => {
+        return safeCall(() => taskFn(opts), returnValue => {
             isFunction(returnValue) && cleanups.push(returnValue);
-        }), (reason => {
+        }, reason => {
             handleError(reason, hostElement, rCtx);
-        }));
+        });
     };
     const runComputed = (task, containerState, rCtx) => {
-        task.$flags$ &= -17, cleanupTask(task);
+        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
         const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qComputed");
         iCtx.$subscriber$ = [ 0, task ], iCtx.$renderCtx$ = rCtx;
         const {$subsManager$: subsManager} = containerState;
-        const taskFn = task.$qrl$.getFn(iCtx, (() => {
+        const taskFn = task.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(task);
-        }));
+        });
         const ok = returnValue => {
-            untrack((() => {
+            untrack(() => {
                 const signal = task.$state$;
-                signal[QObjectSignalFlags] &= -3, signal.untrackedValue = returnValue, signal[QObjectManagerSymbol].$notifySubs$();
-            }));
+                signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue = returnValue, 
+                signal[QObjectManagerSymbol].$notifySubs$();
+            });
         };
         const fail = reason => {
             handleError(reason, hostElement, rCtx);
         };
         try {
-            return maybeThen(task.$qrl$.$resolveLazy$(containerState.$containerEl$), (() => {
+            return maybeThen(task.$qrl$.$resolveLazy$(containerState.$containerEl$), () => {
                 const result = taskFn();
                 if (isPromise(result)) {
                     const warningMessage = "useComputed$: Async functions in computed tasks are deprecated and will stop working in v2. Use useTask$ or useResource$ instead.";
@@ -1807,7 +1809,7 @@
                     return result.then(ok, fail);
                 }
                 ok(result);
-            }));
+            });
         } catch (reason) {
             fail(reason);
         }
@@ -2034,7 +2036,7 @@
     const getWrappingContainer = el => el.closest("[q\\:container]");
     const untrack = fn => invoke(void 0, fn);
     const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
-    const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
+    const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, () => signal.value));
     const _createSignal = (value, containerState, flags, subscriptions) => {
         const manager = containerState.$subsManager$.$createManager$(subscriptions);
         return new SignalImpl(value, manager, flags);
@@ -2179,7 +2181,7 @@
     const strToInt = nu => parseInt(nu, 36);
     const getEventName = attribute => {
         const colonPos = attribute.indexOf(":");
-        return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
+        return attribute ? attribute.slice(colonPos + 1).replace(/-./g, x => x[1].toUpperCase()) : attribute;
     };
     const SVG_NS = "http://www.w3.org/2000/svg";
     const IS_SVG = 1;
@@ -2247,9 +2249,9 @@
                     insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
                 } else if (elmToMove = oldCh[idxInOld], elmToMove.$type$ !== newStartVnode.$type$) {
                     const newElm = createElm(ctx, newStartVnode, flags, results);
-                    maybeThen(newElm, (newElm => {
+                    maybeThen(newElm, newElm => {
                         insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
-                    }));
+                    });
                 } else {
                     results.push(diffVnode(ctx, elmToMove, newStartVnode, flags)), oldCh[idxInOld] = void 0, 
                     assertDefined(), insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
@@ -2261,9 +2263,9 @@
             results.push(addChildren(ctx, parentElm, null == newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].$elm$, newCh, newStartIdx, newEndIdx, flags));
         }
         let wait = promiseAll(results);
-        return oldStartIdx <= oldEndIdx && (wait = maybeThen(wait, (() => {
+        return oldStartIdx <= oldEndIdx && (wait = maybeThen(wait, () => {
             removeChildren(staticCtx, oldCh, oldStartIdx, oldEndIdx);
-        }))), wait;
+        })), wait;
     };
     const getChildren = (elm, filter) => {
         const end = isVirtualElement(elm) ? elm.close : null;
@@ -2333,7 +2335,7 @@
         const vnodeFlags = newVnode.$flags$;
         const elCtx = getContext(elm, containerState);
         if (tag !== VIRTUAL) {
-            let isSvg = !!(flags & IS_SVG);
+            let isSvg = 0 !== (flags & IS_SVG);
             if (isSvg || "svg" !== tag || (flags |= IS_SVG, isSvg = !0), props !== EMPTY_OBJ) {
                 1 & vnodeFlags || (elCtx.li.length = 0);
                 const values = oldVnode.$props$;
@@ -2344,11 +2346,11 @@
                         if (isOnProp(prop)) {
                             const normalized = setEvent(elCtx.li, prop, newValue, containerState.$containerEl$);
                             addQwikEvent(staticCtx, elm, normalized);
-                        } else {
-                            isSignal(newValue) && (newValue = trackSignal(newValue, [ 1, currentComponent.$element$, newValue, elm, prop ])), 
-                            "class" === prop ? newValue = serializeClassWithHost(newValue, currentComponent) : "style" === prop && (newValue = stringifyStyle(newValue)), 
-                            values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg));
+                            continue;
                         }
+                        isSignal(newValue) && (newValue = trackSignal(newValue, [ 1, currentComponent.$element$, newValue, elm, prop ])), 
+                        "class" === prop ? newValue = serializeClassWithHost(newValue, currentComponent) : "style" === prop && (newValue = stringifyStyle(newValue)), 
+                        values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg));
                     } else {
                         assertElement(), void 0 !== newValue && setRef(newValue, elm);
                     }
@@ -2357,7 +2359,7 @@
             if (2 & vnodeFlags) {
                 return;
             }
-            isSvg && "foreignObject" === tag && (flags &= -2);
+            isSvg && "foreignObject" === tag && (flags &= ~IS_SVG);
             if (void 0 !== props.dangerouslySetInnerHTML) {
                 return void 0;
             }
@@ -2372,7 +2374,7 @@
             let needsRender = !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
             return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rCtx, elCtx), 
             elCtx.$componentQrl$ = cmpProps["q:renderFn"], assertQrl(elCtx.$componentQrl$), 
-            needsRender = !0), needsRender ? maybeThen(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
+            needsRender = !0), needsRender ? maybeThen(renderComponent(rCtx, elCtx, flags), () => renderContentProjection(rCtx, elCtx, newVnode, flags)) : renderContentProjection(rCtx, elCtx, newVnode, flags);
         }
         if ("q:s" in props) {
             return assertDefined(), void currentComponent.$slots$.push(newVnode);
@@ -2404,18 +2406,18 @@
             const templateEl = slotMaps.templates[key];
             templateEl && !splittedNewChildren[key] && (slotMaps.templates[key] = void 0, removeNode(staticCtx, templateEl));
         }
-        return promiseAll(Object.keys(splittedNewChildren).map((slotName => {
+        return promiseAll(Object.keys(splittedNewChildren).map(slotName => {
             const newVdom = splittedNewChildren[slotName];
             const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
             const slotEl = slotCtx.$element$;
             slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotEl;
-            let newFlags = -2 & flags;
+            let newFlags = flags & ~IS_SVG;
             slotEl.isSvg && (newFlags |= IS_SVG);
-            const index = staticCtx.$addSlots$.findIndex((slot => slot[0] === slotEl));
+            const index = staticCtx.$addSlots$.findIndex(slot => slot[0] === slotEl);
             return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, newFlags);
-        })));
+        }));
     };
     const addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
         const promises = [];
@@ -2487,7 +2489,7 @@
         const staticCtx = rCtx.$static$;
         const containerState = staticCtx.$containerState$;
         isVirtual ? elm = newVirtualElement(doc, isSvg) : "head" === tag ? (elm = doc.head, 
-        flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= -3), 2 & vnode.$flags$ && (flags |= 4), 
+        flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= ~IS_HEAD), 2 & vnode.$flags$ && (flags |= 4), 
         vnode.$elm$ = elm;
         const elCtx = createContext(elm);
         if (rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
@@ -2509,7 +2511,7 @@
                     }
                 }
                 setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL;
-                const wait = maybeThen(renderComponent(rCtx, elCtx, flags), (() => {
+                const wait = maybeThen(renderComponent(rCtx, elCtx, flags), () => {
                     let children = vnode.$children$;
                     if (0 === children.length) {
                         return;
@@ -2524,7 +2526,7 @@
                         const slotRctx = pushRenderContext(rCtx);
                         const slotEl = slotCtx.$element$;
                         slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotEl;
-                        let newFlags = -2 & flags;
+                        let newFlags = flags & ~IS_SVG;
                         slotEl.isSvg && (newFlags |= IS_SVG);
                         for (const node of newVnode.$children$) {
                             const nodeElm = createElm(slotRctx, node, newFlags, p);
@@ -2532,7 +2534,7 @@
                         }
                     }
                     return promiseAllLazy(p);
-                }));
+                });
                 return isPromise(wait) && promises.push(wait), elm;
             }
             if ("q:s" in props) {
@@ -2544,20 +2546,20 @@
             }
         } else {
             if (vnode.$immutableProps$) {
-                const immProps = props !== EMPTY_OBJ ? Object.fromEntries(Object.entries(vnode.$immutableProps$).map((([k, v]) => [ k, v === _IMMUTABLE ? props[k] : v ]))) : vnode.$immutableProps$;
+                const immProps = props !== EMPTY_OBJ ? Object.fromEntries(Object.entries(vnode.$immutableProps$).map(([k, v]) => [ k, v === _IMMUTABLE ? props[k] : v ])) : vnode.$immutableProps$;
                 setProperties(staticCtx, elCtx, currentComponent, immProps, isSvg, !0);
             }
             if (props !== EMPTY_OBJ) {
                 elCtx.$vdom$ = vnode;
-                const p = vnode.$immutableProps$ ? Object.fromEntries(Object.entries(props).filter((([k]) => !(k in vnode.$immutableProps$)))) : props;
+                const p = vnode.$immutableProps$ ? Object.fromEntries(Object.entries(props).filter(([k]) => !(k in vnode.$immutableProps$))) : props;
                 vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, p, isSvg, !1);
             }
-            if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2), currentComponent) {
+            if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG), currentComponent) {
                 const scopedIds = currentComponent.$scopeIds$;
-                scopedIds && scopedIds.forEach((styleId => {
+                scopedIds && scopedIds.forEach(styleId => {
                     elm.classList.add(styleId);
-                })), currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (elCtx.li.push(...currentComponent.li), 
-                currentComponent.$flags$ &= -3);
+                }), currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER && (elCtx.li.push(...currentComponent.li), 
+                currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
             }
             for (const listener of elCtx.li) {
                 addQwikEvent(staticCtx, elm, listener[0]);
@@ -2565,14 +2567,14 @@
             if (void 0 !== props.dangerouslySetInnerHTML) {
                 return elm;
             }
-            isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2);
+            isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG);
         }
         let children = vnode.$children$;
         if (0 === children.length) {
             return elm;
         }
         1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
-        const nodes = children.map((ch => createElm(rCtx, ch, flags, promises)));
+        const nodes = children.map(ch => createElm(rCtx, ch, flags, promises));
         for (const node of nodes) {
             directAppendChild(elm, node);
         }
@@ -2684,9 +2686,9 @@
             }
             const ctx = tryGetContext(elm);
             ctx && ((elCtx, subsManager) => {
-                elCtx.$tasks$?.forEach((task => {
+                elCtx.$tasks$?.forEach(task => {
                     subsManager.$clearSub$(task), destroyTask(task);
-                })), elCtx.$componentQrl$ = null, elCtx.$seq$ = null, elCtx.$tasks$ = null;
+                }), elCtx.$componentQrl$ = null, elCtx.$seq$ = null, elCtx.$tasks$ = null;
             })(ctx, subsManager);
             const end = isVirtualElement(elm) ? elm.close : null;
             let node = elm.firstChild;
@@ -2700,9 +2702,9 @@
     const executeContextWithScrollAndTransition = async ctx => {
         if (build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
         document.startViewTransition)) {
-            const transition = document.startViewTransition((() => {
+            const transition = document.startViewTransition(() => {
                 executeDOMRender(ctx), restoreScroll();
-            }));
+            });
             const event = new CustomEvent("qviewTransition", {
                 detail: transition
             });
@@ -2852,11 +2854,11 @@
             const slotChildren = getChildren(slotEl, isChildComponent);
             if (slotChildren.length > 0) {
                 const sref = slotEl.getAttribute("q:sref");
-                const hostCtx = staticCtx.$roots$.find((r => r.$id$ === sref));
+                const hostCtx = staticCtx.$roots$.find(r => r.$id$ === sref);
                 if (hostCtx) {
                     const hostElm = hostCtx.$element$;
                     if (hostElm.isConnected) {
-                        if (getChildren(hostElm, isSlotTemplate).some((node => directGetAttribute(node, QSlot) === key))) {
+                        if (getChildren(hostElm, isSlotTemplate).some(node => directGetAttribute(node, QSlot) === key)) {
                             cleanupTree(slotEl, staticCtx, subsManager, !1);
                         } else {
                             const template = createTemplate(staticCtx.$doc$, key);
@@ -2876,10 +2878,10 @@
         for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
             const key = getKey(slotEl);
             assertDefined();
-            const template = getChildren(hostElm, isSlotTemplate).find((node => node.getAttribute(QSlot) === key));
-            template && (getChildren(template, isChildComponent).forEach((child => {
+            const template = getChildren(hostElm, isSlotTemplate).find(node => node.getAttribute(QSlot) === key);
+            template && (getChildren(template, isChildComponent).forEach(child => {
                 directAppendChild(slotEl, child);
-            })), template.remove());
+            }), template.remove());
         }
     };
     const printRenderStats = () => {
@@ -2926,10 +2928,10 @@
                     return {};
                 }
                 const attributes = str.split(" ");
-                return Object.fromEntries(attributes.map((attr => {
+                return Object.fromEntries(attributes.map(attr => {
                     const index = attr.indexOf("=");
                     return index >= 0 ? [ attr.slice(0, index), unescape(attr.slice(index + 1)) ] : [ attr, "" ];
-                })));
+                }));
             })(open.data.slice(3)), assertTrue(open.data.startsWith("qv ")), open.__virtual = this, 
             close.__virtual = this, seal();
         }
@@ -2997,9 +2999,9 @@
         }
         querySelectorAll(query) {
             const result = [];
-            return getChildren(this, isNodeElement).forEach((el => {
+            return getChildren(this, isNodeElement).forEach(el => {
                 isQwikElement(el) && (el.matches(query) && result.push(el), result.concat(Array.from(el.querySelectorAll(query))));
-            })), result;
+            }), result;
         }
         querySelector(query) {
             for (const el of this.childNodes) {
@@ -3020,7 +3022,7 @@
         }
         set innerHTML(html) {
             const parent = this.parentElement;
-            parent ? (this.childNodes.forEach((a => this.removeChild(a))), this.$template$.innerHTML = html, 
+            parent ? (this.childNodes.forEach(a => this.removeChild(a)), this.$template$.innerHTML = html, 
             parent.insertBefore(this.$template$.content, this.close)) : this.$template$.innerHTML = html;
         }
         get firstChild() {
@@ -3056,9 +3058,9 @@
     }
     const updateComment = attributes => `qv ${(map => {
         const attributes = [];
-        return Object.entries(map).forEach((([key, value]) => {
+        return Object.entries(map).forEach(([key, value]) => {
             attributes.push(value ? `${key}=${escape(value)}` : `${key}`);
-        })), attributes.join(" ");
+        }), attributes.join(" ");
     })(attributes)}`;
     const processVirtualNodes = node => {
         if (null == node) {
@@ -3125,20 +3127,20 @@
                 }
             }
         }
-        const data = await _pauseFromContexts(contexts, containerState, (el => isNode$1(el) && isText(el) ? getTextID(el, containerState) : null));
+        const data = await _pauseFromContexts(contexts, containerState, el => isNode$1(el) && isText(el) ? getTextID(el, containerState) : null);
         const qwikJson = doc.createElement("script");
         directSetAttribute(qwikJson, "type", "qwik/json"), qwikJson.textContent = escapeText(JSON.stringify(data.state, void 0, void 0)), 
         parentJSON.appendChild(qwikJson);
-        const extraListeners = Array.from(containerState.$events$, (s => JSON.stringify(s)));
+        const extraListeners = Array.from(containerState.$events$, s => JSON.stringify(s));
         const eventsScript = doc.createElement("script");
         return eventsScript.textContent = `(window.qwikevents||=[]).push(${extraListeners.join(", ")})`, 
         parentJSON.appendChild(eventsScript), data;
     };
     const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
         const collector = createCollector(containerState);
-        textNodes?.forEach(((_, key) => {
+        textNodes?.forEach((_, key) => {
             collector.$seen$.add(key);
-        }));
+        });
         let hasListeners = !1;
         for (const ctx of allContexts) {
             if (ctx.$tasks$) {
@@ -3252,7 +3254,7 @@
             }
             converted.length > 0 && subsMap.set(obj, converted);
         }
-        objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
+        objs.sort((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1));
         let count = 0;
         for (const obj of objs) {
             objToId.set(obj, intToStr(count)), count++;
@@ -3270,7 +3272,7 @@
             if (null == value) {
                 break;
             }
-            subs.push(value.map((s => "number" == typeof s ? `_${s}` : serializeSubscription(s, getObjId))).filter(isNotNullable));
+            subs.push(value.map(s => "number" == typeof s ? `_${s}` : serializeSubscription(s, getObjId)).filter(isNotNullable));
         }
         assertEqual();
         const convertedObjs = serializeObjects(objs, mustGetObjId, getObjId, collector, containerState);
@@ -3311,10 +3313,10 @@
                 }
                 if (contexts) {
                     const serializedContexts = [];
-                    contexts.forEach(((value, key) => {
+                    contexts.forEach((value, key) => {
                         const id = getObjId(value);
                         id && serializedContexts.push(`${key}=${id}`);
-                    }));
+                    });
                     const value = serializedContexts.join(" ");
                     value && (metaValue.c = value, add = !0);
                 }
@@ -3376,12 +3378,12 @@
     };
     const createCollector = containerState => {
         const inlinedFunctions = [];
-        return containerState.$inlineFns$.forEach(((id, fnStr) => {
+        return containerState.$inlineFns$.forEach((id, fnStr) => {
             for (;inlinedFunctions.length <= id; ) {
                 inlinedFunctions.push("");
             }
             inlinedFunctions[id] = fnStr;
-        })), {
+        }), {
             $containerState$: containerState,
             $seen$: new Set,
             $objSet$: new Set,
@@ -3483,15 +3485,15 @@
                         return void collector.$objSet$.add(obj);
                     }
                     if (isPromise(obj)) {
-                        return void collector.$promises$.push((promise = obj, promise.then((value => (promise[PROMISE_VALUE] = {
+                        return void collector.$promises$.push((promise = obj, promise.then(value => (promise[PROMISE_VALUE] = {
                             resolved: !0,
                             value
-                        }, value)), (value => (promise[PROMISE_VALUE] = {
+                        }, value), value => (promise[PROMISE_VALUE] = {
                             resolved: !1,
                             value
-                        }, value)))).then((value => {
+                        }, value))).then(value => {
                             collectValue(value, collector, leaks);
-                        })));
+                        }));
                     }
                     if ("object" === objType) {
                         if (isNode$1(obj)) {
@@ -3553,7 +3555,7 @@
     };
     const isEmptyObj = obj => 0 === Object.keys(obj).length;
     function serializeObjects(objs, mustGetObjId, getObjId, collector, containerState) {
-        return objs.map((obj => {
+        return objs.map(obj => {
             if (null === obj) {
                 return null;
             }
@@ -3599,7 +3601,7 @@
                 }
             }
             throw qError(3, obj);
-        }));
+        });
     }
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
@@ -3622,7 +3624,7 @@
                     {
                         const ref = "QWIK-SELF";
                         const frames = new Error(ref).stack.split("\n");
-                        const start = frames.findIndex((f => f.includes(ref)));
+                        const start = frames.findIndex(f => f.includes(ref));
                         match = frames[start + 2 + stackOffset].match(EXTRACT_FILE_NAME), chunk = match ? match[1] : "main";
                     }
                 }
@@ -3674,7 +3676,7 @@
             $containerState$: containerState,
             $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
         };
-        return mapJoin(existingQRLs, (qrl => serializeQRL(qrl, opts)), "\n");
+        return mapJoin(existingQRLs, qrl => serializeQRL(qrl, opts), "\n");
     };
     const parseQRL = (qrl, containerEl) => {
         const endIdx = qrl.length;
@@ -3697,11 +3699,11 @@
         const index = array.indexOf(obj);
         return -1 === index ? (array.push(obj), String(array.length - 1)) : String(index);
     };
-    const inflateQrl = (qrl, elCtx) => (assertDefined(), qrl.$captureRef$ = qrl.$capture$.map((idx => {
+    const inflateQrl = (qrl, elCtx) => (assertDefined(), qrl.$captureRef$ = qrl.$capture$.map(idx => {
         const int = parseInt(idx, 10);
         const obj = elCtx.$refMap$[int];
         return assertTrue(), obj;
-    })));
+    }));
     const useResourceQrl = (qrl, opts) => {
         const {val, set, i, iCtx, elCtx} = useSequentialScope();
         if (null != val) {
@@ -3801,7 +3803,7 @@
             const result = _createResourceReturn(void 0);
             return result.value = Promise.resolve(), "0" === first ? (result._state = "resolved", 
             result._resolved = id, result.loading = !1) : "1" === first ? (result._state = "pending", 
-            result.value = new Promise((() => {})), result.loading = !0) : "2" === first && (result._state = "rejected", 
+            result.value = new Promise(() => {}), result.loading = !0) : "2" === first && (result._state = "rejected", 
             result._error = id, result.loading = !1), result;
         })(data),
         $fill$: (resource, getObject) => {
@@ -3809,7 +3811,7 @@
                 resource._resolved = getObject(resource._resolved), resource.value = Promise.resolve(resource._resolved);
             } else if ("rejected" === resource._state) {
                 const p = Promise.reject(resource._error);
-                p.catch((() => null)), resource._error = getObject(resource._error), resource.value = p;
+                p.catch(() => null), resource._error = getObject(resource._error), resource.value = p;
             }
         }
     });
@@ -3908,7 +3910,7 @@
         $test$: v => v instanceof SignalImpl,
         $collect$: (obj, collector, leaks) => {
             collectValue(obj.untrackedValue, collector, leaks);
-            return !0 === leaks && !(obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
+            return !0 === leaks && 0 === (obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
             obj;
         },
         $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
@@ -3956,9 +3958,9 @@
         $test$: v => "undefined" != typeof FormData && v instanceof globalThis.FormData,
         $serialize$: formData => {
             const array = [];
-            return formData.forEach(((value, key) => {
+            return formData.forEach((value, key) => {
                 array.push("string" == typeof value ? [ key, value ] : [ key, value.name ]);
-            })), JSON.stringify(array);
+            }), JSON.stringify(array);
         },
         $prepare$: data => {
             const array = JSON.parse(data);
@@ -4025,7 +4027,7 @@
         $prefix$: "",
         $test$: v => v instanceof Set,
         $collect$: (set, collector, leaks) => {
-            set.forEach((value => collectValue(value, collector, leaks)));
+            set.forEach(value => collectValue(value, collector, leaks));
         },
         $serialize$: (v, getObjID) => Array.from(v).map(getObjID).join(" "),
         $prepare$: data => {
@@ -4044,15 +4046,15 @@
         $prefix$: "",
         $test$: v => v instanceof Map,
         $collect$: (map, collector, leaks) => {
-            map.forEach(((value, key) => {
+            map.forEach((value, key) => {
                 collectValue(value, collector, leaks), collectValue(key, collector, leaks);
-            }));
+            });
         },
         $serialize$: (map, getObjID) => {
             const result = [];
-            return map.forEach(((value, key) => {
+            return map.forEach((value, key) => {
                 result.push(getObjID(key) + " " + getObjID(value));
-            })), result.join(" ");
+            }), result.join(" ");
         },
         $prepare$: data => {
             const set = new Map;
@@ -4075,13 +4077,13 @@
     }), Uint8ArraySerializer ];
     const serializerByPrefix = /*#__PURE__*/ (() => {
         const serializerByPrefix = [];
-        return serializers.forEach((s => {
+        return serializers.forEach(s => {
             const prefix = s.$prefixCode$;
             for (;serializerByPrefix.length < prefix; ) {
                 serializerByPrefix.push(void 0);
             }
             serializerByPrefix.push(s);
-        })), serializerByPrefix;
+        }), serializerByPrefix;
     })();
     function getSerializer(obj) {
         if ("string" == typeof obj) {
@@ -4091,7 +4093,7 @@
             }
         }
     }
-    const collectorSerializers = /*#__PURE__*/ serializers.filter((a => a.$collect$));
+    const collectorSerializers = /*#__PURE__*/ serializers.filter(a => a.$collect$);
     const collectDeps = (obj, collector, leaks) => {
         for (const s of collectorSerializers) {
             if (s.$test$(obj)) {
@@ -4182,12 +4184,12 @@
                 }
                 if (isArray(unwrapped)) {
                     let expectIndex = 0;
-                    return unwrapped.forEach(((v, i) => {
+                    return unwrapped.forEach((v, i) => {
                         if (i !== expectIndex) {
                             throw qError(3, unwrapped);
                         }
                         _verifySerializable(v, seen, ctx + "[" + i + "]"), expectIndex = i + 1;
-                    })), value;
+                    }), value;
                 }
                 if (isSerializableObject(unwrapped)) {
                     for (const [key, item] of Object.entries(unwrapped)) {
@@ -4343,7 +4345,7 @@
         $addSub$(sub, key) {
             const subs = this.$subs$;
             const group = sub[1];
-            0 === sub[0] && subs.some((([_type, _group, _key]) => 0 === _type && _group === group && _key === key)) || (subs.push(__lastSubscription = [ ...sub, key ]), 
+            0 === sub[0] && subs.some(([_type, _group, _key]) => 0 === _type && _group === group && _key === key) || (subs.push(__lastSubscription = [ ...sub, key ]), 
             this.$addToGroup$(group, this));
         }
         $notifySubs$(key) {
@@ -4400,18 +4402,18 @@
             const start = now();
             const ctx = tryGetInvokeContext();
             if (null !== symbolFn) {
-                symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = wrapFn(module[symbol])));
+                symbolRef = symbolFn().then(module => qrl.resolved = symbolRef = wrapFn(module[symbol]));
             } else {
                 const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
-                symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
+                symbolRef = maybeThen(imported, ref => qrl.resolved = symbolRef = wrapFn(ref));
             }
-            return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then((() => emitUsedSymbol(symbol, ctx?.$element$, start)), (err => {
+            return "object" == typeof symbolRef && isPromise(symbolRef) && symbolRef.then(() => emitUsedSymbol(symbol, ctx?.$element$, start), err => {
                 console.error(`qrl ${symbol} failed to load`, err), symbolRef = null;
-            })), symbolRef;
+            }), symbolRef;
         };
         const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
         function invokeFn(currentCtx, beforeFn) {
-            return (...args) => maybeThen(resolveLazy(), (f => {
+            return (...args) => maybeThen(resolveLazy(), f => {
                 if (!isFunction(f)) {
                     throw qError(10);
                 }
@@ -4420,7 +4422,7 @@
                 }
                 const context = createOrReuseInvocationContext(currentCtx);
                 return invoke.call(this, context, f, ...args);
-            }));
+            });
         }
         const createOrReuseInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
         const resolvedSymbol = refSymbol ?? symbol;
@@ -4441,7 +4443,7 @@
             $captureRef$: captureRef,
             dev: null,
             resolved: void 0
-        }), symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved)))), 
+        }), symbolRef && (symbolRef = maybeThen(symbolRef, resolved => qrl.resolved = symbolRef = wrapFn(resolved))), 
         build.isBrowser && resolvedSymbol && preloader.p(resolvedSymbol, .8), qrl;
     };
     const getSymbolHash = symbolName => {
@@ -4518,7 +4520,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.15.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.16.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4652,7 +4654,7 @@
     const STRINGS_COMMENTS = [ [ ANY, 39, 14 ], [ ANY, 34, 15 ], [ ANY, 47, 16, "*" ] ];
     const STATE_MACHINE = [ [ [ ANY, 42, starSelector ], [ ANY, OPEN_BRACKET, 7 ], [ ANY, COLON, pseudoElement, ":", "before", "after", "first-letter", "first-line" ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, COLON, 3, "has", "host-context", "not", "where", "is", "matches", "any" ], [ ANY, COLON, 4 ], [ ANY, IDENT, 1 ], [ ANY, DOT, 1 ], [ ANY, HASH, 1 ], [ ANY, 64, atRuleSelector, "keyframe" ], [ ANY, 64, atRuleBlock, "media", "supports", "container" ], [ ANY, 64, atRuleInert ], [ ANY, 123, 13 ], [ 47, 42, 16 ], [ ANY, 59, EXIT ], [ ANY, 125, EXIT ], [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, 8 ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, 93, EXIT_INSERT_SCOPE ], [ ANY, 39, 14 ], [ ANY, 34, 15 ] ], [ [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ WHITESPACE, IDENT, 1 ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, 123, 13 ], ...STRINGS_COMMENTS ], [ [ ANY, 123, rule ], [ ANY, 59, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 59, EXIT ], [ ANY, 123, 9 ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ ANY, 123, 13 ], [ ANY, 40, 8 ], ...STRINGS_COMMENTS ], [ [ ANY, 39, EXIT ] ], [ [ ANY, 34, EXIT ] ], [ [ 42, 47, EXIT ] ] ];
     const useStylesQrl = styles => {
-        _useStyles(styles, (str => str), !1);
+        _useStyles(styles, str => str, !1);
     };
     const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
     const useStylesScopedQrl = styles => ({
@@ -4684,11 +4686,14 @@
         styleId;
     };
     const PREFETCH_CODE = /*#__PURE__*/ (c => {
-        "getRegistrations" in c && c.getRegistrations().then((registrations => {
-            registrations.forEach((registration => {
+        "getRegistrations" in c && c.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
                 registration.active && registration.active.scriptURL.endsWith("_URL_") && registration.unregister().catch(console.error);
-            }));
-        }));
+            });
+        }), "caches" in window && caches.keys().then(names => {
+            const cacheName = names.find(name => name.startsWith("QwikBundles"));
+            cacheName && caches.delete(cacheName).catch(console.error);
+        }).catch(console.error);
     }).toString();
     Object.defineProperty(exports, "isBrowser", {
         enumerable: !0,
@@ -4719,7 +4724,7 @@
             ...opts
         };
         resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
-        let code = PREFETCH_CODE.replace("'_URL_'", JSON.stringify(resolvedOpts.path));
+        let code = PREFETCH_CODE.replace('"_URL_"', JSON.stringify(resolvedOpts.path.split("/").pop()));
         build.isDev || (code = code.replaceAll(/\s\s+/gm, ""));
         const props = {
             dangerouslySetInnerHTML: [ "(" + code + ")(", [ "navigator.serviceWorker" ].join(","), ");" ].join(""),
@@ -4732,7 +4737,7 @@
         let promise;
         if (isResourceReturn(resource)) {
             if (isBrowser) {
-                if (props.onRejected && (resource.value.catch((() => {})), "rejected" === resource._state)) {
+                if (props.onRejected && (resource.value.catch(() => {}), "rejected" === resource._state)) {
                     return props.onRejected(resource._error);
                 }
                 if (props.onPending) {
@@ -4747,7 +4752,7 @@
                         throw resource._error;
                     }
                 }
-                if (void 0 !== untrack((() => resource._resolved))) {
+                if (void 0 !== untrack(() => resource._resolved)) {
                     return props.onResolved(resource._resolved);
                 }
             }
@@ -4847,7 +4852,7 @@
         const locale = opts.serverData?.locale;
         const containerAttributes = opts.containerAttributes;
         const qRender = containerAttributes["q:render"];
-        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.15.0", 
+        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.16.0", 
         containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
         containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
         containerAttributes["q:instance"] = hash();
@@ -4863,7 +4868,7 @@
         };
         (ssrCtx.$invocationContext$ = newInvokeContext(locale)).$renderCtx$ = rCtx;
         const rootNode = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null);
-        containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(rootNode, rCtx, ssrCtx, opts.stream, containerState, opts)));
+        containerState.$hostsRendering$ = new Set, await Promise.resolve().then(() => renderRoot$1(rootNode, rCtx, ssrCtx, opts.stream, containerState, opts));
     }, exports._restProps = (props, omit) => {
         const rest = {};
         for (const key in props) {
@@ -4949,10 +4954,10 @@
         return qrl.dev = opts, qrl;
     }, exports.isSignal = isSignal, exports.jsx = jsx, exports.jsxDEV = (type, props, key, _isStatic, opts) => {
         const processed = null == key ? null : String(key);
-        const children = untrack((() => {
+        const children = untrack(() => {
             const c = props.children;
             return "string" == typeof type && delete props.children, c;
-        }));
+        });
         isString(type) && "className" in props && (props.class = props.className, delete props.className);
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         return node.dev = {
@@ -5020,11 +5025,11 @@
     exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
         const ctx = tryGetInvokeContext();
         return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-    }, exports.useSignal = initialState => useConstant((() => createSignal(initialState))), 
+    }, exports.useSignal = initialState => useConstant(() => createSignal(initialState)), 
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.15.0", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.16.0", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();
@@ -5032,4 +5037,4 @@
             _locale = previousLang;
         }
     };
-}));
+});

@@ -93,7 +93,7 @@ const preloadOne = (bundle) => {
   doc.head.appendChild(link);
 };
 const adjustProbabilities = (bundle, newInverseProbability, seen) => {
-  if (seen == null ? void 0 : seen.has(bundle)) {
+  if (seen?.has(bundle)) {
     return;
   }
   const previousInverseProbability = bundle.$inverseProbability$;
@@ -113,7 +113,7 @@ const adjustProbabilities = (bundle, newInverseProbability, seen) => {
     queueDirty = true;
   }
   if (bundle.$deps$) {
-    seen || (seen = /* @__PURE__ */ new Set());
+    seen ||= /* @__PURE__ */ new Set();
     seen.add(bundle);
     const probability = 1 - bundle.$inverseProbability$;
     for (const dep of bundle.$deps$) {
@@ -144,7 +144,7 @@ const handleBundle = (name, inverseProbability) => {
 };
 let depsCount;
 const preload = (name, probability) => {
-  if (!(name == null ? void 0 : name.length)) {
+  if (!name?.length) {
     return;
   }
   depsCount = 0;

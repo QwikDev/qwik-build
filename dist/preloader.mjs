@@ -73,7 +73,7 @@ const preloadOne = (e) => {
   doc.head.appendChild(o);
 };
 const adjustProbabilities = (e, t, o) => {
-  if (o == null ? void 0 : o.has(e)) return;
+  if (o?.has(e)) return;
   const n = e.u;
   e.u = t;
   if (n - e.u < 0.01) return;
@@ -89,7 +89,7 @@ const adjustProbabilities = (e, t, o) => {
     queueDirty = 1;
   }
   if (e.h) {
-    o || (o = /* @__PURE__ */ new Set());
+    o ||= /* @__PURE__ */ new Set();
     o.add(e);
     const t2 = 1 - e.u;
     for (const n2 of e.h) {
@@ -116,7 +116,7 @@ const handleBundle = (e, t) => {
 };
 let depsCount;
 const preload = (e, t) => {
-  if (!(e == null ? void 0 : e.length)) return;
+  if (!e?.length) return;
   depsCount = 0;
   let o = t ? 1 - t : 0.4;
   if (Array.isArray(e)) for (let t2 = e.length - 1; t2 >= 0; t2--) {

@@ -17,19 +17,10 @@ const findShadowRoots = (fragment) => {
   });
 };
 const isPromise = (promise) => promise && typeof promise.then === "function";
-let doNotClean = true;
 const broadcast = (infix, ev, type = ev.type) => {
-  let found = doNotClean;
   querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((el) => {
-    found = true;
     dispatch(el, infix, ev, type);
   });
-  if (!found) {
-    window[infix.slice(1)].removeEventListener(
-      type,
-      infix === "-window" ? processWindowEvent : processDocumentEvent
-    );
-  }
 };
 const resolveContainer = (containerEl) => {
   if (containerEl._qwikjson_ === void 0) {
@@ -196,11 +187,7 @@ const processReadyStateChange = () => {
 const addEventListener = (el, eventName, handler, capture = false) => {
   el.addEventListener(eventName, handler, { capture, passive: false });
 };
-let cleanTimer;
 const processEventOrNode = (...eventNames) => {
-  doNotClean = true;
-  clearTimeout(cleanTimer);
-  cleanTimer = setTimeout(() => doNotClean = false, 2e4);
   for (const eventNameOrNode of eventNames) {
     if (typeof eventNameOrNode === "string") {
       if (!events.has(eventNameOrNode)) {

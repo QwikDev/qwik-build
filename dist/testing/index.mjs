@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.15.0
+ * @builder.io/qwik/testing 1.16.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22800,7 +22800,7 @@ var preloadOne = (e) => {
   doc.head.appendChild(o);
 };
 var adjustProbabilities = (e, t, o) => {
-  if (o == null ? void 0 : o.has(e)) return;
+  if (o?.has(e)) return;
   const n = e.u;
   e.u = t;
   if (n - e.u < 0.01) return;
@@ -22843,7 +22843,7 @@ var handleBundle = (e, t) => {
 };
 var depsCount;
 var preload = (e, t) => {
-  if (!(e == null ? void 0 : e.length)) return;
+  if (!e?.length) return;
   depsCount = 0;
   let o = t ? 1 - t : 0.4;
   if (Array.isArray(e)) for (let t2 = e.length - 1; t2 >= 0; t2--) {
