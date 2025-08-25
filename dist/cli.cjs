@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.15.0-dev+9d8d222
+ * @builder.io/qwik/cli 1.15.0-dev+8229a89
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1244,6 +1244,1989 @@ var require_cross_spawn = __commonJS({
   }
 });
 
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/identifier.js
+var require_identifier = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/identifier.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.identifierRegex = exports2.reservedIdentifiers = void 0;
+    exports2.isReserved = isReserved;
+    exports2.isIdentifier = isIdentifier;
+    exports2.reservedIdentifiers = [
+      // Keywords
+      "await",
+      "break",
+      "case",
+      "catch",
+      "class",
+      "const",
+      "continue",
+      "debugger",
+      "default",
+      "delete",
+      "do",
+      "else",
+      "enum",
+      "export",
+      "extends",
+      "false",
+      "finally",
+      "for",
+      "function",
+      "if",
+      "import",
+      "in",
+      "instanceof",
+      "new",
+      "null",
+      "return",
+      "super",
+      "switch",
+      "this",
+      "throw",
+      "true",
+      "try",
+      "typeof",
+      "var",
+      "void",
+      "while",
+      "with",
+      "yield",
+      // Future reserved keywords
+      "implements",
+      "interface",
+      "package",
+      "private",
+      "protected",
+      "public"
+    ];
+    exports2.identifierRegex = /[$_\p{ID_Start}][$_\u200C\u200D\p{ID_Continue}]*/u;
+    var exactRegex = new RegExp(`^${exports2.identifierRegex.source}$`, exports2.identifierRegex.flags);
+    function isReserved(value) {
+      return exports2.reservedIdentifiers.includes(value);
+    }
+    function isIdentifier(value) {
+      return exactRegex.test(value) && !isReserved(value);
+    }
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/token.js
+var require_token = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/token.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonToken = exports2.JsonTokenType = void 0;
+    var JsonTokenType;
+    (function(JsonTokenType2) {
+      JsonTokenType2["IDENTIFIER"] = "IDENTIFIER";
+      JsonTokenType2["STRING"] = "STRING";
+      JsonTokenType2["NUMBER"] = "NUMBER";
+      JsonTokenType2["BOOLEAN"] = "BOOLEAN";
+      JsonTokenType2["NULL"] = "NULL";
+      JsonTokenType2["COLON"] = "COLON";
+      JsonTokenType2["COMMA"] = "COMMA";
+      JsonTokenType2["LINE_COMMENT"] = "LINE_COMMENT";
+      JsonTokenType2["BLOCK_COMMENT"] = "BLOCK_COMMENT";
+      JsonTokenType2["BRACE_LEFT"] = "BRACE_LEFT";
+      JsonTokenType2["BRACE_RIGHT"] = "BRACE_RIGHT";
+      JsonTokenType2["BRACKET_LEFT"] = "BRACKET_LEFT";
+      JsonTokenType2["BRACKET_RIGHT"] = "BRACKET_RIGHT";
+      JsonTokenType2["WHITESPACE"] = "WHITESPACE";
+      JsonTokenType2["NEWLINE"] = "NEWLINE";
+      JsonTokenType2["EOF"] = "EOF";
+    })(JsonTokenType || (exports2.JsonTokenType = JsonTokenType = {}));
+    var JsonToken;
+    (function(JsonToken2) {
+      function isType(token, type) {
+        return token.type === type;
+      }
+      JsonToken2.isType = isType;
+    })(JsonToken || (exports2.JsonToken = JsonToken = {}));
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/error.js
+var require_error = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/error.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonParseError = exports2.JsonError = void 0;
+    var JsonError = class extends Error {
+      constructor(message) {
+        super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
+      }
+    };
+    exports2.JsonError = JsonError;
+    var JsonParseError = class extends JsonError {
+      constructor(message, location) {
+        super(message);
+        this.location = location;
+        Object.setPrototypeOf(this, new.target.prototype);
+      }
+    };
+    exports2.JsonParseError = JsonParseError;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/lexer.js
+var require_lexer = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/lexer.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonLexer = void 0;
+    var token_1 = require_token();
+    var identifier_1 = require_identifier();
+    var error_1 = require_error();
+    var JsonLexer = class _JsonLexer {
+      constructor(source) {
+        this.current = null;
+        this.remaining = source;
+      }
+      static tokenize(source) {
+        return [...new _JsonLexer(source)];
+      }
+      isEof() {
+        var _a;
+        return ((_a = this.current) == null ? void 0 : _a.type) === token_1.JsonTokenType.EOF;
+      }
+      [Symbol.iterator]() {
+        return {
+          next: () => this.isEof() ? {
+            done: true,
+            value: void 0
+          } : {
+            done: false,
+            value: this.next()
+          }
+        };
+      }
+      skipInsignificant() {
+        return this.skip(token_1.JsonTokenType.WHITESPACE, token_1.JsonTokenType.NEWLINE, token_1.JsonTokenType.LINE_COMMENT, token_1.JsonTokenType.BLOCK_COMMENT);
+      }
+      skip(...types) {
+        const tokens = [];
+        while (!this.isEof() && this.matches(...types)) {
+          tokens.push(this.peek());
+          this.next();
+        }
+        return tokens;
+      }
+      expect(type, ...other) {
+        const token = this.peek();
+        const types = [type, ...other];
+        if (!_JsonLexer.isTokenType(token, types)) {
+          const { line, column } = token.location.start;
+          const expectedTypes = types.length === 1 ? types[0] : `either ${types.slice(0, -1).join(", ")} or ${types[types.length - 1]}`;
+          throw new error_1.JsonParseError(`Expected ${expectedTypes}, but got ${token.type} at ${line}:${column}.`, token.location);
+        }
+        return token;
+      }
+      consume(type, ...types) {
+        const token = this.expect(type, ...types);
+        if (!this.isEof()) {
+          this.next();
+        }
+        return token;
+      }
+      matches(...types) {
+        return _JsonLexer.isTokenType(this.peek(), types);
+      }
+      peek() {
+        if (this.current === null) {
+          throw new Error("No token has been consumed yet.");
+        }
+        return this.current;
+      }
+      next() {
+        if (this.isEof()) {
+          throw new Error("The end of the input has been reached.");
+        }
+        if (this.remaining === "") {
+          this.current = this.createToken(token_1.JsonTokenType.EOF, "");
+        } else {
+          this.current = this.match();
+          this.remaining = this.remaining.slice(this.current.value.length);
+        }
+        return this.current;
+      }
+      match() {
+        var _a, _b, _c;
+        for (const { type, pattern } of _JsonLexer.PATTERNS) {
+          if (typeof pattern === "string") {
+            if (this.remaining.startsWith(pattern)) {
+              return this.createToken(type, pattern);
+            }
+            continue;
+          }
+          const match = this.remaining.match(pattern);
+          if (match !== null) {
+            return this.createToken(type, match[0]);
+          }
+        }
+        const start = {
+          index: ((_a = this.current) == null ? void 0 : _a.location.end.index) ?? 0,
+          line: ((_b = this.current) == null ? void 0 : _b.location.end.line) ?? 1,
+          column: ((_c = this.current) == null ? void 0 : _c.location.end.column) ?? 1
+        };
+        const end = {
+          index: start.index + 1,
+          line: start.line,
+          column: start.column + 1
+        };
+        const char = this.remaining[0];
+        throw new error_1.JsonParseError(`Unexpected token '${char}' at ${start.line}:${start.column}.`, {
+          start,
+          end
+        });
+      }
+      createToken(type, value) {
+        var _a, _b, _c;
+        const start = {
+          index: ((_a = this.current) == null ? void 0 : _a.location.end.index) ?? 0,
+          line: ((_b = this.current) == null ? void 0 : _b.location.end.line) ?? 1,
+          column: ((_c = this.current) == null ? void 0 : _c.location.end.column) ?? 1
+        };
+        const end = {
+          index: start.index,
+          line: start.line,
+          column: start.column
+        };
+        end.index += [...value].length;
+        for (const char of value) {
+          if (char === "\n") {
+            end.line++;
+            end.column = 1;
+          } else {
+            end.column++;
+          }
+        }
+        return {
+          type,
+          value,
+          location: {
+            start,
+            end
+          }
+        };
+      }
+      static isTokenType(token, types) {
+        return types.length === 0 || types.includes(token.type);
+      }
+    };
+    exports2.JsonLexer = JsonLexer;
+    JsonLexer.PATTERNS = [
+      {
+        type: token_1.JsonTokenType.BRACE_LEFT,
+        pattern: "{"
+      },
+      {
+        type: token_1.JsonTokenType.BRACE_RIGHT,
+        pattern: "}"
+      },
+      {
+        type: token_1.JsonTokenType.BRACKET_LEFT,
+        pattern: "["
+      },
+      {
+        type: token_1.JsonTokenType.BRACKET_RIGHT,
+        pattern: "]"
+      },
+      {
+        type: token_1.JsonTokenType.COLON,
+        pattern: ":"
+      },
+      {
+        type: token_1.JsonTokenType.COMMA,
+        pattern: ","
+      },
+      {
+        type: token_1.JsonTokenType.LINE_COMMENT,
+        pattern: /^\/\/.*/
+      },
+      {
+        type: token_1.JsonTokenType.BLOCK_COMMENT,
+        pattern: /^\/\*[\s\S]*?\*\//
+      },
+      {
+        type: token_1.JsonTokenType.STRING,
+        pattern: /^"(?:[^"\r\n\u2028\u2029\\]|\\(?:.|\r\n|\r|\n|\u2028|\u2029))*"/u
+      },
+      {
+        type: token_1.JsonTokenType.STRING,
+        pattern: /^'(?:[^'\r\n\u2028\u2029\\]|\\(?:.|\r\n|\r|\n|\u2028|\u2029))*'/u
+      },
+      {
+        type: token_1.JsonTokenType.NEWLINE,
+        pattern: /^(\r?\n)/
+      },
+      {
+        type: token_1.JsonTokenType.WHITESPACE,
+        pattern: /^[ \r\t\v\f\u00A0\u2028\u2029\uFEFF\u1680\u2000-\u200A\u202F\u205F\u3000]+/
+      },
+      {
+        type: token_1.JsonTokenType.NUMBER,
+        pattern: /^[-+]?((?:NaN|Infinity)(?![$_\u200C\u200D\p{ID_Continue}])|0[xX][\da-fA-F]+|(?:(?:0|[1-9]\d*)(?:\.\d*)?|\.\d*)(?:[eE][+-]?\d+)?)/u
+      },
+      {
+        type: token_1.JsonTokenType.NULL,
+        pattern: /^null(?![$_\u200C\u200D\p{ID_Continue}])/u
+      },
+      {
+        type: token_1.JsonTokenType.BOOLEAN,
+        pattern: /^(true|false)(?![$_\u200C\u200D\p{ID_Continue}])/u
+      },
+      {
+        type: token_1.JsonTokenType.IDENTIFIER,
+        pattern: new RegExp(`^${identifier_1.identifierRegex.source}`, identifier_1.identifierRegex.flags)
+      }
+    ];
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/location.js
+var require_location = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/location.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SourceLocation = exports2.SourcePosition = void 0;
+    var SourcePosition;
+    (function(SourcePosition2) {
+      function unknown() {
+        return {
+          index: -1,
+          line: 0,
+          column: 0
+        };
+      }
+      SourcePosition2.unknown = unknown;
+    })(SourcePosition || (exports2.SourcePosition = SourcePosition = {}));
+    var SourceLocation;
+    (function(SourceLocation2) {
+      function unknown() {
+        return {
+          start: SourcePosition.unknown(),
+          end: SourcePosition.unknown()
+        };
+      }
+      SourceLocation2.unknown = unknown;
+    })(SourceLocation || (exports2.SourceLocation = SourceLocation = {}));
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/node.js
+var require_node = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/node.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonNode = void 0;
+    var location_1 = require_location();
+    var JsonNode = class {
+      constructor(definition) {
+        this.location = definition.location ?? location_1.SourceLocation.unknown();
+      }
+      equals(other) {
+        return this.equalsLocation(other) && this.isEquivalent(other);
+      }
+      equalsLocation(other) {
+        return this.location.start.index === other.location.start.index && this.location.start.line === other.location.start.line && this.location.start.column === other.location.start.column && this.location.end.index === other.location.end.index && this.location.end.line === other.location.end.line && this.location.end.column === other.location.end.column;
+      }
+    };
+    exports2.JsonNode = JsonNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/compositeNode.js
+var require_compositeNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/compositeNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonCompositeNode = void 0;
+    var node_1 = require_node();
+    var JsonCompositeNode = class _JsonCompositeNode extends node_1.JsonNode {
+      constructor(definition) {
+        super(definition);
+        this.children = [...definition.children ?? []];
+      }
+      toString(formatting) {
+        const clone = this.clone();
+        clone.rebuild(formatting);
+        return _JsonCompositeNode.flatten(clone).join("");
+      }
+      reformat(formatting = {}) {
+        this.reset();
+        this.rebuild(formatting);
+      }
+      static flatten(node) {
+        if (node instanceof _JsonCompositeNode) {
+          return node.children.flatMap(_JsonCompositeNode.flatten);
+        }
+        return [node];
+      }
+    };
+    exports2.JsonCompositeNode = JsonCompositeNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/valueNode.js
+var require_valueNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/valueNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonValueNode = void 0;
+    var compositeNode_1 = require_compositeNode();
+    var error_1 = require_error();
+    var JsonValueNode = class extends compositeNode_1.JsonCompositeNode {
+      cast(type) {
+        if (!(this instanceof type)) {
+          throw new error_1.JsonError(`Expected value of type ${type.name}, but got ${this.constructor.name}.`);
+        }
+        return this;
+      }
+    };
+    exports2.JsonValueNode = JsonValueNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/tokenNode.js
+var require_tokenNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/tokenNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonTokenNode = void 0;
+    var token_1 = require_token();
+    var node_1 = require_node();
+    var JsonTokenNode = class _JsonTokenNode extends node_1.JsonNode {
+      constructor(definition) {
+        super(definition);
+        this.type = definition.type;
+        this.value = definition.value;
+      }
+      isType(type) {
+        return token_1.JsonToken.isType(this, type);
+      }
+      clone() {
+        return new _JsonTokenNode({
+          type: this.type,
+          value: this.value,
+          location: this.location
+        });
+      }
+      isEquivalent(other) {
+        return other instanceof _JsonTokenNode && this.type === other.type && this.value === other.value;
+      }
+      toString() {
+        return this.value;
+      }
+    };
+    exports2.JsonTokenNode = JsonTokenNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/manipulator.js
+var require_manipulator = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/manipulator.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.NodeManipulator = exports2.NodeMatcher = void 0;
+    var token_1 = require_token();
+    var node_1 = require_node2();
+    var NodeMatcher;
+    (function(NodeMatcher2) {
+      NodeMatcher2.ANY = () => true;
+      NodeMatcher2.NONE = () => false;
+      NodeMatcher2.SIGNIFICANT = (node) => !NodeMatcher2.INSIGNIFICANT(node);
+      NodeMatcher2.INSIGNIFICANT = (node) => NodeMatcher2.SPACE(node) || NodeMatcher2.COMMENT(node);
+      NodeMatcher2.SPACE = (node) => NodeMatcher2.WHITESPACE(node) || NodeMatcher2.NEWLINE(node);
+      NodeMatcher2.WHITESPACE = (node) => node instanceof node_1.JsonTokenNode && node.type === token_1.JsonTokenType.WHITESPACE;
+      NodeMatcher2.NEWLINE = (node) => node instanceof node_1.JsonTokenNode && node.type === token_1.JsonTokenType.NEWLINE;
+      NodeMatcher2.COMMENT = (node) => NodeMatcher2.LINE_COMMENT(node) || NodeMatcher2.BLOCK_COMMENT(node);
+      NodeMatcher2.LINE_COMMENT = (node) => node instanceof node_1.JsonTokenNode && node.type === token_1.JsonTokenType.LINE_COMMENT;
+      NodeMatcher2.BLOCK_COMMENT = (node) => node instanceof node_1.JsonTokenNode && node.type === token_1.JsonTokenType.BLOCK_COMMENT;
+      NodeMatcher2.PUNCTUATION = (node) => node instanceof node_1.JsonTokenNode && [
+        token_1.JsonTokenType.COLON,
+        token_1.JsonTokenType.COMMA,
+        token_1.JsonTokenType.BRACE_LEFT,
+        token_1.JsonTokenType.BRACE_RIGHT,
+        token_1.JsonTokenType.BRACKET_LEFT,
+        token_1.JsonTokenType.BRACKET_RIGHT
+      ].includes(node.type);
+    })(NodeMatcher || (exports2.NodeMatcher = NodeMatcher = {}));
+    var NodeManipulator = class _NodeManipulator {
+      constructor(list) {
+        this.index = 0;
+        this.fixing = false;
+        this.list = list;
+      }
+      done() {
+        return this.index >= this.list.length;
+      }
+      next() {
+        if (this.done()) {
+          throw new Error("The iterator is at the end of the list.");
+        }
+        this.index++;
+      }
+      get position() {
+        return this.index;
+      }
+      seek(position) {
+        if (position < 0 || position >= this.list.length) {
+          throw new Error("The position is out of bounds.");
+        }
+        this.index = position;
+      }
+      previous() {
+        if (this.index === 0) {
+          throw new Error("The iterator is at the beginning of the list.");
+        }
+        this.index--;
+      }
+      get current() {
+        if (this.done()) {
+          throw new Error("The iterator is at the end of the list.");
+        }
+        return this.list[this.index];
+      }
+      get nodeList() {
+        return this.list;
+      }
+      matchesPreviousToken(type) {
+        if (this.index === 0) {
+          return false;
+        }
+        const previous = this.list[this.index - 1];
+        return previous instanceof node_1.JsonTokenNode && previous.type === type;
+      }
+      matches(node) {
+        return this.findMatch([node]) >= 0;
+      }
+      matchesToken(type) {
+        return this.matchesNext((current) => current instanceof node_1.JsonTokenNode && current.type === type, NodeMatcher.NONE);
+      }
+      matchesNext(matcher, skipped) {
+        return this.findNext(matcher, skipped) >= 0;
+      }
+      findNext(matcher, skipper = NodeMatcher.INSIGNIFICANT) {
+        let matchIndex = -1;
+        const previousPosition = this.index;
+        while (!this.done()) {
+          const { current } = this;
+          if (matcher(current)) {
+            matchIndex = this.index;
+            break;
+          }
+          if (skipper(current)) {
+            this.next();
+            continue;
+          }
+          break;
+        }
+        this.index = previousPosition;
+        return matchIndex;
+      }
+      token(token, $optional = false) {
+        return this.nodes([token], $optional);
+      }
+      node(node, $optional = false) {
+        return this.nodes([node], $optional);
+      }
+      nodes(nodes, optional = false) {
+        const index = this.findMatch(nodes);
+        if (index >= 0) {
+          if (nodes.length === 1) {
+            this.seek(index);
+            this.remove();
+            this.insert(nodes[0]);
+          } else {
+            this.seek(index + 1);
+          }
+          this.fixing = false;
+        } else if (!optional) {
+          this.fixing = true;
+          this.accommodate(nodes[0]);
+        }
+        return this;
+      }
+      insert(node) {
+        this.list.splice(this.index, 0, node);
+        this.next();
+        return this;
+      }
+      remove() {
+        this.list.splice(this.index, 1);
+        return this;
+      }
+      dropUntil(matcher) {
+        let fixing = false;
+        const startIndex = this.index;
+        while (!this.done()) {
+          const node = this.current;
+          if (matcher(node)) {
+            if (fixing) {
+              this.fixSpacing(startIndex);
+            }
+            return true;
+          }
+          if (!(node instanceof node_1.JsonTokenNode) || NodeMatcher.SIGNIFICANT(node)) {
+            this.remove();
+            fixing = true;
+            continue;
+          }
+          if (!fixing || node.type === token_1.JsonTokenType.WHITESPACE) {
+            this.next();
+            continue;
+          }
+          this.fixSpacing(startIndex);
+          fixing = false;
+        }
+        if (fixing) {
+          this.fixSpacing(startIndex);
+        }
+        return false;
+      }
+      end() {
+        this.dropUntil(NodeMatcher.NONE);
+        if (!this.fixing) {
+          return this;
+        }
+        while (this.index > 0) {
+          this.previous();
+          const node = this.current;
+          if (NodeMatcher.INSIGNIFICANT(node)) {
+            this.remove();
+            continue;
+          }
+          this.next();
+          break;
+        }
+        return this;
+      }
+      findMatch(nodes) {
+        return this.findNext((current) => nodes.some((node) => current == null ? void 0 : current.isEquivalent(node)), NodeMatcher.INSIGNIFICANT);
+      }
+      fixSpacing(startIndex) {
+        const currentToken = this.done() ? null : this.current;
+        let removalCount = 0;
+        while (this.index > startIndex) {
+          this.previous();
+          const node = this.current;
+          if (!NodeMatcher.WHITESPACE(node)) {
+            this.next();
+            break;
+          }
+          removalCount++;
+        }
+        const previousToken = this.list[this.index - 1] ?? null;
+        if (currentToken !== null) {
+          if (previousToken === null && NodeMatcher.SPACE(currentToken) || removalCount > 0 && (NodeMatcher.BLOCK_COMMENT(previousToken) && NodeMatcher.PUNCTUATION(currentToken) || NodeMatcher.BLOCK_COMMENT(currentToken) && NodeMatcher.PUNCTUATION(previousToken))) {
+            removalCount++;
+          } else if (NodeMatcher.NEWLINE(previousToken) && NodeMatcher.NEWLINE(currentToken)) {
+            removalCount++;
+            this.previous();
+          } else if (!NodeMatcher.NEWLINE(currentToken)) {
+            removalCount--;
+            this.next();
+          }
+        }
+        while (removalCount-- > 0) {
+          this.remove();
+        }
+      }
+      accommodate(node) {
+        if (NodeMatcher.INSIGNIFICANT(node)) {
+          this.insert(node);
+          return;
+        }
+        if (!this.done()) {
+          const index = this.findNext((current) => _NodeManipulator.isReplacement(current, node));
+          if (index >= 0) {
+            this.seek(index);
+            this.remove();
+            this.fixing = false;
+          }
+        }
+        this.insert(node);
+      }
+      static isReplacement(previousNode, currentNode) {
+        if (currentNode instanceof node_1.JsonTokenNode || previousNode instanceof node_1.JsonTokenNode) {
+          return previousNode.isEquivalent(currentNode);
+        }
+        if (currentNode instanceof node_1.JsonValueNode && previousNode instanceof node_1.JsonValueNode) {
+          return true;
+        }
+        return previousNode.constructor === currentNode.constructor;
+      }
+    };
+    exports2.NodeManipulator = NodeManipulator;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/factory.js
+var require_factory = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/factory.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonValueFactory = void 0;
+    var valueNode_1 = require_valueNode();
+    var JsonValueFactory;
+    (function(JsonValueFactory2) {
+      const factories = {};
+      function register(type, factory) {
+        factories[type] = factory;
+      }
+      JsonValueFactory2.register = register;
+      function create(value) {
+        if (value instanceof valueNode_1.JsonValueNode) {
+          return value;
+        }
+        if (Array.isArray(value)) {
+          return factories.array(value);
+        }
+        if (typeof value === "object" && value !== null) {
+          return factories.object(value);
+        }
+        return factories.primitive(value);
+      }
+      JsonValueFactory2.create = create;
+    })(JsonValueFactory || (exports2.JsonValueFactory = JsonValueFactory = {}));
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/identifierNode.js
+var require_identifierNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/identifierNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonIdentifierNode = void 0;
+    var valueNode_1 = require_valueNode();
+    var manipulator_1 = require_manipulator();
+    var tokenNode_1 = require_tokenNode();
+    var token_1 = require_token();
+    var factory_1 = require_factory();
+    var identifier_1 = require_identifier();
+    var error_1 = require_error();
+    var JsonIdentifierNode = class _JsonIdentifierNode extends valueNode_1.JsonValueNode {
+      constructor(definition) {
+        super(definition);
+        this.token = definition.token;
+      }
+      static of(name) {
+        if (!(0, identifier_1.isIdentifier)(name)) {
+          throw new error_1.JsonError(`Invalid identifier '${name}'.`);
+        }
+        return new _JsonIdentifierNode({
+          token: new tokenNode_1.JsonTokenNode({
+            type: token_1.JsonTokenType.IDENTIFIER,
+            value: name
+          })
+        });
+      }
+      update(other) {
+        const node = factory_1.JsonValueFactory.create(other);
+        if (!this.isEquivalent(node)) {
+          return node;
+        }
+        return this;
+      }
+      reset() {
+        this.children.length = 0;
+      }
+      rebuild() {
+        new manipulator_1.NodeManipulator(this.children).node(this.token).end();
+      }
+      clone() {
+        const tokenClone = this.token.clone();
+        return new _JsonIdentifierNode({
+          token: tokenClone,
+          children: this.children.map((child) => child === this.token ? tokenClone : child),
+          location: this.location
+        });
+      }
+      isEquivalent(other) {
+        return other instanceof _JsonIdentifierNode && this.token.equals(other.token);
+      }
+      toJSON() {
+        return this.token.value;
+      }
+    };
+    exports2.JsonIdentifierNode = JsonIdentifierNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/primitiveNode.js
+var require_primitiveNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/primitiveNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonPrimitiveNode = void 0;
+    var valueNode_1 = require_valueNode();
+    var manipulator_1 = require_manipulator();
+    var tokenNode_1 = require_tokenNode();
+    var token_1 = require_token();
+    var factory_1 = require_factory();
+    var JsonPrimitiveNode = class _JsonPrimitiveNode extends valueNode_1.JsonValueNode {
+      constructor(definition) {
+        super(definition);
+        this.token = definition.token;
+        this.value = definition.value;
+      }
+      static of(value) {
+        return factory_1.JsonValueFactory.create(value);
+      }
+      static ofHex(value) {
+        return new _JsonPrimitiveNode({
+          token: new tokenNode_1.JsonTokenNode({
+            type: token_1.JsonTokenType.NUMBER,
+            value: `"0x${value.toString(16)}"`
+          }),
+          value
+        });
+      }
+      update(other) {
+        const node = factory_1.JsonValueFactory.create(other);
+        if (!this.isEquivalent(node)) {
+          return node;
+        }
+        return this;
+      }
+      reset() {
+        this.children.length = 0;
+      }
+      rebuild(formatting) {
+        var _a;
+        const manipulator = new manipulator_1.NodeManipulator(this.children);
+        let token = this.token;
+        if (token.isType(token_1.JsonTokenType.STRING) && manipulator.done()) {
+          const quotes = (_a = formatting == null ? void 0 : formatting.string) == null ? void 0 : _a.quote;
+          if (quotes === "single") {
+            let value = JSON.stringify(this.value).slice(1, -1).replace(/((?:^|[^\\])(?:\\\\)*)\\"/g, (_3, preceding) => `${preceding}"`).replace(/'/g, "\\'");
+            value = `'${value}'`;
+            token = new tokenNode_1.JsonTokenNode({
+              type: token_1.JsonTokenType.STRING,
+              value
+            });
+          }
+        }
+        manipulator.node(token);
+        manipulator.end();
+      }
+      clone() {
+        const tokenClone = this.token.clone();
+        return new _JsonPrimitiveNode({
+          token: tokenClone,
+          value: this.value,
+          children: this.children.map((child) => child === this.token ? tokenClone : child.clone()),
+          location: this.location
+        });
+      }
+      isEquivalent(other) {
+        return other instanceof _JsonPrimitiveNode && this.token.equals(other.token) && this.value === other.value;
+      }
+      toJSON() {
+        return this.value;
+      }
+    };
+    exports2.JsonPrimitiveNode = JsonPrimitiveNode;
+    var tokenTypes = {
+      string: token_1.JsonTokenType.STRING,
+      number: token_1.JsonTokenType.NUMBER,
+      boolean: token_1.JsonTokenType.BOOLEAN,
+      null: token_1.JsonTokenType.NULL
+    };
+    factory_1.JsonValueFactory.register("primitive", (value) => new JsonPrimitiveNode({
+      value,
+      token: new tokenNode_1.JsonTokenNode({
+        type: tokenTypes[value === null ? "null" : typeof value],
+        value: JSON.stringify(value)
+      })
+    }));
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/propertyNode.js
+var require_propertyNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/propertyNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonPropertyNode = void 0;
+    var tokenNode_1 = require_tokenNode();
+    var token_1 = require_token();
+    var compositeNode_1 = require_compositeNode();
+    var manipulator_1 = require_manipulator();
+    var factory_1 = require_factory();
+    var identifierNode_1 = require_identifierNode();
+    var identifier_1 = require_identifier();
+    var primitiveNode_1 = require_primitiveNode();
+    var JsonPropertyNode = class _JsonPropertyNode extends compositeNode_1.JsonCompositeNode {
+      constructor(definition) {
+        super(definition);
+        this.key = definition.key;
+        this.value = definition.value;
+      }
+      reset() {
+        this.key.reset();
+        this.value.reset();
+        this.children.length = 0;
+      }
+      set(value) {
+        this.value = factory_1.JsonValueFactory.create(value);
+      }
+      rebuild(formatting) {
+        var _a, _b, _c;
+        this.value.rebuild(formatting);
+        const quote = (_a = formatting == null ? void 0 : formatting.property) == null ? void 0 : _a.quote;
+        const spaced = ((_b = formatting == null ? void 0 : formatting.object) == null ? void 0 : _b.colonSpacing) ?? false;
+        const manipulator = new manipulator_1.NodeManipulator(this.children);
+        let { key } = this;
+        if (manipulator.matches(this.key)) {
+          key.rebuild();
+        } else {
+          key = this.formatKey(formatting);
+          key.rebuild({
+            ...formatting,
+            string: {
+              quote: quote === "single" || quote === "double" ? quote : (_c = formatting == null ? void 0 : formatting.string) == null ? void 0 : _c.quote
+            }
+          });
+        }
+        manipulator.node(key);
+        manipulator.token(new tokenNode_1.JsonTokenNode({
+          type: token_1.JsonTokenType.COLON,
+          value: ":"
+        }));
+        if (spaced) {
+          manipulator.token(new tokenNode_1.JsonTokenNode({
+            type: token_1.JsonTokenType.WHITESPACE,
+            value: " "
+          }), !manipulator.done());
+        }
+        manipulator.node(this.value).end();
+      }
+      formatKey(formatting) {
+        var _a;
+        if (this.key instanceof primitiveNode_1.JsonPrimitiveNode && ((_a = formatting == null ? void 0 : formatting.property) == null ? void 0 : _a.unquoted) === true && (0, identifier_1.isIdentifier)(this.key.value)) {
+          return identifierNode_1.JsonIdentifierNode.of(this.key.value);
+        }
+        return this.key;
+      }
+      clone() {
+        const keyClone = this.key.clone();
+        const valueClone = this.value.clone();
+        return new _JsonPropertyNode({
+          key: keyClone,
+          value: valueClone,
+          children: this.children.map((child) => {
+            if (child === this.key) {
+              return keyClone;
+            }
+            if (child === this.value) {
+              return valueClone;
+            }
+            return child.clone();
+          }),
+          location: this.location
+        });
+      }
+      isEquivalent(other) {
+        if (!(other instanceof _JsonPropertyNode)) {
+          return false;
+        }
+        return this.key.isEquivalent(other.key) && this.value.isEquivalent(other.value);
+      }
+    };
+    exports2.JsonPropertyNode = JsonPropertyNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/structureNode.js
+var require_structureNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/structureNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonStructureNode = exports2.StructureDelimiter = void 0;
+    var valueNode_1 = require_valueNode();
+    var token_1 = require_token();
+    var tokenNode_1 = require_tokenNode();
+    var manipulator_1 = require_manipulator();
+    var compositeNode_1 = require_compositeNode();
+    var propertyNode_1 = require_propertyNode();
+    var COMMENT = manipulator_1.NodeMatcher.COMMENT;
+    var WHITESPACE = manipulator_1.NodeMatcher.WHITESPACE;
+    var NEWLINE = manipulator_1.NodeMatcher.NEWLINE;
+    var SPACE = manipulator_1.NodeMatcher.SPACE;
+    var INSIGNIFICANT = manipulator_1.NodeMatcher.INSIGNIFICANT;
+    var StructureDelimiter;
+    (function(StructureDelimiter2) {
+      StructureDelimiter2["OBJECT"] = "object";
+      StructureDelimiter2["ARRAY"] = "array";
+    })(StructureDelimiter || (exports2.StructureDelimiter = StructureDelimiter = {}));
+    (function(StructureDelimiter2) {
+      const definitions = {
+        [StructureDelimiter2.OBJECT]: {
+          start: {
+            type: token_1.JsonTokenType.BRACE_LEFT,
+            value: "{"
+          },
+          end: {
+            type: token_1.JsonTokenType.BRACE_RIGHT,
+            value: "}"
+          }
+        },
+        [StructureDelimiter2.ARRAY]: {
+          start: {
+            type: token_1.JsonTokenType.BRACKET_LEFT,
+            value: "["
+          },
+          end: {
+            type: token_1.JsonTokenType.BRACKET_RIGHT,
+            value: "]"
+          }
+        }
+      };
+      function isStartToken(token) {
+        return Object.values(definitions).some(({ start }) => start.type === token.type);
+      }
+      StructureDelimiter2.isStartToken = isStartToken;
+      function isEndToken(token) {
+        return Object.values(definitions).some(({ end }) => end.type === token.type);
+      }
+      StructureDelimiter2.isEndToken = isEndToken;
+      function getStartToken(delimiter) {
+        return new tokenNode_1.JsonTokenNode(definitions[delimiter].start);
+      }
+      StructureDelimiter2.getStartToken = getStartToken;
+      function getEndToken(delimiter) {
+        return new tokenNode_1.JsonTokenNode(definitions[delimiter].end);
+      }
+      StructureDelimiter2.getEndToken = getEndToken;
+    })(StructureDelimiter || (exports2.StructureDelimiter = StructureDelimiter = {}));
+    var JsonStructureNode = class _JsonStructureNode extends valueNode_1.JsonValueNode {
+      reset() {
+        for (const item of this.getList()) {
+          item.reset();
+        }
+        this.children.length = 0;
+      }
+      rebuild(formatting = {}) {
+        const parentFormatting = this.detectFormatting(formatting);
+        let childFormatting = parentFormatting;
+        const children = [...this.children];
+        for (let index = 0; index < children.length; index++) {
+          const child = children[index];
+          if (child instanceof _JsonStructureNode) {
+            childFormatting = {
+              ...child.detectFormatting(childFormatting),
+              indentationLevel: childFormatting.indentationLevel
+            };
+            continue;
+          }
+          if (child instanceof compositeNode_1.JsonCompositeNode && this.children.includes(child)) {
+            children.splice(index + 1, 0, ...child.children);
+          }
+        }
+        for (const item of this.getList()) {
+          item.rebuild(childFormatting);
+        }
+        this.rebuildChildren(parentFormatting);
+      }
+      rebuildChildren(formatting) {
+        const manipulator = new manipulator_1.NodeManipulator(this.children);
+        const delimiter = this.getDelimiter();
+        const startToken = StructureDelimiter.getStartToken(delimiter);
+        const endToken = StructureDelimiter.getEndToken(delimiter);
+        manipulator.token(startToken);
+        const list = this.getList();
+        const count = list.length;
+        const { indentationLevel = 0 } = formatting;
+        const { indentationSize = 0, commaSpacing = false, entryIndentation = false, leadingIndentation: blockLeadingIndentation = false, trailingIndentation: blockTrailingIndentation = false, trailingComma = false } = formatting[delimiter] ?? {};
+        let previousMatched = false;
+        for (let index = 0; index < count; index++) {
+          const item = list[index];
+          const leadingIndentation = index !== 0 && entryIndentation || index === 0 && blockLeadingIndentation;
+          if (_JsonStructureNode.matchesInsertion(manipulator, list, index)) {
+            if (leadingIndentation) {
+              this.indent(manipulator, formatting);
+            }
+            manipulator.insert(item);
+            previousMatched = false;
+          } else if (_JsonStructureNode.matchesRemoval(manipulator, list, index)) {
+            manipulator.dropUntil(item.isEquivalent.bind(item));
+            manipulator.node(item);
+            previousMatched = true;
+          } else {
+            const currentMatched = manipulator.matches(item);
+            if (!currentMatched) {
+              _JsonStructureNode.skipComments(manipulator);
+            }
+            if (leadingIndentation) {
+              if (indentationSize > 0 && manipulator.matchesNext((node) => endToken.isEquivalent(node))) {
+                manipulator.node(new tokenNode_1.JsonTokenNode({
+                  type: token_1.JsonTokenType.NEWLINE,
+                  value: "\n"
+                }));
+                if (manipulator.matchesToken(token_1.JsonTokenType.WHITESPACE) && manipulator.matchesNext(manipulator_1.NodeMatcher.NEWLINE, manipulator_1.NodeMatcher.WHITESPACE)) {
+                  manipulator.remove();
+                }
+                manipulator.token(this.getIndentationToken(formatting));
+              } else {
+                this.indent(manipulator, formatting, previousMatched && currentMatched);
+              }
+            }
+            previousMatched = currentMatched;
+            if (manipulator.matchesPreviousToken(token_1.JsonTokenType.LINE_COMMENT)) {
+              manipulator.insert(new tokenNode_1.JsonTokenNode({
+                type: token_1.JsonTokenType.NEWLINE,
+                value: "\n"
+              }));
+            } else if (manipulator.position > 1 && !currentMatched && manipulator.matchesPreviousToken(token_1.JsonTokenType.BLOCK_COMMENT) && !manipulator.matchesToken(token_1.JsonTokenType.WHITESPACE)) {
+              manipulator.previous();
+              const trailingSpace = manipulator.matchesPreviousToken(token_1.JsonTokenType.WHITESPACE);
+              manipulator.next();
+              if (trailingSpace) {
+                manipulator.token(new tokenNode_1.JsonTokenNode({
+                  type: token_1.JsonTokenType.WHITESPACE,
+                  value: " "
+                }));
+              }
+            }
+            manipulator.node(item);
+          }
+          if (index < count - 1 || trailingComma) {
+            manipulator.node(new tokenNode_1.JsonTokenNode({
+              type: token_1.JsonTokenType.COMMA,
+              value: ","
+            }));
+          }
+          if (index === count - 1) {
+            if (blockTrailingIndentation) {
+              this.indent(manipulator, {
+                ...formatting,
+                indentationLevel: indentationLevel - 1
+              });
+            }
+          } else if ((indentationSize === 0 || !entryIndentation) && commaSpacing && (!manipulator.matchesNext(manipulator_1.NodeMatcher.SPACE) || manipulator.matchesNext((node) => endToken.isEquivalent(node), manipulator_1.NodeMatcher.SPACE))) {
+            manipulator.token(new tokenNode_1.JsonTokenNode({
+              type: token_1.JsonTokenType.WHITESPACE,
+              value: " "
+            }), manipulator.matchesNext((node) => list[index + 1].isEquivalent(node), manipulator_1.NodeMatcher.SPACE));
+          }
+        }
+        if (count === 0) {
+          const index = manipulator.findNext((node) => node.isEquivalent(endToken), manipulator_1.NodeMatcher.ANY);
+          if (index >= 0) {
+            manipulator.dropUntil((node) => node.isEquivalent(endToken));
+          }
+        }
+        manipulator.token(endToken);
+        manipulator.end();
+      }
+      detectFormatting(parent = {}) {
+        let blockStart = false;
+        let lineStart = true;
+        let inlineComma = false;
+        let inlineColon = false;
+        let levelComma = false;
+        let lineIndentationSize = 0;
+        let levelIndentationSize = 0;
+        let leadingIndentation;
+        let trailingIndentation;
+        let trailingComma = false;
+        let newLine = false;
+        let immediatelyClosed = true;
+        let empty = true;
+        const formatting = {};
+        const blockFormatting = {};
+        const tokens = [..._JsonStructureNode.iterate(this, this.getMaxDepth())];
+        for (let index = 0; index < tokens.length; index++) {
+          const { token, depth, parents } = tokens[index];
+          switch (token.type) {
+            case token_1.JsonTokenType.IDENTIFIER:
+              formatting.property = {
+                ...formatting.property,
+                unquoted: true
+              };
+              break;
+            case token_1.JsonTokenType.STRING: {
+              const grandParent = parents[parents.length - 2];
+              const quote = token.value.startsWith("'") ? "single" : "double";
+              if (grandParent instanceof propertyNode_1.JsonPropertyNode && grandParent.key.equals(parents[parents.length - 1])) {
+                formatting.property = {
+                  ...formatting.property,
+                  quote
+                };
+              } else {
+                formatting.string = {
+                  ...formatting.string,
+                  quote
+                };
+              }
+              break;
+            }
+          }
+          if (depth === 0 && StructureDelimiter.isStartToken(token)) {
+            blockStart = true;
+          } else {
+            const blockEnd = StructureDelimiter.isEndToken(token);
+            if (depth === 0) {
+              if (blockEnd) {
+                trailingIndentation = lineStart;
+                trailingComma = levelComma;
+              }
+              if (blockStart) {
+                leadingIndentation = NEWLINE(token);
+                if (!WHITESPACE(token)) {
+                  blockStart = false;
+                }
+              }
+            }
+            if (!blockEnd) {
+              levelIndentationSize = lineIndentationSize;
+              immediatelyClosed = false;
+              if (!SPACE(token)) {
+                empty = false;
+              }
+            }
+          }
+          if (WHITESPACE(token)) {
+            if (token.value.includes("	")) {
+              formatting.indentationCharacter = "tab";
+            }
+            if (depth === 0 && lineStart) {
+              lineIndentationSize = token.value.includes("	") ? token.value.replace(/[^\t]/g, "").length : token.value.replace(/[^ ]/g, "").length;
+            }
+          }
+          if (inlineComma && index > 0 && tokens[index - 1].depth === 0) {
+            if (!NEWLINE(token)) {
+              blockFormatting.commaSpacing = WHITESPACE(token);
+            }
+            let entryIndentation = NEWLINE(token);
+            for (let nextIndex = index; !entryIndentation && nextIndex < tokens.length; nextIndex++) {
+              const { token: nextToken, depth: nextDepth } = tokens[nextIndex];
+              if (nextDepth === 0) {
+                if (WHITESPACE(nextToken) || COMMENT(nextToken)) {
+                  continue;
+                }
+                if (NEWLINE(nextToken)) {
+                  entryIndentation = true;
+                }
+              }
+              break;
+            }
+            blockFormatting.entryIndentation = entryIndentation;
+            inlineComma = false;
+          }
+          if (inlineColon) {
+            blockFormatting.colonSpacing = WHITESPACE(token);
+            inlineColon = false;
+          }
+          inlineColon = token.type === token_1.JsonTokenType.COLON || inlineColon && WHITESPACE(token);
+          inlineComma = token.type === token_1.JsonTokenType.COMMA || inlineComma && WHITESPACE(token);
+          levelComma = depth === 0 && token.type === token_1.JsonTokenType.COMMA || levelComma && INSIGNIFICANT(token);
+          lineStart = NEWLINE(token) || lineStart && WHITESPACE(token);
+          newLine = newLine || NEWLINE(token);
+        }
+        if (!immediatelyClosed) {
+          if (!empty) {
+            blockFormatting.indentationSize = 0;
+            blockFormatting.trailingComma = trailingComma;
+          }
+          blockFormatting.leadingIndentation = leadingIndentation ?? false;
+          blockFormatting.trailingIndentation = trailingIndentation ?? false;
+        }
+        const currentDepth = Math.max(parent.indentationLevel ?? 0, 0) + 1;
+        if (levelIndentationSize > 0 && !empty) {
+          const remainder = levelIndentationSize % currentDepth;
+          blockFormatting.indentationSize = (levelIndentationSize - remainder) / currentDepth + remainder;
+        }
+        if (newLine) {
+          if (blockFormatting.commaSpacing === void 0) {
+            blockFormatting.commaSpacing = true;
+          }
+          if (blockFormatting.colonSpacing === void 0) {
+            blockFormatting.colonSpacing = true;
+          }
+          if (blockFormatting.entryIndentation === void 0) {
+            blockFormatting.entryIndentation = true;
+          }
+        }
+        formatting[this.getDelimiter()] = blockFormatting;
+        formatting.indentationLevel = currentDepth;
+        return {
+          ...parent,
+          ...formatting,
+          object: {
+            ...parent.array,
+            ...formatting.array,
+            ...parent.object,
+            ...formatting.object
+          },
+          array: {
+            ...parent.object,
+            ...formatting.object,
+            ...parent.array,
+            ...formatting.array
+          }
+        };
+      }
+      indent(manipulator, formatting, optional = false) {
+        const delimiter = this.getDelimiter();
+        const { indentationSize = 0, leadingIndentation = false, trailingIndentation = false } = formatting[delimiter] ?? {};
+        if (indentationSize <= 0 && !leadingIndentation && !trailingIndentation) {
+          return;
+        }
+        const newLine = new tokenNode_1.JsonTokenNode({
+          type: token_1.JsonTokenType.NEWLINE,
+          value: "\n"
+        });
+        manipulator.token(newLine, optional);
+        if (manipulator.matchesToken(token_1.JsonTokenType.WHITESPACE)) {
+          manipulator.next();
+        } else {
+          manipulator.token(this.getIndentationToken(formatting), optional);
+        }
+      }
+      getIndentationToken(formatting) {
+        const delimiter = this.getDelimiter();
+        const { indentationLevel = 0 } = formatting;
+        const { indentationSize = 0 } = formatting[delimiter] ?? {};
+        const char = formatting.indentationCharacter === "tab" ? "	" : " ";
+        return new tokenNode_1.JsonTokenNode({
+          type: token_1.JsonTokenType.WHITESPACE,
+          value: char.repeat(indentationLevel * indentationSize)
+        });
+      }
+      static *iterate(parent, maxDepth, parents = []) {
+        for (const child of parent.children) {
+          if (child instanceof tokenNode_1.JsonTokenNode) {
+            yield {
+              depth: parents.length,
+              token: child,
+              parents: [...parents, parent]
+            };
+          }
+          if (maxDepth > 0 && child instanceof compositeNode_1.JsonCompositeNode) {
+            yield* _JsonStructureNode.iterate(child, maxDepth - 1, [...parents, parent]);
+          }
+        }
+      }
+      static skipComments(manipulator) {
+        while (manipulator.matchesNext(manipulator_1.NodeMatcher.COMMENT, manipulator_1.NodeMatcher.SPACE)) {
+          manipulator.next();
+        }
+      }
+      static matchesInsertion(manipulator, items, index) {
+        const count = items.length;
+        const currentNode = items[index];
+        if (manipulator.matchesNext(currentNode.isEquivalent.bind(currentNode), manipulator_1.NodeMatcher.ANY)) {
+          return false;
+        }
+        for (let i = index + 1; i < count; i++) {
+          if (manipulator.matches(items[i])) {
+            return true;
+          }
+        }
+        return false;
+      }
+      static matchesRemoval(manipulator, items, index) {
+        if (manipulator.matches(items[index])) {
+          return false;
+        }
+        const nextItems = items.slice(index + 1);
+        return manipulator.matchesNext(
+          items[index].isEquivalent.bind(items[index]),
+          // if any of the following nodes match one of
+          // the remaining items before the current one,
+          // items have been swapped, not dropped
+          (item) => nextItems.every((nextItem) => !nextItem.isEquivalent(item))
+        );
+      }
+    };
+    exports2.JsonStructureNode = JsonStructureNode;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/arrayNode.js
+var require_arrayNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/arrayNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonArrayNode = void 0;
+    var structureNode_1 = require_structureNode();
+    var factory_1 = require_factory();
+    var error_1 = require_error();
+    var JsonArrayNode = class _JsonArrayNode extends structureNode_1.JsonStructureNode {
+      constructor(definition) {
+        super(definition);
+        this.elementNodes = [...definition.elements];
+      }
+      static of(...elements) {
+        return new _JsonArrayNode({ elements: elements.map(factory_1.JsonValueFactory.create) });
+      }
+      update(other) {
+        if (!(other instanceof _JsonArrayNode) && !Array.isArray(other)) {
+          return factory_1.JsonValueFactory.create(other);
+        }
+        const otherElements = other instanceof _JsonArrayNode ? other.elements : other;
+        const elements = this.elementNodes.splice(0);
+        for (let index = 0; index < otherElements.length; index++) {
+          this.push(index < elements.length ? elements[index].update(otherElements[index]) : otherElements[index]);
+        }
+        if (otherElements.length < elements.length) {
+          this.splice(otherElements.length, elements.length - otherElements.length);
+        }
+        return this;
+      }
+      getList() {
+        return [...this.elementNodes];
+      }
+      getDelimiter() {
+        return structureNode_1.StructureDelimiter.ARRAY;
+      }
+      getMaxDepth() {
+        return 1;
+      }
+      get elements() {
+        return [...this.elementNodes];
+      }
+      get(index, type) {
+        const element = this.elementNodes[index];
+        if (type !== void 0 && !(element instanceof type)) {
+          throw new error_1.JsonError(`Expected ${type.name} at index ${index}, but got ${element.constructor.name}.`);
+        }
+        return element;
+      }
+      set(index, element) {
+        if (index < 0 || index >= this.elementNodes.length) {
+          throw new Error(`Index ${index} is out of bounds.`);
+        }
+        this.elementNodes[index] = factory_1.JsonValueFactory.create(element);
+      }
+      clear() {
+        this.elementNodes.length = 0;
+      }
+      delete(index) {
+        if (index < 0 || index >= this.elementNodes.length) {
+          throw new Error(`Index ${index} is out of bounds.`);
+        }
+        this.splice(index, 1);
+      }
+      unshift(...elements) {
+        this.elementNodes.unshift(...elements.map(factory_1.JsonValueFactory.create));
+      }
+      push(...elements) {
+        this.elementNodes.push(...elements.map(factory_1.JsonValueFactory.create));
+      }
+      shift() {
+        return this.elementNodes.shift();
+      }
+      pop() {
+        return this.elementNodes.pop();
+      }
+      splice(start, deleteCount, ...elements) {
+        return this.elementNodes.splice(start, deleteCount, ...elements.map(factory_1.JsonValueFactory.create));
+      }
+      clone() {
+        const clones = /* @__PURE__ */ new Map();
+        for (const element of this.elementNodes) {
+          clones.set(element, element.clone());
+        }
+        return new _JsonArrayNode({
+          elements: [...clones.values()],
+          children: this.children.map((child) => clones.get(child) ?? child.clone()),
+          location: this.location
+        });
+      }
+      isEquivalent(other) {
+        if (!(other instanceof _JsonArrayNode)) {
+          return false;
+        }
+        if (this.elements.length !== other.elements.length) {
+          return false;
+        }
+        return this.elements.every((element, index) => other.elements[index].isEquivalent(element));
+      }
+      toJSON() {
+        return this.elements.map((element) => element.toJSON());
+      }
+    };
+    exports2.JsonArrayNode = JsonArrayNode;
+    factory_1.JsonValueFactory.register("array", (elements) => new JsonArrayNode({
+      elements: elements.map(factory_1.JsonValueFactory.create)
+    }));
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/objectNode.js
+var require_objectNode = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/objectNode.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonObjectNode = void 0;
+    var valueNode_1 = require_valueNode();
+    var structureNode_1 = require_structureNode();
+    var propertyNode_1 = require_propertyNode();
+    var primitiveNode_1 = require_primitiveNode();
+    var factory_1 = require_factory();
+    var error_1 = require_error();
+    var JsonObjectNode2 = class _JsonObjectNode extends structureNode_1.JsonStructureNode {
+      constructor(definition) {
+        super(definition);
+        this.propertyNodes = [...definition.properties];
+      }
+      static of(properties) {
+        return new _JsonObjectNode({
+          properties: Object.entries(properties).map(([key, value]) => new propertyNode_1.JsonPropertyNode({
+            key: primitiveNode_1.JsonPrimitiveNode.of(key),
+            value: factory_1.JsonValueFactory.create(value)
+          }))
+        });
+      }
+      update(other) {
+        if (!(other instanceof valueNode_1.JsonValueNode)) {
+          if (typeof other !== "object" || other === null || Array.isArray(other)) {
+            return factory_1.JsonValueFactory.create(other);
+          }
+          for (const [key, value] of Object.entries(other)) {
+            if (value === void 0) {
+              this.delete(key);
+              continue;
+            }
+            const property = this.propertyNodes.find((current) => current.key.toJSON() === key);
+            if (property !== void 0) {
+              property.value = property.value.update(value);
+              continue;
+            }
+            this.set(key, value);
+          }
+          for (const property of this.propertyNodes) {
+            const key = property.key.toJSON();
+            if (other[key] === void 0) {
+              this.delete(property.key.toJSON());
+            }
+          }
+          return this;
+        }
+        if (!(other instanceof _JsonObjectNode)) {
+          return other;
+        }
+        for (const property of other.propertyNodes) {
+          const index = this.propertyNodes.findIndex((current) => current.key.toJSON() === property.key.toJSON());
+          if (index >= 0) {
+            const cloneProperty = this.propertyNodes[index].clone();
+            cloneProperty.value = cloneProperty.value.update(property.value);
+          } else {
+            this.propertyNodes.push(property);
+          }
+        }
+        for (const property of this.propertyNodes) {
+          const key = property.key.toJSON();
+          if (!other.has(key)) {
+            this.delete(key);
+          }
+        }
+        return this;
+      }
+      getList() {
+        return [...this.propertyNodes];
+      }
+      getDelimiter() {
+        return structureNode_1.StructureDelimiter.OBJECT;
+      }
+      getMaxDepth() {
+        return 2;
+      }
+      has(name) {
+        return this.propertyNodes.some((current) => current.key.toJSON() === name);
+      }
+      get properties() {
+        return [...this.propertyNodes];
+      }
+      set(name, value) {
+        const index = this.propertyNodes.findIndex((current) => current.key.toJSON() === name);
+        if (index >= 0) {
+          this.propertyNodes[index].set(value);
+          return;
+        }
+        this.propertyNodes.push(new propertyNode_1.JsonPropertyNode({
+          key: typeof name === "string" ? primitiveNode_1.JsonPrimitiveNode.of(name) : name,
+          value: factory_1.JsonValueFactory.create(value)
+        }));
+      }
+      delete(name) {
+        for (let index = 0; index < this.propertyNodes.length; index++) {
+          const property = this.propertyNodes[index];
+          if (property.key.toJSON() === name) {
+            this.propertyNodes.splice(index, 1);
+            break;
+          }
+        }
+      }
+      get(name, type) {
+        const property = this.propertyNodes.find((current) => current.key.toJSON() === name);
+        if (property === void 0) {
+          throw new Error(`Property "${name}" does not exist.`);
+        }
+        const { value } = property;
+        if (type !== void 0 && !(value instanceof type)) {
+          throw new error_1.JsonError(`Expected a value of type ${type.name}, but got ${value.constructor.name}`);
+        }
+        return value;
+      }
+      clone() {
+        const clones = /* @__PURE__ */ new Map();
+        for (const property of this.propertyNodes) {
+          clones.set(property, property.clone());
+        }
+        return new _JsonObjectNode({
+          properties: [...clones.values()],
+          children: this.children.map((child) => clones.get(child) ?? child.clone()),
+          location: this.location
+        });
+      }
+      isEquivalent(other) {
+        if (!(other instanceof _JsonObjectNode)) {
+          return false;
+        }
+        if (this.properties.length !== other.properties.length) {
+          return false;
+        }
+        const entries = Object.fromEntries(other.properties.map((property) => [property.key.toJSON(), property]));
+        return this.properties.every((property) => {
+          var _a;
+          return ((_a = entries[property.key.toJSON()]) == null ? void 0 : _a.isEquivalent(property)) === true;
+        });
+      }
+      toJSON() {
+        return Object.fromEntries(this.properties.map((property) => [
+          property.key.toJSON(),
+          property.value.toJSON()
+        ]));
+      }
+    };
+    exports2.JsonObjectNode = JsonObjectNode2;
+    factory_1.JsonValueFactory.register("object", (object) => new JsonObjectNode2({
+      properties: Object.entries(object).flatMap(([propertyName, propertyValue]) => propertyValue === void 0 ? [] : [
+        new propertyNode_1.JsonPropertyNode({
+          key: primitiveNode_1.JsonPrimitiveNode.of(propertyName),
+          value: factory_1.JsonValueFactory.create(propertyValue)
+        })
+      ])
+    }));
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/index.js
+var require_node2 = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/index.js"(exports2) {
+    "use strict";
+    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o2, m2, k2, k22) {
+      if (k22 === void 0) k22 = k2;
+      var desc = Object.getOwnPropertyDescriptor(m2, k2);
+      if (!desc || ("get" in desc ? !m2.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m2[k2];
+        } };
+      }
+      Object.defineProperty(o2, k22, desc);
+    } : function(o2, m2, k2, k22) {
+      if (k22 === void 0) k22 = k2;
+      o2[k22] = m2[k2];
+    });
+    var __exportStar = exports2 && exports2.__exportStar || function(m2, exports3) {
+      for (var p in m2) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports3, p)) __createBinding(exports3, m2, p);
+    };
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    __exportStar(require_structureNode(), exports2);
+    __exportStar(require_arrayNode(), exports2);
+    __exportStar(require_compositeNode(), exports2);
+    __exportStar(require_identifierNode(), exports2);
+    __exportStar(require_node(), exports2);
+    __exportStar(require_objectNode(), exports2);
+    __exportStar(require_primitiveNode(), exports2);
+    __exportStar(require_propertyNode(), exports2);
+    __exportStar(require_tokenNode(), exports2);
+    __exportStar(require_valueNode(), exports2);
+    __exportStar(require_factory(), exports2);
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/parser.js
+var require_parser = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/parser.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.JsonParser = void 0;
+    var lexer_1 = require_lexer();
+    var token_1 = require_token();
+    var node_1 = require_node2();
+    var identifier_1 = require_identifier();
+    var error_1 = require_error();
+    var JsonParser2 = class _JsonParser {
+      constructor(source) {
+        this.lexer = new lexer_1.JsonLexer(source);
+      }
+      static parse(source, type) {
+        const parser = new _JsonParser(source);
+        if (type !== void 0) {
+          return parser.parseValue(type);
+        }
+        return parser.parseValue();
+      }
+      parseValue(type) {
+        const node = this.parseRoot();
+        if (type !== void 0 && !(node instanceof type)) {
+          throw new error_1.JsonError(`Expected ${type.name}, but got ${node.constructor.name}.`);
+        }
+        return node;
+      }
+      parseRoot() {
+        this.lexer.next();
+        const leadingTokens = this.lexer.skipInsignificant();
+        const node = this.parseNext();
+        const trailingTokens = this.lexer.skipInsignificant();
+        node.children.unshift(..._JsonParser.createChildren(leadingTokens));
+        node.children.push(..._JsonParser.createChildren(trailingTokens));
+        if (!this.lexer.isEof()) {
+          const token = this.lexer.peek();
+          const position = token.location.start;
+          throw new error_1.JsonParseError(`Unexpected token '${token.value}' at ${position.line}:${position.column}.`, token.location);
+        }
+        return node;
+      }
+      parseNext() {
+        const token = this.lexer.peek();
+        switch (token.type) {
+          case token_1.JsonTokenType.BRACE_LEFT:
+            return this.parseObject();
+          case token_1.JsonTokenType.BRACKET_LEFT:
+            return this.parseArray();
+          case token_1.JsonTokenType.NUMBER:
+            return this.parseNumber();
+          case token_1.JsonTokenType.STRING:
+            return this.parseString();
+          case token_1.JsonTokenType.BOOLEAN:
+            return this.parseBoolean();
+          case token_1.JsonTokenType.NULL:
+            return this.parseNull();
+          default: {
+            const position = token.location.start;
+            throw new error_1.JsonParseError(`Unexpected token '${token.value}' at ${position.line}:${position.column}.`, token.location);
+          }
+        }
+      }
+      parseNumber() {
+        const token = this.lexer.consume(token_1.JsonTokenType.NUMBER);
+        const tokenNode = new node_1.JsonTokenNode(token);
+        return new node_1.JsonPrimitiveNode({
+          token: tokenNode,
+          value: this.parseNumberValue(token),
+          children: [tokenNode],
+          location: token.location
+        });
+      }
+      parseNumberValue(token) {
+        let { value } = token;
+        let sign = 1;
+        if (value.startsWith("+")) {
+          value = value.slice(1);
+        } else if (value.startsWith("-")) {
+          sign = -1;
+          value = value.slice(1);
+        }
+        if (value === "Infinity") {
+          return sign * Infinity;
+        }
+        if (value === "NaN") {
+          return NaN;
+        }
+        if (value.startsWith(".")) {
+          value = `0${value}`;
+        } else {
+          value = value.replace(/\.(?!\d)/, "");
+        }
+        if (value.startsWith("0x") || value.startsWith("0X")) {
+          return sign * Number.parseInt(value, 16);
+        }
+        return sign * JSON.parse(value);
+      }
+      parseString() {
+        const token = this.lexer.consume(token_1.JsonTokenType.STRING);
+        let { value } = token;
+        if (value.startsWith("'")) {
+          value = value.slice(1, -1).replace(/((?:^|[^\\])(?:\\\\)*)\\(["'])/g, (_3, preceding, quote) => `${preceding}${quote === '"' ? '\\"' : "'"}`);
+          value = `"${value}"`;
+        }
+        value = value.replace(/\\(?:\r\n|\r|\n|\u2028|\u2029)/gu, "");
+        const tokenNode = new node_1.JsonTokenNode(token);
+        let parsedValue;
+        try {
+          parsedValue = JSON.parse(value);
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new error_1.JsonParseError(`Invalid string at ${token.location.start.line}:${token.location.start.column}: ${error.message}`, token.location);
+          }
+          throw error;
+        }
+        return new node_1.JsonPrimitiveNode({
+          token: tokenNode,
+          value: parsedValue,
+          children: [tokenNode],
+          location: token.location
+        });
+      }
+      parseNull() {
+        const token = this.lexer.consume(token_1.JsonTokenType.NULL);
+        const tokenNode = new node_1.JsonTokenNode(token);
+        return new node_1.JsonPrimitiveNode({
+          token: tokenNode,
+          value: null,
+          children: [tokenNode],
+          location: token.location
+        });
+      }
+      parseBoolean() {
+        const token = this.lexer.consume(token_1.JsonTokenType.BOOLEAN);
+        const tokenNode = new node_1.JsonTokenNode(token);
+        return new node_1.JsonPrimitiveNode({
+          token: tokenNode,
+          value: token.value === "true",
+          children: [tokenNode],
+          location: token.location
+        });
+      }
+      parseArray() {
+        const children = [
+          this.lexer.consume(token_1.JsonTokenType.BRACKET_LEFT),
+          ...this.lexer.skipInsignificant()
+        ];
+        const elements = [];
+        while (!this.lexer.matches(token_1.JsonTokenType.BRACKET_RIGHT)) {
+          const element = this.parseNext();
+          elements.push(element);
+          children.push(element, ...this.lexer.skipInsignificant());
+          if (!this.lexer.matches(token_1.JsonTokenType.BRACKET_RIGHT)) {
+            children.push(this.lexer.consume(token_1.JsonTokenType.COMMA), ...this.lexer.skipInsignificant());
+          }
+        }
+        children.push(this.lexer.consume(token_1.JsonTokenType.BRACKET_RIGHT));
+        return new node_1.JsonArrayNode({
+          elements,
+          children: _JsonParser.createChildren(children),
+          location: {
+            start: children[0].location.start,
+            end: children[children.length - 1].location.end
+          }
+        });
+      }
+      parseObject() {
+        const children = [
+          this.lexer.consume(token_1.JsonTokenType.BRACE_LEFT),
+          ...this.lexer.skipInsignificant()
+        ];
+        const properties = [];
+        while (!this.lexer.matches(token_1.JsonTokenType.BRACE_RIGHT)) {
+          const property = this.parseObjectProperty();
+          properties.push(property);
+          children.push(property, ...this.lexer.skipInsignificant());
+          if (!this.lexer.matches(token_1.JsonTokenType.BRACE_RIGHT)) {
+            children.push(this.lexer.consume(token_1.JsonTokenType.COMMA), ...this.lexer.skipInsignificant());
+          }
+        }
+        children.push(this.lexer.consume(token_1.JsonTokenType.BRACE_RIGHT));
+        return new node_1.JsonObjectNode({
+          properties,
+          children: _JsonParser.createChildren(children),
+          location: {
+            start: children[0].location.start,
+            end: children[children.length - 1].location.end
+          }
+        });
+      }
+      parseObjectProperty() {
+        const children = [];
+        this.lexer.expect(token_1.JsonTokenType.STRING, token_1.JsonTokenType.IDENTIFIER);
+        const key = this.lexer.matches(token_1.JsonTokenType.STRING) ? this.parseString() : this.parseIdentifier();
+        children.push(key, ...this.lexer.skipInsignificant(), this.lexer.consume(token_1.JsonTokenType.COLON), ...this.lexer.skipInsignificant());
+        const value = this.parseNext();
+        children.push(value);
+        return new node_1.JsonPropertyNode({
+          key,
+          value,
+          children: _JsonParser.createChildren(children),
+          location: {
+            start: children[0].location.start,
+            end: children[children.length - 1].location.end
+          }
+        });
+      }
+      parseIdentifier() {
+        const token = this.lexer.consume(token_1.JsonTokenType.IDENTIFIER);
+        if ((0, identifier_1.isReserved)(token.value)) {
+          const location = token.location.start;
+          throw new error_1.JsonParseError(`Reserved identifier '${token.value}' at ${location.line}:${location.column}.`, token.location);
+        }
+        const tokenNode = new node_1.JsonTokenNode(token);
+        return new node_1.JsonIdentifierNode({
+          token: tokenNode,
+          children: [tokenNode],
+          location: token.location
+        });
+      }
+      static createChildren(children) {
+        return children.map((child) => {
+          if (child instanceof node_1.JsonNode) {
+            return child;
+          }
+          return new node_1.JsonTokenNode(child);
+        });
+      }
+    };
+    exports2.JsonParser = JsonParser2;
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/formatting.js
+var require_formatting = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/formatting.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+  }
+});
+
+// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/index.js
+var require_json5_parser = __commonJS({
+  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/index.js"(exports2) {
+    "use strict";
+    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o2, m2, k2, k22) {
+      if (k22 === void 0) k22 = k2;
+      var desc = Object.getOwnPropertyDescriptor(m2, k2);
+      if (!desc || ("get" in desc ? !m2.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m2[k2];
+        } };
+      }
+      Object.defineProperty(o2, k22, desc);
+    } : function(o2, m2, k2, k22) {
+      if (k22 === void 0) k22 = k2;
+      o2[k22] = m2[k2];
+    });
+    var __exportStar = exports2 && exports2.__exportStar || function(m2, exports3) {
+      for (var p in m2) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports3, p)) __createBinding(exports3, m2, p);
+    };
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    __exportStar(require_identifier(), exports2);
+    __exportStar(require_lexer(), exports2);
+    __exportStar(require_location(), exports2);
+    __exportStar(require_parser(), exports2);
+    __exportStar(require_token(), exports2);
+    __exportStar(require_formatting(), exports2);
+    __exportStar(require_node2(), exports2);
+    __exportStar(require_error(), exports2);
+  }
+});
+
 // node_modules/.pnpm/merge-stream@2.0.0/node_modules/merge-stream/index.js
 var require_merge_stream = __commonJS({
   "node_modules/.pnpm/merge-stream@2.0.0/node_modules/merge-stream/index.js"(exports2, module2) {
@@ -1761,6 +3744,7 @@ var import_node_fs5 = __toESM(require("node:fs"), 1);
 var import_node_path5 = require("node:path");
 
 // packages/qwik/src/cli/add/update-files.ts
+var import_json5_parser = __toESM(require_json5_parser(), 1);
 var import_node_fs4 = __toESM(require("node:fs"), 1);
 var import_node_path4 = require("node:path");
 async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir, alwaysInRoot) {
@@ -1778,8 +3762,8 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir, alwaysInR
         const finalDestPath = getFinalDestPath(opts, destRootPath, destDir, destName, alwaysInRoot);
         if (destName === "package.json") {
           await mergePackageJsons(fileUpdates, srcChildPath, destRootPath);
-        } else if (destName === "settings.json") {
-          await mergeJsons(fileUpdates, srcChildPath, finalDestPath);
+        } else if (destDir.endsWith(".vscode") && destName === "settings.json") {
+          await mergeVSCodeSettings(fileUpdates, srcChildPath, finalDestPath);
         } else if (destName === "README.md") {
           await mergeReadmes(fileUpdates, srcChildPath, finalDestPath);
         } else if (destName === ".gitignore" || destName === ".prettierignore" || destName === ".eslintignore") {
@@ -1839,15 +3823,18 @@ async function mergePackageJsons(fileUpdates, srcPath, destPath) {
     });
   }
 }
-async function mergeJsons(fileUpdates, srcPath, destPath) {
+async function mergeVSCodeSettings(fileUpdates, srcPath, destPath) {
   const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
   try {
-    const srcPkgJson = JSON.parse(srcContent);
-    const destPkgJson = JSON.parse(await import_node_fs4.default.promises.readFile(destPath, "utf-8"));
-    Object.assign(srcPkgJson, destPkgJson);
+    const srcPkgJson = import_json5_parser.JsonParser.parse(srcContent, import_json5_parser.JsonObjectNode);
+    const destPkgJson = import_json5_parser.JsonParser.parse(
+      await import_node_fs4.default.promises.readFile(destPath, "utf-8"),
+      import_json5_parser.JsonObjectNode
+    );
+    destPkgJson.update({ ...destPkgJson.toJSON(), ...srcPkgJson.toJSON() });
     fileUpdates.files.push({
       path: destPath,
-      content: JSON.stringify(srcPkgJson, null, 2) + "\n",
+      content: destPkgJson.toString() + "\n",
       type: "modify"
     });
   } catch (e2) {
@@ -5647,7 +7634,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.15.0-dev+9d8d222");
+  console.log("1.15.0-dev+8229a89");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
