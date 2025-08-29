@@ -31,12 +31,9 @@ const trigger = () => {
     const e = queue[0];
     const t = e.u;
     const o = 1 - t;
-    const n = graph ? (
-      // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config.o * o)
-    ) : (
-      // While the graph is not available, we limit to 2 preloads
-      2
+    const n = graph ? config.o : (
+      // While the graph is not available, we limit to 5 preloads
+      5
     );
     if (o >= 0.99 || preloadCount < n) {
       queue.shift();

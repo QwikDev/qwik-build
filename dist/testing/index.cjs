@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.15.0-dev+e02d8d8
+ * @builder.io/qwik/testing 1.15.0-dev+9876fa7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22063,12 +22063,9 @@ var trigger = () => {
     const e = queue[0];
     const t = e.u;
     const o = 1 - t;
-    const n = graph ? (
-      // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config.o * o)
-    ) : (
-      // While the graph is not available, we limit to 2 preloads
-      2
+    const n = graph ? config.o : (
+      // While the graph is not available, we limit to 5 preloads
+      5
     );
     if (o >= 0.99 || preloadCount < n) {
       queue.shift();

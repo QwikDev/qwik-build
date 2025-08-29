@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+e02d8d8
+ * @builder.io/qwik/optimizer 1.15.0-dev+9876fa7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1235,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.15.0-dev+e02d8d8"
+    qwik: "1.15.0-dev+9876fa7"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5384,7 +5384,7 @@ globalThis.qwikOptimizer = function(module) {
       const e = queue[0];
       const t = e.u;
       const o = 1 - t;
-      const n = graph ? Math.max(1, config.o * o) : 2;
+      const n = graph ? config.o : 5;
       if (!(o >= .99 || preloadCount < n)) {
         break;
       }

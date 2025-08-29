@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.15.0-dev+e02d8d8
+ * @builder.io/qwik/server 1.15.0-dev+9876fa7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -292,12 +292,9 @@ var trigger = () => {
     const bundle = queue[0];
     const inverseProbability = bundle.$inverseProbability$;
     const probability = 1 - inverseProbability;
-    const allowedPreloads = graph ? (
-      // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config.$maxIdlePreloads$ * probability)
-    ) : (
-      // While the graph is not available, we limit to 2 preloads
-      2
+    const allowedPreloads = graph ? config.$maxIdlePreloads$ : (
+      // While the graph is not available, we limit to 5 preloads
+      5
     );
     if (probability >= 0.99 || preloadCount < allowedPreloads) {
       queue.shift();
@@ -705,7 +702,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.15.0-dev+e02d8d8",
+  qwik: "1.15.0-dev+9876fa7",
   qwikDom: "2.1.19"
 };
 
