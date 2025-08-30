@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.15.0-dev+9876fa7
+ * @builder.io/qwik/cli 1.15.0-dev+37435a7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1244,9 +1244,9 @@ var require_cross_spawn = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/identifier.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/identifier.js
 var require_identifier = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/identifier.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/identifier.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.identifierRegex = exports2.reservedIdentifiers = void 0;
@@ -1311,9 +1311,9 @@ var require_identifier = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/token.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/token.js
 var require_token = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/token.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/token.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonToken = exports2.JsonTokenType = void 0;
@@ -1346,9 +1346,9 @@ var require_token = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/error.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/error.js
 var require_error = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/error.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/error.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonParseError = exports2.JsonError = void 0;
@@ -1370,9 +1370,9 @@ var require_error = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/lexer.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/lexer.js
 var require_lexer = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/lexer.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/lexer.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonLexer = void 0;
@@ -1585,9 +1585,9 @@ var require_lexer = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/location.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/location.js
 var require_location = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/location.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/location.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.SourceLocation = exports2.SourcePosition = void 0;
@@ -1615,9 +1615,9 @@ var require_location = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/node.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/node.js
 var require_node = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/node.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/node.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonNode = void 0;
@@ -1637,9 +1637,9 @@ var require_node = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/compositeNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/compositeNode.js
 var require_compositeNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/compositeNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/compositeNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonCompositeNode = void 0;
@@ -1669,9 +1669,9 @@ var require_compositeNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/valueNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/valueNode.js
 var require_valueNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/valueNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/valueNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonValueNode = void 0;
@@ -1689,9 +1689,9 @@ var require_valueNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/tokenNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/tokenNode.js
 var require_tokenNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/tokenNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/tokenNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonTokenNode = void 0;
@@ -1724,9 +1724,9 @@ var require_tokenNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/manipulator.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/manipulator.js
 var require_manipulator = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/manipulator.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/manipulator.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeManipulator = exports2.NodeMatcher = void 0;
@@ -1963,9 +1963,9 @@ var require_manipulator = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/factory.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/factory.js
 var require_factory = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/factory.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/factory.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonValueFactory = void 0;
@@ -1994,9 +1994,9 @@ var require_factory = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/identifierNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/identifierNode.js
 var require_identifierNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/identifierNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/identifierNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonIdentifierNode = void 0;
@@ -2055,9 +2055,9 @@ var require_identifierNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/primitiveNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/primitiveNode.js
 var require_primitiveNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/primitiveNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/primitiveNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonPrimitiveNode = void 0;
@@ -2145,9 +2145,9 @@ var require_primitiveNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/propertyNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/propertyNode.js
 var require_propertyNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/propertyNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/propertyNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonPropertyNode = void 0;
@@ -2240,9 +2240,9 @@ var require_propertyNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/structureNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/structureNode.js
 var require_structureNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/structureNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/structureNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonStructureNode = exports2.StructureDelimiter = void 0;
@@ -2647,9 +2647,9 @@ var require_structureNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/arrayNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/arrayNode.js
 var require_arrayNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/arrayNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/arrayNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonArrayNode = void 0;
@@ -2758,9 +2758,9 @@ var require_arrayNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/objectNode.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/objectNode.js
 var require_objectNode = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/objectNode.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/objectNode.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonObjectNode = void 0;
@@ -2770,6 +2770,13 @@ var require_objectNode = __commonJS({
     var primitiveNode_1 = require_primitiveNode();
     var factory_1 = require_factory();
     var error_1 = require_error();
+    var manipulator_1 = require_manipulator();
+    var tokenNode_1 = require_tokenNode();
+    var token_1 = require_token();
+    var INSIGNIFICANT = manipulator_1.NodeMatcher.INSIGNIFICANT;
+    var NEWLINE = manipulator_1.NodeMatcher.NEWLINE;
+    var SIGNIFICANT = manipulator_1.NodeMatcher.SIGNIFICANT;
+    var SPACE = manipulator_1.NodeMatcher.SPACE;
     var JsonObjectNode2 = class _JsonObjectNode extends structureNode_1.JsonStructureNode {
       constructor(definition) {
         super(definition);
@@ -2782,6 +2789,112 @@ var require_objectNode = __commonJS({
             value: factory_1.JsonValueFactory.create(value)
           }))
         });
+      }
+      merge(source) {
+        if (source.propertyNodes.length === 0) {
+          return;
+        }
+        if (this.propertyNodes.length === 0) {
+          this.propertyNodes.push(...source.propertyNodes.map((property) => property.clone()));
+          this.children.splice(0, this.children.length, ...source.children.map((child) => child.clone()));
+          return;
+        }
+        for (const property of source.propertyNodes) {
+          const key = property.key.toJSON();
+          const sourceRange = source.findPropertyRange(key);
+          let sourceChildren = [property];
+          if (sourceRange !== null) {
+            sourceChildren = source.children.slice(sourceRange[0], sourceRange[1] + 1);
+          }
+          const newProperty = property.clone();
+          sourceChildren = sourceChildren.map((node) => node === property ? newProperty : node.clone());
+          const range = this.findPropertyRange(key);
+          if (range === null) {
+            this.propertyNodes.push(newProperty);
+            this.insert(sourceChildren);
+            continue;
+          }
+          const currentIndex = this.propertyNodes.findIndex((candidate) => candidate.key.toJSON() === key);
+          this.propertyNodes.splice(currentIndex, 1, newProperty);
+          this.children.splice(range[0], range[1] - range[0] + 1, ...sourceChildren);
+        }
+      }
+      insert(nodes) {
+        let insertionIndex = this.children.length;
+        for (let index = this.children.length - 1; index >= 0; index--) {
+          const child = this.children[index];
+          if (child instanceof tokenNode_1.JsonTokenNode) {
+            if (child.isType(token_1.JsonTokenType.BRACE_RIGHT)) {
+              insertionIndex = index;
+              continue;
+            }
+            if (child.isType(token_1.JsonTokenType.COMMA)) {
+              insertionIndex = index + 1;
+              break;
+            }
+          }
+          if (SIGNIFICANT(child)) {
+            break;
+          }
+          if (NEWLINE(child)) {
+            while (index > 0 && SPACE(this.children[index - 1])) {
+              index--;
+            }
+            insertionIndex = index;
+            break;
+          }
+          insertionIndex = index;
+        }
+        let needsComma = false;
+        for (let index = insertionIndex - 1; index >= 0; index--) {
+          const child = this.children[index];
+          if (child instanceof tokenNode_1.JsonTokenNode) {
+            if (child.isType(token_1.JsonTokenType.COMMA)) {
+              needsComma = false;
+              break;
+            }
+          }
+          if (SIGNIFICANT(child)) {
+            needsComma = true;
+            break;
+          }
+        }
+        if (needsComma) {
+          this.children.splice(insertionIndex, 0, new tokenNode_1.JsonTokenNode({
+            type: token_1.JsonTokenType.COMMA,
+            value: ","
+          }));
+          insertionIndex++;
+        }
+        this.children.splice(insertionIndex, 0, ...nodes);
+      }
+      findPropertyRange(name) {
+        let startIndex = this.children.findIndex((node) => node instanceof propertyNode_1.JsonPropertyNode && node.key.toJSON() === name);
+        if (startIndex === -1) {
+          return null;
+        }
+        let endIndex = startIndex;
+        for (let lookBehind = startIndex - 1; lookBehind >= 0; lookBehind--) {
+          const child = this.children[lookBehind];
+          if (!INSIGNIFICANT(child)) {
+            break;
+          }
+          if (NEWLINE(child)) {
+            startIndex = lookBehind;
+          }
+        }
+        for (let lookAhead = endIndex + 1; lookAhead < this.children.length; lookAhead++) {
+          const child = this.children[lookAhead];
+          if (!(child instanceof tokenNode_1.JsonTokenNode) || SIGNIFICANT(child) && !child.isType(token_1.JsonTokenType.COMMA)) {
+            break;
+          }
+          if (NEWLINE(child)) {
+            endIndex = lookAhead - 1;
+            break;
+          }
+          endIndex = lookAhead;
+        }
+        return [startIndex, endIndex];
       }
       update(other) {
         if (!(other instanceof valueNode_1.JsonValueNode)) {
@@ -2917,9 +3030,9 @@ var require_objectNode = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/index.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/index.js
 var require_node2 = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/node/index.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/node/index.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o2, m2, k2, k22) {
       if (k22 === void 0) k22 = k2;
@@ -2952,9 +3065,9 @@ var require_node2 = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/parser.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/parser.js
 var require_parser = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/parser.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/parser.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.JsonParser = void 0;
@@ -3187,17 +3300,17 @@ var require_parser = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/formatting.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/formatting.js
 var require_formatting = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/formatting.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/formatting.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
   }
 });
 
-// node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/index.js
+// node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/index.js
 var require_json5_parser = __commonJS({
-  "node_modules/.pnpm/@croct+json5-parser@0.1.1/node_modules/@croct/json5-parser/index.js"(exports2) {
+  "node_modules/.pnpm/@croct+json5-parser@0.2.0/node_modules/@croct/json5-parser/index.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o2, m2, k2, k22) {
       if (k22 === void 0) k22 = k2;
@@ -3831,7 +3944,7 @@ async function mergeVSCodeSettings(fileUpdates, srcPath, destPath) {
       await import_node_fs4.default.promises.readFile(destPath, "utf-8"),
       import_json5_parser.JsonObjectNode
     );
-    destPkgJson.update({ ...destPkgJson.toJSON(), ...srcPkgJson.toJSON() });
+    destPkgJson.merge(srcPkgJson);
     fileUpdates.files.push({
       path: destPath,
       content: destPkgJson.toString() + "\n",
@@ -7634,7 +7747,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.15.0-dev+9876fa7");
+  console.log("1.15.0-dev+37435a7");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
