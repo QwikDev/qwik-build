@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.15.0-dev+49ceeb0
+ * @builder.io/qwik/optimizer 1.16.0-dev+ea22cc2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -46,7 +46,7 @@ globalThis.qwikOptimizer = function(module) {
     value: true
   }), mod);
   var require_utils = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/utils.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/utils.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -86,37 +86,37 @@ globalThis.qwikOptimizer = function(module) {
         return methods[methodName](input, offset);
       }
       exports2.readUInt = readUInt;
-      function readBox(buffer, offset) {
-        if (buffer.length - offset < 4) {
+      function readBox(input, offset) {
+        if (input.length - offset < 4) {
           return;
         }
-        const boxSize = (0, exports2.readUInt32BE)(buffer, offset);
-        if (buffer.length - offset < boxSize) {
+        const boxSize = (0, exports2.readUInt32BE)(input, offset);
+        if (input.length - offset < boxSize) {
           return;
         }
         return {
-          name: (0, exports2.toUTF8String)(buffer, 4 + offset, 8 + offset),
+          name: (0, exports2.toUTF8String)(input, 4 + offset, 8 + offset),
           offset: offset,
           size: boxSize
         };
       }
-      function findBox(buffer, boxName, offset) {
-        while (offset < buffer.length) {
-          const box = readBox(buffer, offset);
+      function findBox(input, boxName, offset) {
+        while (offset < input.length) {
+          const box = readBox(input, offset);
           if (!box) {
             break;
           }
           if (box.name === boxName) {
             return box;
           }
-          offset += box.size;
+          offset += box.size > 0 ? box.size : 8;
         }
       }
       exports2.findBox = findBox;
     }
   });
   var require_bmp = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/bmp.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/bmp.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -132,7 +132,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_ico = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/ico.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/ico.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -182,7 +182,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_cur = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/cur.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/cur.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -205,7 +205,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_dds = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/dds.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/dds.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -221,7 +221,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_gif = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/gif.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/gif.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -238,7 +238,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_icns = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/icns.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/icns.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -321,14 +321,14 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_j2c = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/j2c.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/j2c.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
       exports2.J2C = void 0;
       var utils_1 = require_utils();
       exports2.J2C = {
-        validate: input => "ff4fff51" === (0, utils_1.toHexString)(input, 0, 4),
+        validate: input => 4283432785 === (0, utils_1.readUInt32BE)(input, 0),
         calculate: input => ({
           height: (0, utils_1.readUInt32BE)(input, 12),
           width: (0, utils_1.readUInt32BE)(input, 8)
@@ -337,7 +337,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_jp2 = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/jp2.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/jp2.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -345,14 +345,16 @@ globalThis.qwikOptimizer = function(module) {
       var utils_1 = require_utils();
       exports2.JP2 = {
         validate(input) {
-          if (1783636e3 !== (0, utils_1.readUInt32BE)(input, 4) || (0, utils_1.readUInt32BE)(input, 0) < 1) {
+          const boxType = (0, utils_1.toUTF8String)(input, 4, 8);
+          if ("jP  " !== boxType) {
             return false;
           }
           const ftypBox = (0, utils_1.findBox)(input, "ftyp", 0);
           if (!ftypBox) {
             return false;
           }
-          return 1718909296 === (0, utils_1.readUInt32BE)(input, ftypBox.offset + 4);
+          const brand = (0, utils_1.toUTF8String)(input, ftypBox.offset + 8, ftypBox.offset + 12);
+          return "jp2 " === brand;
         },
         calculate(input) {
           const jp2hBox = (0, utils_1.findBox)(input, "jp2h", 0);
@@ -369,7 +371,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_jpg = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/jpg.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/jpg.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -465,7 +467,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_ktx = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/ktx.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/ktx.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -489,7 +491,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_png = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/png.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/png.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -526,7 +528,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_pnm = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/pnm.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/pnm.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -596,7 +598,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_psd = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/psd.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/psd.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -612,7 +614,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_svg = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/svg.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/svg.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -706,7 +708,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_tga = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/tga.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/tga.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -722,7 +724,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_webp = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/webp.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/webp.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -778,7 +780,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_heif = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/heif.js"(exports2) {
+    "node_modules/.pnpm/image-size@1.2.1/node_modules/image-size/dist/types/heif.js"(exports2) {
       Object.defineProperty(exports2, "__esModule", {
         value: true
       });
@@ -794,21 +796,28 @@ globalThis.qwikOptimizer = function(module) {
         hevx: "heic"
       };
       exports2.HEIF = {
-        validate(buffer) {
-          const ftype = (0, utils_1.toUTF8String)(buffer, 4, 8);
-          const brand = (0, utils_1.toUTF8String)(buffer, 8, 12);
-          return "ftyp" === ftype && brand in brandMap;
+        validate(input) {
+          const boxType = (0, utils_1.toUTF8String)(input, 4, 8);
+          if ("ftyp" !== boxType) {
+            return false;
+          }
+          const ftypBox = (0, utils_1.findBox)(input, "ftyp", 0);
+          if (!ftypBox) {
+            return false;
+          }
+          const brand = (0, utils_1.toUTF8String)(input, ftypBox.offset + 8, ftypBox.offset + 12);
+          return brand in brandMap;
         },
-        calculate(buffer) {
-          const metaBox = (0, utils_1.findBox)(buffer, "meta", 0);
-          const iprpBox = metaBox && (0, utils_1.findBox)(buffer, "iprp", metaBox.offset + 12);
-          const ipcoBox = iprpBox && (0, utils_1.findBox)(buffer, "ipco", iprpBox.offset + 8);
-          const ispeBox = ipcoBox && (0, utils_1.findBox)(buffer, "ispe", ipcoBox.offset + 8);
+        calculate(input) {
+          const metaBox = (0, utils_1.findBox)(input, "meta", 0);
+          const iprpBox = metaBox && (0, utils_1.findBox)(input, "iprp", metaBox.offset + 12);
+          const ipcoBox = iprpBox && (0, utils_1.findBox)(input, "ipco", iprpBox.offset + 8);
+          const ispeBox = ipcoBox && (0, utils_1.findBox)(input, "ispe", ipcoBox.offset + 8);
           if (ispeBox) {
             return {
-              height: (0, utils_1.readUInt32BE)(buffer, ispeBox.offset + 16),
-              width: (0, utils_1.readUInt32BE)(buffer, ispeBox.offset + 12),
-              type: (0, utils_1.toUTF8String)(buffer, 8, 12)
+              height: (0, utils_1.readUInt32BE)(input, ispeBox.offset + 16),
+              width: (0, utils_1.readUInt32BE)(input, ispeBox.offset + 12),
+              type: (0, utils_1.toUTF8String)(input, 8, 12)
             };
           }
           throw new TypeError("Invalid HEIF, no size found");
@@ -1226,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.15.0-dev+49ceeb0"
+    qwik: "1.16.0-dev+ea22cc2"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2632,10 +2641,7 @@ globalThis.qwikOptimizer = function(module) {
           symbol.origin && (symbol.origin = normalizePath(symbol.origin));
         }
         for (const bundle of Object.values(manifest.bundles)) {
-          bundle.origins && (bundle.origins = bundle.origins.map(abs => {
-            const relPath = path.relative(opts.rootDir, abs);
-            return normalizePath(relPath);
-          }).sort());
+          bundle.origins && (bundle.origins = bundle.origins.sort());
         }
         manifest.manifestHash = hashCode(JSON.stringify(manifest));
         return manifest;
@@ -2944,6 +2950,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     outputOpts.dir || (outputOpts.dir = opts.outDir);
     "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
+    outputOpts.hoistTransitiveImports = false;
     return outputOpts;
   }
   function createRollupError2(id, diagnostic) {
@@ -5377,7 +5384,7 @@ globalThis.qwikOptimizer = function(module) {
       const e = queue[0];
       const t = e.u;
       const o = 1 - t;
-      const n = graph ? Math.max(1, config.o * o) : 2;
+      const n = graph ? config.o : 5;
       if (!(o >= .99 || preloadCount < n)) {
         break;
       }
@@ -5424,7 +5431,7 @@ globalThis.qwikOptimizer = function(module) {
     if (n - e.u < .01) {
       return;
     }
-    if (null != base && e.i < BundleImportState_Preload && e.u < config.l) {
+    if (null != base && e.i < BundleImportState_Preload) {
       if (e.i === BundleImportState_None) {
         e.i = BundleImportState_Queued;
         queue.push(e);
@@ -5442,7 +5449,7 @@ globalThis.qwikOptimizer = function(module) {
           continue;
         }
         let r;
-        if (n2.S > .5 && (1 === t2 || t2 >= .99 && depsCount < 100)) {
+        if (1 === t2 || t2 >= .99 && depsCount < 100) {
           depsCount++;
           r = Math.min(.01, 1 - n2.S);
         } else {
@@ -6099,10 +6106,7 @@ globalThis.qwikOptimizer = function(module) {
               exclude: [ /./ ]
             },
             rollupOptions: {
-              maxParallelFileOps: 1,
-              output: {
-                manualChunks: qwikPlugin.manualChunks
-              }
+              maxParallelFileOps: 1
             }
           },
           define: {

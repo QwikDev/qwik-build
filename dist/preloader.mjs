@@ -31,12 +31,9 @@ const trigger = () => {
     const e = queue[0];
     const t = e.u;
     const o = 1 - t;
-    const n = graph ? (
-      // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config.o * o)
-    ) : (
-      // While the graph is not available, we limit to 2 preloads
-      2
+    const n = graph ? config.o : (
+      // While the graph is not available, we limit to 5 preloads
+      5
     );
     if (o >= 0.99 || preloadCount < n) {
       queue.shift();
@@ -79,7 +76,7 @@ const adjustProbabilities = (e, t, o) => {
   if (n - e.u < 0.01) return;
   if (
     // don't queue until we have initialized the preloader
-    base != null && e.i < BundleImportState_Preload && e.u < config.l
+    base != null && e.i < BundleImportState_Preload
   ) {
     if (e.i === BundleImportState_None) {
       e.i = BundleImportState_Queued;
@@ -96,7 +93,7 @@ const adjustProbabilities = (e, t, o) => {
       const e2 = getBundle(n2.B);
       if (e2.u === 0) continue;
       let r;
-      if (n2.S > 0.5 && (t2 === 1 || t2 >= 0.99 && depsCount < 100)) {
+      if (t2 === 1 || t2 >= 0.99 && depsCount < 100) {
         depsCount++;
         r = Math.min(0.01, 1 - n2.S);
       } else {
