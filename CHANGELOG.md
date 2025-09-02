@@ -4,13 +4,13 @@
 
 ### Patch Changes
 
-- The entry.ssr renderToStream `preloader.preloadProbability` option is now deprecated because this could cause performance issues with bundles fetched on click instead of being preloaded ahead of time. (The preloader still relies on probabilities to know preload the most likely bundles first) (by [@maiieul](https://github.com/maiieul) in [#7847](https://github.com/QwikDev/qwik/pull/7847))
+- 🐞🩹 The entry.ssr renderToStream `preloader.preloadProbability` option is now deprecated because this could cause performance issues with bundles fetched on click instead of being preloaded ahead of time. (The preloader still relies on probabilities to know preload the most likely bundles first) (by [@maiieul](https://github.com/maiieul) in [#7847](https://github.com/QwikDev/qwik/pull/7847))
 
 - 🐞🩹 Link prefetch now always preloads Link prefetch bundles on monorepos (by [@maiieul](https://github.com/maiieul) in [#7835](https://github.com/QwikDev/qwik/pull/7835))
 
 - 🐞🩹 Rollup's hoistTranstiveImports is now set to `false` because the hoisting added unnecessary bundles to be preloaded to the bundle-graph static imports graph. This could lead to a suboptimal preloading experience. (by [@maiieul](https://github.com/maiieul) in [#7850](https://github.com/QwikDev/qwik/pull/7850))
 
-- feat(cli): Add check-client command to verify bundle freshness (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7517](https://github.com/QwikDev/qwik/pull/7517))
+- 🛠 Add check-client command to verify bundle freshness (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7517](https://github.com/QwikDev/qwik/pull/7517))
 
 - 🐞🩹 preloader now preloads bundles as long as they are part of the current viewport's bundles graph, even if their probability is very small (by [@maiieul](https://github.com/maiieul) in [#7836](https://github.com/QwikDev/qwik/pull/7836))
 
