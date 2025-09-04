@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.16.0-dev+9fa4d26
+ * @builder.io/qwik/optimizer 1.16.0-dev+a797237
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.16.0-dev+9fa4d26"
+  qwik: "1.16.0-dev+a797237"
 };
 
 async function getSystem() {
@@ -1280,15 +1280,9 @@ async function getSystem() {
   sys.path = createPath(sys);
   sys.strictDynamicImport = sys.dynamicImport = path => import(path);
   false;
-  if ("node" === sysEnv || "bun" === sysEnv) {
-    sys.path = await sys.dynamicImport("node:path");
-    sys.cwd = () => process.cwd();
-    sys.os = process.platform;
-  } else if ("deno" === sysEnv) {
-    sys.path = await sys.dynamicImport("node:path");
-    sys.cwd = () => Deno.cwd();
-    sys.os = Deno.platform();
-  }
+  sys.path = await sys.dynamicImport("node:path");
+  sys.cwd = () => process.cwd();
+  sys.os = process.platform;
   return sys;
 }
 
