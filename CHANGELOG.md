@@ -12,11 +12,17 @@
 
 - 🛠 Add check-client command to verify bundle freshness (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7517](https://github.com/QwikDev/qwik/pull/7517))
 
+- ✨ All qwik packages are now marked as side effect free in their package.json. This should remove a few unecessary empty imports added by rollup and then not tree-shaken like `import "./preloader.js"`. (by [@maiieul](https://github.com/maiieul) in [#7908](https://github.com/QwikDev/qwik/pull/7908))
+
+- 🐞🩹 unmount qwikify react root alongside with qwik component (by [@sashkashishka](https://github.com/sashkashishka) in [#7864](https://github.com/QwikDev/qwik/pull/7864))
+
 - 🐞🩹 preloader now preloads bundles as long as they are part of the current viewport's bundles graph, even if their probability is very small (by [@maiieul](https://github.com/maiieul) in [#7836](https://github.com/QwikDev/qwik/pull/7836))
 
 - ✨ maxIdlePreloads is now constant over time so you know for sure how many bundles will be preloaded concurrently during idle. (by [@maiieul](https://github.com/maiieul) in [#7846](https://github.com/QwikDev/qwik/pull/7846))
 
 - 🛠 use patched domino instead of qwik-dom (by [@gioboa](https://github.com/gioboa) in [#7842](https://github.com/QwikDev/qwik/pull/7842))
+
+- 🐞🩹 Qwik is now smarter at bundling non QRL source files and qwik libraries modules (e.g. helpers, enums, inline components, etc.) together. (by [@maiieul](https://github.com/maiieul) in [#7888](https://github.com/QwikDev/qwik/pull/7888))
 
 ## 1.16.0
 
