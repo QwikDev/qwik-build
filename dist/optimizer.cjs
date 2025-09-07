@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.16.0-dev+f812761
+ * @builder.io/qwik/optimizer 1.16.0-dev+d310c1a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1235,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.16.0-dev+f812761"
+    qwik: "1.16.0-dev+d310c1a"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1274,11 +1274,13 @@ globalThis.qwikOptimizer = function(module) {
         return cjsModule.exports;
       };
     }
-    try {
-      sys.path = await sys.dynamicImport("node:path");
-      sys.cwd = () => process.cwd();
-      sys.os = process.platform;
-    } catch {}
+    if ("webworker" !== sysEnv && "browsermain" !== sysEnv) {
+      try {
+        sys.path = await sys.dynamicImport("node:path");
+        sys.cwd = () => process.cwd();
+        sys.os = process.platform;
+      } catch {}
+    }
     return sys;
   }
   var getPlatformInputFiles = async sys => {
