@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.16.0-dev+d310c1a
+ * @builder.io/qwik 1.16.0-dev+03415f0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.16.0-dev+d310c1a";
+const version = "1.16.0-dev+03415f0";
 
 /**
  * @internal
@@ -7647,49 +7647,56 @@ const useResource$ = (generatorFn, opts) => {
  */
 // </docs>
 const Resource = (props) => {
-    const isBrowser = !isServerPlatform();
+    // Resource path
+    return jsx(Fragment, {
+        children: getResourceValueAsPromise(props),
+    });
+};
+function getResourceValueAsPromise(props) {
     const resource = props.value;
-    let promise;
     if (isResourceReturn(resource)) {
+        const isBrowser = !isServerPlatform();
         if (isBrowser) {
             if (props.onRejected) {
-                resource.value.catch(() => { });
                 if (resource._state === 'rejected') {
-                    return props.onRejected(resource._error);
+                    return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
                 }
             }
             if (props.onPending) {
                 const state = resource._state;
                 if (state === 'resolved') {
-                    return props.onResolved(resource._resolved);
+                    return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
                 }
                 else if (state === 'pending') {
-                    return props.onPending();
+                    return Promise.resolve().then(useBindInvokeContext(props.onPending));
                 }
                 else if (state === 'rejected') {
                     throw resource._error;
                 }
             }
             if (untrack(() => resource._resolved) !== undefined) {
-                return props.onResolved(resource._resolved);
+                return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
             }
         }
-        promise = resource.value;
+        const value = resource.value;
+        if (value) {
+            return value.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+        }
+        else {
+            // this is temporary value until the `runResource` is executed and promise is assigned to the value
+            return Promise.resolve(undefined);
+        }
     }
     else if (isPromise(resource)) {
-        promise = resource;
+        return resource.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
     else if (isSignal(resource)) {
-        promise = Promise.resolve(resource.value);
+        return Promise.resolve(resource.value).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
     else {
-        return props.onResolved(resource);
+        return Promise.resolve(resource).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
-    // Resource path
-    return jsx(Fragment, {
-        children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)),
-    });
-};
+}
 const _createResourceReturn = (opts) => {
     const resource = {
         __brand: 'resource',

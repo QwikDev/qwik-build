@@ -2283,9 +2283,9 @@ export declare interface ResourcePending<T> {
 /** @public */
 export declare interface ResourceProps<T> {
     readonly value: ResourceReturn<T> | Signal<Promise<T> | T> | Promise<T>;
-    onResolved: (value: T) => JSXOutput;
-    onPending?: () => JSXOutput;
-    onRejected?: (reason: Error) => JSXOutput;
+    onResolved: (value: T) => JSXOutput | Promise<JSXOutput>;
+    onPending?: () => JSXOutput | Promise<JSXOutput>;
+    onRejected?: (reason: Error) => JSXOutput | Promise<JSXOutput>;
 }
 
 /** @public */
@@ -3858,7 +3858,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.16.0-dev+d310c1a
+ * 1.16.0-dev+03415f0
  *
  * @public
  */
