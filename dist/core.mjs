@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.16.0-dev+e90e5f8
+ * @builder.io/qwik 1.16.0-dev+17268f7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -261,7 +261,7 @@ const codeToText = (code, ...parts) => {
             'props are immutable', // 17
             '<div> component can only be used at the root of a Qwik component$()', // 18
             'Props are immutable by default.', // 19
-            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules`, // 20
+            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/core/tasks/#use-method-rules`, // 20
             'Container is already paused. Skipping', // 21
             '', // 22 -- unused
             'When rendering directly on top of Document, the root node must be a <html>', // 23
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.16.0-dev+e90e5f8";
+const version = "1.16.0-dev+17268f7";
 
 /**
  * @internal
@@ -2640,7 +2640,7 @@ const validateJSXNode = (node) => {
 In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
 
 However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
-See https://qwik.dev/docs/components/styles/#usestyles for more information.`);
+See https://qwik.dev/docs/core/styles/#usestyles for more information.`);
                     }
                 }
                 if (type === 'script') {
