@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.16.0-dev+17268f7
+ * @builder.io/qwik 1.16.0-dev+67e9bd7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.16.0-dev+17268f7";
+const version = "1.16.0-dev+67e9bd7";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -1058,7 +1058,6 @@ maybeThen(executeComponent(rCtx, elCtx), res => {
             const listeners = placeholderCtx.li;
             listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
             const attributes = {
-                type: "placeholder",
                 hidden: "",
                 "q:id": placeholderCtx.$id$
             };
