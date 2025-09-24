@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.16.0-dev+4f128c9
+ * @builder.io/qwik 1.16.1-dev+f03a4ea
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.16.0-dev+4f128c9";
+    const version = "1.16.1-dev+f03a4ea";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -673,7 +673,6 @@
                 const listeners = placeholderCtx.li;
                 listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
                 const attributes = {
-                    type: "placeholder",
                     hidden: "",
                     "q:id": placeholderCtx.$id$
                 };
@@ -3718,6 +3717,34 @@
         return runResource(task, containerState, iCtx.$renderCtx$, previousWait), elCtx.$tasks$ || (elCtx.$tasks$ = []), 
         elCtx.$tasks$.push(task), set(resource), resource;
     };
+    function getResourceValueAsPromise(props) {
+        const resource = props.value;
+        if (isResourceReturn(resource)) {
+            if (!isServerPlatform()) {
+                if (props.onRejected && "rejected" === resource._state) {
+                    return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
+                }
+                if (props.onPending) {
+                    const state = resource._state;
+                    if ("resolved" === state) {
+                        return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
+                    }
+                    if ("pending" === state) {
+                        return Promise.resolve().then(useBindInvokeContext(props.onPending));
+                    }
+                    if ("rejected" === state) {
+                        throw resource._error;
+                    }
+                }
+                if (void 0 !== untrack(() => resource._resolved)) {
+                    return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
+                }
+            }
+            const value = resource.value;
+            return value ? value.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : Promise.resolve(void 0);
+        }
+        return isPromise(resource) ? resource.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : isSignal(resource) ? Promise.resolve(resource.value).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : Promise.resolve(resource).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+    }
     const _createResourceReturn = opts => ({
         __brand: "resource",
         value: void 0,
@@ -4732,44 +4759,9 @@
             nonce: resolvedOpts.nonce
         };
         return _jsxC("script", props, 0, "prefetch-service-worker");
-    }, exports.RenderOnce = RenderOnce, exports.Resource = props => {
-        const isBrowser = !isServerPlatform();
-        const resource = props.value;
-        let promise;
-        if (isResourceReturn(resource)) {
-            if (isBrowser) {
-                if (props.onRejected && (resource.value.catch(() => {}), "rejected" === resource._state)) {
-                    return props.onRejected(resource._error);
-                }
-                if (props.onPending) {
-                    const state = resource._state;
-                    if ("resolved" === state) {
-                        return props.onResolved(resource._resolved);
-                    }
-                    if ("pending" === state) {
-                        return props.onPending();
-                    }
-                    if ("rejected" === state) {
-                        throw resource._error;
-                    }
-                }
-                if (void 0 !== untrack(() => resource._resolved)) {
-                    return props.onResolved(resource._resolved);
-                }
-            }
-            promise = resource.value;
-        } else if (isPromise(resource)) {
-            promise = resource;
-        } else {
-            if (!isSignal(resource)) {
-                return props.onResolved(resource);
-            }
-            promise = Promise.resolve(resource.value);
-        }
-        return jsx(Fragment, {
-            children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected))
-        });
-    }, exports.SSRComment = SSRComment, exports.SSRHint = () => null, exports.SSRRaw = SSRRaw, 
+    }, exports.RenderOnce = RenderOnce, exports.Resource = props => jsx(Fragment, {
+        children: getResourceValueAsPromise(props)
+    }), exports.SSRComment = SSRComment, exports.SSRHint = () => null, exports.SSRRaw = SSRRaw, 
     exports.SSRStream = (props, key) => jsx(RenderOnce, {
         children: jsx(InternalSSRStream, props)
     }, key), exports.SSRStreamBlock = props => [ jsx(SSRComment, {

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.16.0-dev+4f128c9
+ * @builder.io/qwik 1.16.1-dev+f03a4ea
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -261,7 +261,7 @@ const codeToText = (code, ...parts) => {
             'props are immutable', // 17
             '<div> component can only be used at the root of a Qwik component$()', // 18
             'Props are immutable by default.', // 19
-            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules`, // 20
+            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/core/tasks/#use-method-rules`, // 20
             'Container is already paused. Skipping', // 21
             '', // 22 -- unused
             'When rendering directly on top of Document, the root node must be a <html>', // 23
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.16.0-dev+4f128c9";
+const version = "1.16.1-dev+f03a4ea";
 
 /**
  * @internal
@@ -1761,8 +1761,11 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
                 listeners.push(...elCtx.li);
                 elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
                 placeholderCtx.$id$ = getNextIndex(rCtx);
+                /**
+                 * This is a placeholder for qwik attributes when the component does not have a DOM
+                 * element. We keep it empty, so it can be a script tag without type.
+                 */
                 const attributes = {
-                    type: 'placeholder',
                     hidden: '',
                     'q:id': placeholderCtx.$id$,
                 };
@@ -2640,7 +2643,7 @@ const validateJSXNode = (node) => {
 In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
 
 However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
-See https://qwik.dev/docs/components/styles/#usestyles for more information.`);
+See https://qwik.dev/docs/core/styles/#usestyles for more information.`);
                     }
                 }
                 if (type === 'script') {
@@ -7647,49 +7650,56 @@ const useResource$ = (generatorFn, opts) => {
  */
 // </docs>
 const Resource = (props) => {
-    const isBrowser = !isServerPlatform();
+    // Resource path
+    return jsx(Fragment, {
+        children: getResourceValueAsPromise(props),
+    });
+};
+function getResourceValueAsPromise(props) {
     const resource = props.value;
-    let promise;
     if (isResourceReturn(resource)) {
+        const isBrowser = !isServerPlatform();
         if (isBrowser) {
             if (props.onRejected) {
-                resource.value.catch(() => { });
                 if (resource._state === 'rejected') {
-                    return props.onRejected(resource._error);
+                    return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
                 }
             }
             if (props.onPending) {
                 const state = resource._state;
                 if (state === 'resolved') {
-                    return props.onResolved(resource._resolved);
+                    return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
                 }
                 else if (state === 'pending') {
-                    return props.onPending();
+                    return Promise.resolve().then(useBindInvokeContext(props.onPending));
                 }
                 else if (state === 'rejected') {
                     throw resource._error;
                 }
             }
             if (untrack(() => resource._resolved) !== undefined) {
-                return props.onResolved(resource._resolved);
+                return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
             }
         }
-        promise = resource.value;
+        const value = resource.value;
+        if (value) {
+            return value.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+        }
+        else {
+            // this is temporary value until the `runResource` is executed and promise is assigned to the value
+            return Promise.resolve(undefined);
+        }
     }
     else if (isPromise(resource)) {
-        promise = resource;
+        return resource.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
     else if (isSignal(resource)) {
-        promise = Promise.resolve(resource.value);
+        return Promise.resolve(resource.value).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
     else {
-        return props.onResolved(resource);
+        return Promise.resolve(resource).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
-    // Resource path
-    return jsx(Fragment, {
-        children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)),
-    });
-};
+}
 const _createResourceReturn = (opts) => {
     const resource = {
         __brand: 'resource',

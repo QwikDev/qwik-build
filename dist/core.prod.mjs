@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.16.0-dev+4f128c9
+ * @builder.io/qwik 1.16.1-dev+f03a4ea
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.16.0-dev+4f128c9";
+const version = "1.16.1-dev+f03a4ea";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -1058,7 +1058,6 @@ maybeThen(executeComponent(rCtx, elCtx), res => {
             const listeners = placeholderCtx.li;
             listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
             const attributes = {
-                type: "placeholder",
                 hidden: "",
                 "q:id": placeholderCtx.$id$
             };
@@ -4710,44 +4709,38 @@ const useResourceQrl = (qrl, opts) => {
 
 const useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts);
 
-const Resource = props => {
-    const isBrowser = !isServerPlatform();
+const Resource = props => jsx(Fragment, {
+    children: getResourceValueAsPromise(props)
+});
+
+function getResourceValueAsPromise(props) {
     const resource = props.value;
-    let promise;
     if (isResourceReturn(resource)) {
-        if (isBrowser) {
-            if (props.onRejected && (resource.value.catch(() => {}), "rejected" === resource._state)) {
-                return props.onRejected(resource._error);
+        if (!isServerPlatform()) {
+            if (props.onRejected && "rejected" === resource._state) {
+                return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
             }
             if (props.onPending) {
                 const state = resource._state;
                 if ("resolved" === state) {
-                    return props.onResolved(resource._resolved);
+                    return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
                 }
                 if ("pending" === state) {
-                    return props.onPending();
+                    return Promise.resolve().then(useBindInvokeContext(props.onPending));
                 }
                 if ("rejected" === state) {
                     throw resource._error;
                 }
             }
             if (void 0 !== untrack(() => resource._resolved)) {
-                return props.onResolved(resource._resolved);
+                return Promise.resolve(resource._resolved).then(useBindInvokeContext(props.onResolved));
             }
         }
-        promise = resource.value;
-    } else if (isPromise(resource)) {
-        promise = resource;
-    } else {
-        if (!isSignal(resource)) {
-            return props.onResolved(resource);
-        }
-        promise = Promise.resolve(resource.value);
+        const value = resource.value;
+        return value ? value.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : Promise.resolve(void 0);
     }
-    return jsx(Fragment, {
-        children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected))
-    });
-};
+    return isPromise(resource) ? resource.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : isSignal(resource) ? Promise.resolve(resource.value).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : Promise.resolve(resource).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+}
 
 const _createResourceReturn = opts => ({
     __brand: "resource",
