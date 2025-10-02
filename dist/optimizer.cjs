@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.16.1-dev+f03a4ea
+ * @builder.io/qwik/optimizer 1.16.1-dev+f715a53
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1235,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.16.1-dev+f03a4ea"
+    qwik: "1.16.1-dev+f715a53"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2859,6 +2859,23 @@ globalThis.qwikOptimizer = function(module) {
   var SSR_OUT_DIR = "server";
   var LIB_OUT_DIR = "lib";
   var Q_MANIFEST_FILENAME = "q-manifest.json";
+  async function findDepPkgJsonPath(sys, dep, parent) {
+    const fs = await sys.dynamicImport("node:fs");
+    let root = parent;
+    while (root) {
+      const pkg = sys.path.join(root, "node_modules", dep, "package.json");
+      try {
+        await fs.promises.access(pkg);
+        return fs.promises.realpath(pkg);
+      } catch {}
+      const nextRoot = sys.path.dirname(root);
+      if (nextRoot === root) {
+        break;
+      }
+      root = nextRoot;
+    }
+    return;
+  }
   function qwikRollup(qwikRollupOpts = {}) {
     const qwikPlugin = createQwikPlugin(qwikRollupOpts.optimizerOptions);
     const rollupPlugin = {
@@ -2934,20 +2951,20 @@ globalThis.qwikOptimizer = function(module) {
     };
     return rollupPlugin;
   }
-  function normalizeRollupOutputOptions(qwikPlugin, rollupOutputOpts, useAssetsDir, outDir) {
+  async function normalizeRollupOutputOptions(qwikPlugin, rollupOutputOpts, useAssetsDir, outDir) {
     if (Array.isArray(rollupOutputOpts)) {
       rollupOutputOpts.length || rollupOutputOpts.push({});
-      return rollupOutputOpts.map(outputOptsObj => ({
-        ...normalizeRollupOutputOptionsObject(qwikPlugin, outputOptsObj, useAssetsDir),
+      return await Promise.all(rollupOutputOpts.map(async outputOptsObj => ({
+        ...await normalizeRollupOutputOptionsObject(qwikPlugin, outputOptsObj, useAssetsDir),
         dir: outDir || outputOptsObj.dir
-      }));
+      })));
     }
     return {
-      ...normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, useAssetsDir),
+      ...await normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOpts, useAssetsDir),
       dir: outDir || (null == rollupOutputOpts ? void 0 : rollupOutputOpts.dir)
     };
   }
-  function normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOptsObj, useAssetsDir) {
+  async function normalizeRollupOutputOptionsObject(qwikPlugin, rollupOutputOptsObj, useAssetsDir) {
     const outputOpts = {
       ...rollupOutputOptsObj
     };
@@ -2991,6 +3008,18 @@ globalThis.qwikOptimizer = function(module) {
     outputOpts.dir || (outputOpts.dir = opts.outDir);
     "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
     outputOpts.hoistTransitiveImports = false;
+    const userPkgJsonPath = await findDepPkgJsonPath(optimizer.sys, "rollup", optimizer.sys.cwd());
+    if (userPkgJsonPath) {
+      try {
+        const fs = await optimizer.sys.dynamicImport("node:fs");
+        const pkgJsonStr = await fs.promises.readFile(userPkgJsonPath, "utf-8");
+        const pkgJson = JSON.parse(pkgJsonStr);
+        const version = String((null == pkgJson ? void 0 : pkgJson.version) || "");
+        const [major, minor, patch] = version.split(".").map(n => parseInt(n, 10));
+        const isGte452 = Number.isFinite(major) && (major > 4 || 4 === major && (minor > 52 || 52 === minor && (patch || 0) >= 0));
+        isGte452 ? outputOpts.onlyExplicitManualChunks = true : console.warn(`⚠️ We detected that you're using a Rollup version prior to 4.52.0 (${version}). For the latest and greatest, we recommend to let Vite install the latest version for you, or manually install the latest version of Rollup in your project if that doesn't work. It will enable the new Rollup \`outputOpts.onlyExplicitManualChunks\` feature flag, which improves preloading performance and reduces cache invalidation for a snappier user experience.`);
+      } catch {}
+    }
     return outputOpts;
   }
   function createRollupError2(id, diagnostic) {
@@ -3736,7 +3765,7 @@ globalThis.qwikOptimizer = function(module) {
           const origOnwarn = null == (_t = updatedViteConfig.build.rollupOptions) ? void 0 : _t.onwarn;
           updatedViteConfig.build.rollupOptions = {
             input: opts.input,
-            output: normalizeRollupOutputOptions(qwikPlugin, null == (_v = null == (_u = viteConfig.build) ? void 0 : _u.rollupOptions) ? void 0 : _v.output, useAssetsDir, buildOutputDir),
+            output: await normalizeRollupOutputOptions(qwikPlugin, null == (_v = null == (_u = viteConfig.build) ? void 0 : _u.rollupOptions) ? void 0 : _v.output, useAssetsDir, buildOutputDir),
             preserveEntrySignatures: "exports-only",
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
@@ -3988,23 +4017,6 @@ globalThis.qwikOptimizer = function(module) {
   function getViteDevModule(opts) {
     const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
     return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    const parent = document.head ?? document.body ?? document.documentElement;\n    parent.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Client Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
-  }
-  async function findDepPkgJsonPath(sys, dep, parent) {
-    const fs = await sys.dynamicImport("node:fs");
-    let root = parent;
-    while (root) {
-      const pkg = sys.path.join(root, "node_modules", dep, "package.json");
-      try {
-        await fs.promises.access(pkg);
-        return fs.promises.realpath(pkg);
-      } catch {}
-      const nextRoot = sys.path.dirname(root);
-      if (nextRoot === root) {
-        break;
-      }
-      root = nextRoot;
-    }
-    return;
   }
   var findQwikRoots = async (sys, packageJsonDir) => {
     const paths = new Map;

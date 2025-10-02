@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.16.1-dev+f03a4ea
+ * @builder.io/qwik/server 1.16.1-dev+f715a53
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -650,7 +650,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL || "/"}build/`;
 }
 var versions = {
-  qwik: "1.16.1-dev+f03a4ea",
+  qwik: "1.16.1-dev+f715a53",
   qwikDom: "2.1.19"
 };
 
@@ -741,10 +741,12 @@ async function renderToStream(rootNode, opts) {
   await setServerPlatform(opts, resolvedManifest);
   const injections = resolvedManifest?.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes ?? {})) : [];
-  const includeMode = opts.qwikLoader?.include ?? "auto";
+  let includeMode = opts.qwikLoader ? typeof opts.qwikLoader === "object" ? opts.qwikLoader.include === "never" ? 2 /* Never */ : 0 /* Module */ : opts.qwikLoader === "inline" ? 1 /* Inline */ : opts.qwikLoader === "never" ? 2 /* Never */ : 0 /* Module */ : 0 /* Module */;
   const qwikLoaderChunk = resolvedManifest?.manifest.qwikLoader;
-  let didAddQwikLoader = false;
-  if (includeMode !== "never" && qwikLoaderChunk) {
+  if (includeMode === 0 /* Module */ && !qwikLoaderChunk) {
+    includeMode = 1 /* Inline */;
+  }
+  if (includeMode === 0 /* Module */) {
     beforeContent.unshift(
       jsx2("link", {
         rel: "modulepreload",
@@ -758,7 +760,21 @@ async function renderToStream(rootNode, opts) {
         nonce
       })
     );
-    didAddQwikLoader = true;
+  } else if (includeMode === 1 /* Inline */) {
+    const qwikLoaderScript = getQwikLoaderScript({
+      debug: opts.debug
+    });
+    beforeContent.unshift(
+      jsx2("script", {
+        id: "qwikloader",
+        // Qwik only works when modules work
+        type: "module",
+        // Execute asap, don't wait for domcontentloaded
+        async: true,
+        nonce,
+        dangerouslySetInnerHTML: qwikLoaderScript
+      })
+    );
   }
   preloaderPre(buildBase, resolvedManifest, opts.preloader, beforeContent, nonce);
   const renderTimer = createTimer();
@@ -792,23 +808,6 @@ async function renderToStream(rootNode, opts) {
           jsx2("script", {
             "q:func": "qwik/json",
             dangerouslySetInnerHTML: serializeFunctions(hash2, snapshotResult.funcs),
-            nonce
-          })
-        );
-      }
-      const needLoader = !snapshotResult || snapshotResult.mode !== "static";
-      const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
-      if (!didAddQwikLoader && includeLoader) {
-        const qwikLoaderScript = getQwikLoaderScript({
-          debug: opts.debug
-        });
-        children.push(
-          jsx2("script", {
-            id: "qwikloader",
-            // execute even before DOM order
-            async: true,
-            type: "module",
-            dangerouslySetInnerHTML: qwikLoaderScript,
             nonce
           })
         );
