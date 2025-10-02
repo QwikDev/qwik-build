@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.16.1-dev+f03a4ea
+ * @builder.io/qwik/server 1.16.1-dev+981b7aa
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -702,7 +702,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.16.1-dev+f03a4ea",
+  qwik: "1.16.1-dev+981b7aa",
   qwikDom: "2.1.19"
 };
 
@@ -710,7 +710,7 @@ var versions = {
 var import_qwik_client_manifest = require("@qwik-client-manifest");
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
-  var _a, _b, _c;
+  var _a, _b;
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
@@ -794,10 +794,12 @@ async function renderToStream(rootNode, opts) {
   await setServerPlatform(opts, resolvedManifest);
   const injections = resolvedManifest == null ? void 0 : resolvedManifest.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => (0, import_qwik4.jsx)(injection.tag, injection.attributes ?? {})) : [];
-  const includeMode = ((_c = opts.qwikLoader) == null ? void 0 : _c.include) ?? "auto";
+  let includeMode = opts.qwikLoader ? typeof opts.qwikLoader === "object" ? opts.qwikLoader.include === "never" ? 2 /* Never */ : 0 /* Module */ : opts.qwikLoader === "inline" ? 1 /* Inline */ : opts.qwikLoader === "never" ? 2 /* Never */ : 0 /* Module */ : 0 /* Module */;
   const qwikLoaderChunk = resolvedManifest == null ? void 0 : resolvedManifest.manifest.qwikLoader;
-  let didAddQwikLoader = false;
-  if (includeMode !== "never" && qwikLoaderChunk) {
+  if (includeMode === 0 /* Module */ && !qwikLoaderChunk) {
+    includeMode = 1 /* Inline */;
+  }
+  if (includeMode === 0 /* Module */) {
     beforeContent.unshift(
       (0, import_qwik4.jsx)("link", {
         rel: "modulepreload",
@@ -811,7 +813,21 @@ async function renderToStream(rootNode, opts) {
         nonce
       })
     );
-    didAddQwikLoader = true;
+  } else if (includeMode === 1 /* Inline */) {
+    const qwikLoaderScript = getQwikLoaderScript({
+      debug: opts.debug
+    });
+    beforeContent.unshift(
+      (0, import_qwik4.jsx)("script", {
+        id: "qwikloader",
+        // Qwik only works when modules work
+        type: "module",
+        // Execute asap, don't wait for domcontentloaded
+        async: true,
+        nonce,
+        dangerouslySetInnerHTML: qwikLoaderScript
+      })
+    );
   }
   preloaderPre(buildBase, resolvedManifest, opts.preloader, beforeContent, nonce);
   const renderTimer = createTimer();
@@ -845,23 +861,6 @@ async function renderToStream(rootNode, opts) {
           (0, import_qwik4.jsx)("script", {
             "q:func": "qwik/json",
             dangerouslySetInnerHTML: serializeFunctions(hash2, snapshotResult.funcs),
-            nonce
-          })
-        );
-      }
-      const needLoader = !snapshotResult || snapshotResult.mode !== "static";
-      const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
-      if (!didAddQwikLoader && includeLoader) {
-        const qwikLoaderScript = getQwikLoaderScript({
-          debug: opts.debug
-        });
-        children.push(
-          (0, import_qwik4.jsx)("script", {
-            id: "qwikloader",
-            // execute even before DOM order
-            async: true,
-            type: "module",
-            dangerouslySetInnerHTML: qwikLoaderScript,
             nonce
           })
         );
