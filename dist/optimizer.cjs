@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.16.1-dev+981b7aa
+ * @builder.io/qwik/optimizer 1.16.1-dev+90ecec9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1235,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.16.1-dev+981b7aa"
+    qwik: "1.16.1-dev+90ecec9"
   };
   async function getSystem() {
     const sysEnv = getEnv();
