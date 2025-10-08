@@ -162,13 +162,12 @@ const processWindowEvent = (ev) => {
   broadcast("-window", ev, camelToKebab(ev.type));
 };
 const processReadyStateChange = () => {
-  var _a;
   const readyState = doc.readyState;
   if (!hasInitialized && (readyState == "interactive" || readyState == "complete")) {
     roots.forEach(findShadowRoots);
     hasInitialized = 1;
     emitEvent("qinit");
-    const riC = (_a = win.requestIdleCallback) != null ? _a : win.setTimeout;
+    const riC = win.requestIdleCallback ?? win.setTimeout;
     riC.bind(win)(() => emitEvent("qidle"));
     if (events.has("qvisible")) {
       const results = querySelectorAll("[on\\:qvisible]");

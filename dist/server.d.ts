@@ -124,6 +124,8 @@ export declare interface PreloaderOptions {
      * The minimum probability for a bundle to be added as a preload link during SSR.
      *
      * Defaults to `0.7` (70% probability)
+     *
+     * This makes sure that the most likely bundles are preloaded ahead of time.
      */
     ssrPreloadProbability?: number;
     /**
@@ -145,9 +147,12 @@ export declare interface PreloaderOptions {
      */
     maxIdlePreloads?: number;
     /**
-     * The minimum probability for a bundle to be added to the preload queue.
+     * @deprecated The minimum probability for a bundle to be added to the preload queue.
      *
-     * Defaults to `0.35` (35% probability)
+     *   Defaulted to `0.35` (35% probability).
+     *
+     *   Deprecated because this could cause performance issues with bundles fetched on on click instead
+     *   of being preloaded ahead of time.
      */
     preloadProbability?: number;
 }
@@ -189,18 +194,12 @@ declare interface QwikBundle {
 declare type QwikBundleGraph = Array<string | number>;
 
 /** @public */
-export declare interface QwikLoaderOptions {
-    /**
-     * Whether to include the qwikloader script in the document. Normally you don't need to worry
-     * about this, but in case of multi-container apps using different Qwik versions, you might want
-     * to only enable it on one of the containers.
-     *
-     * Defaults to `'auto'`.
-     */
+export declare type QwikLoaderOptions = 'module' | 'inline' | 'never' | {
+    /** @deprecated No longer used. */
     include?: 'always' | 'never' | 'auto';
-    /** @deprecated No longer used, the qwikloader is always loaded as soon as possible */
+    /** @deprecated No longer used. */
     position?: 'top' | 'bottom';
-}
+};
 
 /**
  * The metadata of the build. One of its uses is storing where QRL symbols are located.
@@ -296,11 +295,25 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
     /** Language to use when rendering the document. */
     locale?: string | ((options: RenderOptions) => string);
     /**
-     * Specifies if the Qwik Loader script is added to the document or not.
+     * Specifies how the Qwik Loader is included in the document. This enables interactivity and lazy
+     * loading.
      *
-     * Defaults to `{ include: true }`.
+     * `module`: Use a `<script>` tag to load the Qwik Loader. Subsequent page loads will have the
+     * script cached and instantly running.
+     *
+     * `inline`: This embeds the Qwik Loader script directly in the document. This adds about 3kB
+     * before compression, which typically is reduced to about 1.6kB with gzip.
+     *
+     * `never`: Do not include the Qwik Loader script. This is mostly useful when embedding multiple
+     * containers on the same page.
+     *
+     * Defaults to `module`.
+     *
+     * Note that the Qwik Loader is absolutely required for Qwik to work. There must be an instance of
+     * it loaded for any interactivity to happen.
      */
     qwikLoader?: QwikLoaderOptions;
+    /** Specifies how preloading is handled. This ensures that code is instantly available when needed. */
     preloader?: PreloaderOptions | false;
     /** @deprecated Use `preloader` instead */
     qwikPrefetchServiceWorker?: QwikPrefetchServiceWorkerOptions;

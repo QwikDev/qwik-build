@@ -42,12 +42,9 @@ const trigger = () => {
     const bundle = queue[0];
     const inverseProbability = bundle.$inverseProbability$;
     const probability = 1 - inverseProbability;
-    const allowedPreloads = graph ? (
-      // The more likely the bundle, the more simultaneous preloads we want to allow
-      Math.max(1, config.$maxIdlePreloads$ * probability)
-    ) : (
-      // While the graph is not available, we limit to 2 preloads
-      2
+    const allowedPreloads = graph ? config.$maxIdlePreloads$ : (
+      // While the graph is not available, we limit to 5 preloads
+      5
     );
     if (probability >= 0.99 || preloadCount < allowedPreloads) {
       queue.shift();
@@ -103,7 +100,7 @@ const adjustProbabilities = (bundle, newInverseProbability, seen) => {
   }
   if (
     // don't queue until we have initialized the preloader
-    base != null && bundle.$state$ < BundleImportState_Preload && bundle.$inverseProbability$ < config.$invPreloadProbability$
+    base != null && bundle.$state$ < BundleImportState_Preload
   ) {
     if (bundle.$state$ === BundleImportState_None) {
       bundle.$state$ = BundleImportState_Queued;
@@ -122,7 +119,7 @@ const adjustProbabilities = (bundle, newInverseProbability, seen) => {
         continue;
       }
       let newInverseProbability2;
-      if (dep.$importProbability$ > 0.5 && (probability === 1 || probability >= 0.99 && depsCount < 100)) {
+      if (probability === 1 || probability >= 0.99 && depsCount < 100) {
         depsCount++;
         newInverseProbability2 = Math.min(0.01, 1 - dep.$importProbability$);
       } else {
