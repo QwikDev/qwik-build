@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.16.1-dev+90ecec9
+ * @builder.io/qwik/testing 1.16.1-dev+34cd17c
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2102,7 +2102,7 @@ var require_select = __commonJS({
         );
       });
     };
-    var indexOf = function() {
+    var indexOf = (function() {
       if (Array.prototype.indexOf) {
         return Array.prototype.indexOf;
       }
@@ -2113,7 +2113,7 @@ var require_select = __commonJS({
         }
         return -1;
       };
-    }();
+    })();
     var makeInside = function(start, end) {
       var regex = rules.inside.source.replace(/</g, start).replace(/>/g, end);
       return new RegExp(regex);
@@ -2157,7 +2157,7 @@ var require_select = __commonJS({
       };
     };
     var selectors = {
-      "*": function() {
+      "*": (function() {
         if (false) {
           return function(el) {
             if (el.nodeType === 1) return true;
@@ -2166,7 +2166,7 @@ var require_select = __commonJS({
         return function() {
           return true;
         };
-      }(),
+      })(),
       "type": function(type) {
         type = type.toLowerCase();
         return function(el) {
@@ -5842,7 +5842,7 @@ var require_cssparser = __commonJS({
       Parser.SELECTOR_TYPE = 7;
       Parser.SELECTOR_PART_TYPE = 8;
       Parser.SELECTOR_SUB_PART_TYPE = 9;
-      Parser.prototype = function() {
+      Parser.prototype = (function() {
         var proto = new EventTarget(), prop, additions = {
           __proto__: null,
           //restore constructor
@@ -7200,7 +7200,7 @@ var require_cssparser = __commonJS({
           }
         }
         return proto;
-      }();
+      })();
       var Properties = {
         __proto__: null,
         //A
