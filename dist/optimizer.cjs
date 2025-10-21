@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.16.1-dev+981b7aa
+ * @builder.io/qwik/optimizer 1.17.0-dev+2ee90e3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1235,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.16.1-dev+981b7aa"
+    qwik: "1.17.0-dev+2ee90e3"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2730,7 +2730,7 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
     const manualChunks = (id2, {getModuleInfo: getModuleInfo}) => {
-      var _a, _b;
+      var _a;
       if ("client" === opts.target) {
         if (id2.endsWith("@builder.io/qwik/build") || /[/\\]qwik[/\\]dist[/\\]preloader\.[cm]js$/.test(id2) || "\0vite/preload-helper.js" === id2) {
           return "qwik-preloader";
@@ -2747,19 +2747,6 @@ globalThis.qwikOptimizer = function(module) {
           const chunkName = (null == (_a = opts.entryStrategy.manual) ? void 0 : _a[hash]) || segment.entry;
           if (chunkName) {
             return chunkName;
-          }
-        }
-        if (0 === (null == (_b = module2.meta.qwikdeps) ? void 0 : _b.length)) {
-          if (id2.includes("node_modules")) {
-            const idx = id2.lastIndexOf("node_modules");
-            if (idx >= 0) {
-              const relToNodeModules = id2.slice(idx + 13);
-              return relToNodeModules;
-            }
-          } else if (opts.srcDir && id2.includes(opts.srcDir)) {
-            const path = getPath();
-            const relToSrcDir = normalizePath(path.relative(opts.srcDir, id2));
-            return relToSrcDir;
           }
         }
       }
