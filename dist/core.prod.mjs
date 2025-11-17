@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+bb97244
+ * @builder.io/qwik 1.17.1-dev+d1b96d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.17.1-dev+bb97244";
+const version = "1.17.1-dev+d1b96d3";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -3509,16 +3509,16 @@ const setComponentProps = (containerState, elCtx, expectProps) => {
     }
 };
 
-const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
+const cleanupTree = (elm, staticCtx, subsManager, stopSlots, dispose = !1) => {
     if (subsManager.$clearSub$(elm), isQwikElement(elm)) {
-        if (stopSlots && elm.hasAttribute("q:s")) {
+        if (!dispose && stopSlots && elm.hasAttribute("q:s")) {
             return void staticCtx.$rmSlots$.push(elm);
         }
         const ctx = tryGetContext(elm);
         ctx && cleanupContext(ctx, subsManager);
         const end = isVirtualElement(elm) ? elm.close : null;
         let node = elm.firstChild;
-        for (;(node = processVirtualNodes(node)) && (cleanupTree(node, staticCtx, subsManager, !0), 
+        for (;(node = processVirtualNodes(node)) && (cleanupTree(node, staticCtx, subsManager, !0, dispose), 
         node = node.nextSibling, node !== end); ) {}
     }
 };
@@ -5664,7 +5664,7 @@ const injectQContainer = containerEl => {
 };
 
 function cleanupContainer(renderCtx, container) {
-    cleanupTree(container, renderCtx.$static$, renderCtx.$static$.$containerState$.$subsManager$, !0), 
+    cleanupTree(container, renderCtx.$static$, renderCtx.$static$.$containerState$.$subsManager$, !0, !0), 
     removeContainerState(container), directRemoveAttribute(container, "q:version"), 
     directRemoveAttribute(container, "q:container"), directRemoveAttribute(container, "q:render"), 
     container.replaceChildren();

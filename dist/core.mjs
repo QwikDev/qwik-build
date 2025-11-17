@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+bb97244
+ * @builder.io/qwik 1.17.1-dev+d1b96d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.17.1-dev+bb97244";
+const version = "1.17.1-dev+d1b96d3";
 
 /**
  * @internal
@@ -5791,10 +5791,10 @@ const setComponentProps = (containerState, elCtx, expectProps) => {
         }
     }
 };
-const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
+const cleanupTree = (elm, staticCtx, subsManager, stopSlots, dispose = false) => {
     subsManager.$clearSub$(elm);
     if (isQwikElement(elm)) {
-        if (stopSlots && elm.hasAttribute(QSlotS)) {
+        if (!dispose && stopSlots && elm.hasAttribute(QSlotS)) {
             staticCtx.$rmSlots$.push(elm);
             return;
         }
@@ -5805,7 +5805,7 @@ const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
         const end = isVirtualElement(elm) ? elm.close : null;
         let node = elm.firstChild;
         while ((node = processVirtualNodes(node))) {
-            cleanupTree(node, staticCtx, subsManager, true);
+            cleanupTree(node, staticCtx, subsManager, true, dispose);
             node = node.nextSibling;
             if (node === end) {
                 break;
@@ -9272,7 +9272,7 @@ const injectQContainer = (containerEl) => {
 };
 function cleanupContainer(renderCtx, container) {
     const subsManager = renderCtx.$static$.$containerState$.$subsManager$;
-    cleanupTree(container, renderCtx.$static$, subsManager, true);
+    cleanupTree(container, renderCtx.$static$, subsManager, true, true);
     removeContainerState(container);
     // Clean up attributes
     directRemoveAttribute(container, 'q:version');
