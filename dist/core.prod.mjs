@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+fe8566a
+ * @builder.io/qwik 1.17.1-dev+246b4e4
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.17.1-dev+fe8566a";
+const version = "1.17.1-dev+246b4e4";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -4717,7 +4717,7 @@ function getResourceValueAsPromise(props) {
     const resource = props.value;
     if (isResourceReturn(resource)) {
         if (!isServerPlatform()) {
-            if (props.onRejected && "rejected" === resource._state) {
+            if (props.onRejected && (resource.value.catch(() => {}), "rejected" === resource._state)) {
                 return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
             }
             if (props.onPending) {

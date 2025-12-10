@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+fe8566a
+ * @builder.io/qwik 1.17.1-dev+246b4e4
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.17.1-dev+fe8566a";
+    const version = "1.17.1-dev+246b4e4";
 
     /**
      * @internal
@@ -7665,6 +7665,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             const isBrowser = !isServerPlatform();
             if (isBrowser) {
                 if (props.onRejected) {
+                    resource.value.catch(() => { });
                     if (resource._state === 'rejected') {
                         return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
                     }
