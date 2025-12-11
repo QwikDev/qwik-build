@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+71e3136
+ * @builder.io/qwik 1.17.2-dev+a35f2ae
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.17.1-dev+71e3136";
+const version = "1.17.2-dev+a35f2ae";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -2435,8 +2435,8 @@ const runComputed = (task, containerState, rCtx) => {
     const ok = returnValue => {
         untrack(() => {
             const signal = task.$state$;
-            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue = returnValue, 
-            signal[QObjectManagerSymbol].$notifySubs$();
+            signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED, signal.untrackedValue !== returnValue && (signal.untrackedValue = returnValue, 
+            signal[QObjectManagerSymbol].$notifySubs$());
         });
     };
     const fail = reason => {
@@ -3509,16 +3509,16 @@ const setComponentProps = (containerState, elCtx, expectProps) => {
     }
 };
 
-const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
+const cleanupTree = (elm, staticCtx, subsManager, stopSlots, dispose = !1) => {
     if (subsManager.$clearSub$(elm), isQwikElement(elm)) {
-        if (stopSlots && elm.hasAttribute("q:s")) {
+        if (!dispose && stopSlots && elm.hasAttribute("q:s")) {
             return void staticCtx.$rmSlots$.push(elm);
         }
         const ctx = tryGetContext(elm);
         ctx && cleanupContext(ctx, subsManager);
         const end = isVirtualElement(elm) ? elm.close : null;
         let node = elm.firstChild;
-        for (;(node = processVirtualNodes(node)) && (cleanupTree(node, staticCtx, subsManager, !0), 
+        for (;(node = processVirtualNodes(node)) && (cleanupTree(node, staticCtx, subsManager, !0, dispose), 
         node = node.nextSibling, node !== end); ) {}
     }
 };
@@ -4717,7 +4717,7 @@ function getResourceValueAsPromise(props) {
     const resource = props.value;
     if (isResourceReturn(resource)) {
         if (!isServerPlatform()) {
-            if (props.onRejected && "rejected" === resource._state) {
+            if (props.onRejected && (resource.value.catch(() => {}), "rejected" === resource._state)) {
                 return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
             }
             if (props.onPending) {
@@ -5664,7 +5664,7 @@ const injectQContainer = containerEl => {
 };
 
 function cleanupContainer(renderCtx, container) {
-    cleanupTree(container, renderCtx.$static$, renderCtx.$static$.$containerState$.$subsManager$, !0), 
+    cleanupTree(container, renderCtx.$static$, renderCtx.$static$.$containerState$.$subsManager$, !0, !0), 
     removeContainerState(container), directRemoveAttribute(container, "q:version"), 
     directRemoveAttribute(container, "q:container"), directRemoveAttribute(container, "q:render"), 
     container.replaceChildren();

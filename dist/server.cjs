@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.17.1-dev+71e3136
+ * @builder.io/qwik/server 1.17.2-dev+a35f2ae
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -540,7 +540,7 @@ var preloaderPre = (base2, resolvedManifest, options, beforeContent, nonce) => {
        * We add modulepreloads even when the script is at the top because they already fire during
        * html download
        */
-      (0, import_qwik3.jsx)("link", { rel: "modulepreload", href: preloaderPath, nonce }),
+      (0, import_qwik3.jsx)("link", { rel: "modulepreload", href: preloaderPath, nonce, crossorigin: "anonymous" }),
       (0, import_qwik3.jsx)("link", {
         rel: "preload",
         href: bundleGraphPath,
@@ -702,7 +702,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.17.1-dev+71e3136",
+  qwik: "1.17.2-dev+a35f2ae",
   qwikDom: "2.1.19"
 };
 
