@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.2
+ * @builder.io/qwik 1.18.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.17.2";
+    const version = "1.18.0";
 
     /**
      * @internal
@@ -4285,8 +4285,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             untrack(() => {
                 const signal = task.$state$;
                 signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
-                signal.untrackedValue = returnValue;
-                signal[QObjectManagerSymbol].$notifySubs$();
+                if (signal.untrackedValue !== returnValue) {
+                    signal.untrackedValue = returnValue;
+                    signal[QObjectManagerSymbol].$notifySubs$();
+                }
             });
         };
         const fail = (reason) => {
@@ -5791,10 +5793,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
     };
-    const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
+    const cleanupTree = (elm, staticCtx, subsManager, stopSlots, dispose = false) => {
         subsManager.$clearSub$(elm);
         if (isQwikElement(elm)) {
-            if (stopSlots && elm.hasAttribute(QSlotS)) {
+            if (!dispose && stopSlots && elm.hasAttribute(QSlotS)) {
                 staticCtx.$rmSlots$.push(elm);
                 return;
             }
@@ -5805,7 +5807,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const end = isVirtualElement(elm) ? elm.close : null;
             let node = elm.firstChild;
             while ((node = processVirtualNodes(node))) {
-                cleanupTree(node, staticCtx, subsManager, true);
+                cleanupTree(node, staticCtx, subsManager, true, dispose);
                 node = node.nextSibling;
                 if (node === end) {
                     break;
@@ -7663,6 +7665,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             const isBrowser = !isServerPlatform();
             if (isBrowser) {
                 if (props.onRejected) {
+                    resource.value.catch(() => { });
                     if (resource._state === 'rejected') {
                         return Promise.resolve(resource._error).then(useBindInvokeContext(props.onRejected));
                     }
@@ -9272,7 +9275,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
     function cleanupContainer(renderCtx, container) {
         const subsManager = renderCtx.$static$.$containerState$.$subsManager$;
-        cleanupTree(container, renderCtx.$static$, subsManager, true);
+        cleanupTree(container, renderCtx.$static$, subsManager, true, true);
         removeContainerState(container);
         // Clean up attributes
         directRemoveAttribute(container, 'q:version');
