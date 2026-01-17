@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+20a2285
+ * @builder.io/qwik 1.17.1-dev+f7ff9a1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -352,7 +352,7 @@
             return value;
         }
     };
-    const version = "1.17.1-dev+20a2285";
+    const version = "1.17.1-dev+f7ff9a1";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -2034,7 +2034,7 @@
         return seal(), ctx;
     };
     const getWrappingContainer = el => el.closest("[q\\:container]");
-    const untrack = fn => invoke(void 0, fn);
+    const untrack = (expr, ...args) => "function" == typeof expr ? invoke(void 0, expr, ...args) : isSignal(expr) ? expr.untrackedValue : unwrapProxy(expr);
     const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, () => signal.value));
     const _createSignal = (value, containerState, flags, subscriptions) => {

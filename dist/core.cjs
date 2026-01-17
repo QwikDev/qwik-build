@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+20a2285
+ * @builder.io/qwik 1.17.1-dev+f7ff9a1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -922,7 +922,7 @@
      *
      * @public
      */
-    const version = "1.17.1-dev+20a2285";
+    const version = "1.17.1-dev+f7ff9a1";
 
     /**
      * @internal
@@ -4665,12 +4665,25 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return el.closest(QContainerSelector);
     };
     /**
-     * Don't track listeners for this callback
+     * Get the value of the expression without tracking listeners. A function will be invoked, signals
+     * will return their value, and stores will be unwrapped (they return the backing object).
      *
+     * When you pass a function, you can also pass additional arguments that the function will receive.
+     *
+     * Note that stores are not unwrapped recursively.
+     *
+     * @param expr - The function or object to evaluate without tracking.
+     * @param args - Additional arguments to pass when `expr` is a function.
      * @public
      */
-    const untrack = (fn) => {
-        return invoke(undefined, fn);
+    const untrack = (expr, ...args) => {
+        if (typeof expr === 'function') {
+            return invoke(undefined, expr, ...args);
+        }
+        if (isSignal(expr)) {
+            return expr.untrackedValue;
+        }
+        return unwrapProxy(expr);
     };
     const trackInvocation = /*#__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
     /**
