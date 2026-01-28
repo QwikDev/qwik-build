@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.17.1-dev+74265c7
+ * @builder.io/qwik/optimizer 1.17.1-dev+f1126f1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1260,7 +1260,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.17.1-dev+74265c7"
+  qwik: "1.17.1-dev+f1126f1"
 };
 
 async function getSystem() {
@@ -2764,6 +2764,9 @@ function createQwikPlugin(optimizerOptions = {}) {
     if (module) {
       const segment = module.meta.segment;
       if (segment) {
+        if ([ "qwikify$", "useVisibleTask$" ].includes(segment.ctxName)) {
+          return null;
+        }
         const {hash: hash} = segment;
         const chunkName = opts.entryStrategy.manual?.[hash] || segment.entry;
         if (chunkName) {
