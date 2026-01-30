@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.18.0
+ * @builder.io/qwik 1.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -572,7 +572,7 @@
         }
         let virtualComment = "\x3c!--qv" + renderVirtualAttributes(props);
         const isSlot = "q:s" in props;
-        const key = null != node.key ? String(node.key) : null;
+        const key = null != node.key ? escapeHtml(String(node.key)) : null;
         isSlot && (assertDefined(), virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), 
         null != key && (virtualComment += " q:key=" + key), virtualComment += "--\x3e", 
         stream.write(virtualComment);
@@ -614,7 +614,7 @@
                 continue;
             }
             const value = attributes[prop];
-            null != value && (text += " " + ("" === value ? prop : prop + "=" + value));
+            null != value && (text += " " + ("" === value ? prop : prop + "=" + escapeValue(value)));
         }
         return text;
     };
@@ -626,7 +626,7 @@
                     continue;
                 }
                 const value = attributes[prop];
-                null != value && (text += " " + ("" === value ? prop : prop + '="' + value + '"'));
+                null != value && (text += " " + ("" === value ? prop : prop + '="' + escapeValue(value) + '"'));
             }
             return text;
         })(attributes) + ">");
@@ -688,10 +688,11 @@
             let missingSlotsDone;
             if (projectedChildren) {
                 const nodes = Object.keys(projectedChildren).map(slotName => {
-                    const content = projectedChildren[slotName];
+                    const escapedSlotName = slotName ? escapeHtml(slotName) : slotName;
+                    const content = projectedChildren[escapedSlotName];
                     if (content) {
                         return _jsxQ("q:template", {
-                            [QSlot]: slotName || !0,
+                            [QSlot]: escapedSlotName || !0,
                             hidden: !0,
                             "aria-hidden": "true"
                         }, null, content, 0, null);
@@ -712,7 +713,7 @@
         const slotMap = {};
         for (const child of flatChildren) {
             let slotName = "";
-            isJSXNode(child) && (slotName = child.props[QSlot] || ""), (slotMap[slotName] ||= []).push(child);
+            isJSXNode(child) && (slotName = escapeHtml(child.props[QSlot] || "")), (slotMap[slotName] ||= []).push(child);
         }
         return slotMap;
     };
@@ -989,6 +990,7 @@
     const registerQwikEvent$1 = (prop, containerState) => {
         containerState.$events$.add(getEventName(prop));
     };
+    const escapeValue = value => "string" == typeof value ? escapeHtml(value) : value;
     const escapeHtml = s => s.replace(ESCAPE_HTML, c => {
         switch (c) {
           case "&":
@@ -2033,7 +2035,7 @@
         return seal(), ctx;
     };
     const getWrappingContainer = el => el.closest("[q\\:container]");
-    const untrack = fn => invoke(void 0, fn);
+    const untrack = (expr, ...args) => "function" == typeof expr ? invoke(void 0, expr, ...args) : isSignal(expr) ? expr.untrackedValue : unwrapProxy(expr);
     const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, () => signal.value));
     const _createSignal = (value, containerState, flags, subscriptions) => {
@@ -4547,7 +4549,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.18.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.19.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4844,7 +4846,7 @@
         const locale = opts.serverData?.locale;
         const containerAttributes = opts.containerAttributes;
         const qRender = containerAttributes["q:render"];
-        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.18.0", 
+        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.19.0", 
         containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
         containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
         containerAttributes["q:instance"] = hash();
@@ -5021,7 +5023,7 @@
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.18.0", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.19.0", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

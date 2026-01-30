@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.18.0
+ * @builder.io/qwik 1.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -920,7 +920,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.18.0";
+const version = "1.19.0";
 
 /**
  * @internal
@@ -1627,7 +1627,7 @@ const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags,
     }
     let virtualComment = '<!--qv' + renderVirtualAttributes(props);
     const isSlot = QSlotS in props;
-    const key = node.key != null ? String(node.key) : null;
+    const key = node.key != null ? escapeHtml(String(node.key)) : null;
     if (isSlot) {
         assertDefined(rCtx.$cmpCtx$?.$id$, 'hostId must be defined for a slot');
         virtualComment += ' q:sref=' + rCtx.$cmpCtx$.$id$;
@@ -1686,7 +1686,7 @@ const renderAttributes = (attributes) => {
         }
         const value = attributes[prop];
         if (value != null) {
-            text += ' ' + (value === '' ? prop : prop + '="' + value + '"');
+            text += ' ' + (value === '' ? prop : prop + '="' + escapeValue(value) + '"');
         }
     }
     return text;
@@ -1699,7 +1699,7 @@ const renderVirtualAttributes = (attributes) => {
         }
         const value = attributes[prop];
         if (value != null) {
-            text += ' ' + (value === '' ? prop : prop + '=' + value + '');
+            text += ' ' + (value === '' ? prop : prop + '=' + escapeValue(value) + '');
         }
     }
     return text;
@@ -1782,10 +1782,11 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
             let missingSlotsDone;
             if (projectedChildren) {
                 const nodes = Object.keys(projectedChildren).map((slotName) => {
-                    const content = projectedChildren[slotName];
+                    const escapedSlotName = slotName ? escapeHtml(slotName) : slotName;
+                    const content = projectedChildren[escapedSlotName];
                     // projectedChildren[slotName] = undefined;
                     if (content) {
-                        return _jsxQ('q:template', { [QSlot]: slotName || true, hidden: true, 'aria-hidden': 'true' }, null, content, 0, null);
+                        return _jsxQ('q:template', { [QSlot]: escapedSlotName || true, hidden: true, 'aria-hidden': 'true' }, null, content, 0, null);
                     }
                 });
                 const [_rCtx, sCtx] = newSSrContext.$projectedCtxs$;
@@ -1808,7 +1809,7 @@ const splitProjectedChildren = (children, ssrCtx) => {
     for (const child of flatChildren) {
         let slotName = '';
         if (isJSXNode(child)) {
-            slotName = child.props[QSlot] || '';
+            slotName = escapeHtml(child.props[QSlot] || '');
         }
         (slotMap[slotName] ||= []).push(child);
     }
@@ -2382,6 +2383,12 @@ const phasingContent = {
 const ESCAPE_HTML = /[&<>'"]/g;
 const registerQwikEvent$1 = (prop, containerState) => {
     containerState.$events$.add(getEventName(prop));
+};
+const escapeValue = (value) => {
+    if (typeof value === 'string') {
+        return escapeHtml(value);
+    }
+    return value;
 };
 const escapeHtml = (s) => {
     return s.replace(ESCAPE_HTML, (c) => {
@@ -4663,12 +4670,25 @@ const getWrappingContainer = (el) => {
     return el.closest(QContainerSelector);
 };
 /**
- * Don't track listeners for this callback
+ * Get the value of the expression without tracking listeners. A function will be invoked, signals
+ * will return their value, and stores will be unwrapped (they return the backing object).
  *
+ * When you pass a function, you can also pass additional arguments that the function will receive.
+ *
+ * Note that stores are not unwrapped recursively.
+ *
+ * @param expr - The function or object to evaluate without tracking.
+ * @param args - Additional arguments to pass when `expr` is a function.
  * @public
  */
-const untrack = (fn) => {
-    return invoke(undefined, fn);
+const untrack = (expr, ...args) => {
+    if (typeof expr === 'function') {
+        return invoke(undefined, expr, ...args);
+    }
+    if (isSignal(expr)) {
+        return expr.untrackedValue;
+    }
+    return unwrapProxy(expr);
 };
 const trackInvocation = /*#__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
 /**

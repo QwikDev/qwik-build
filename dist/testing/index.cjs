@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.18.0
+ * @builder.io/qwik/testing 1.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -21507,11 +21507,6 @@ var fromCamelToKebabCase = (text) => {
 // packages/qwik/src/core/util/markers.ts
 var QContainerSelector = "[q\\:container]";
 
-// packages/qwik/src/core/use/use-core.ts
-var getWrappingContainer = (el) => {
-  return el.closest(QContainerSelector);
-};
-
 // packages/qwik/src/core/state/constants.ts
 var QObjectRecursive = 1 << 0;
 var QObjectImmutable = 1 << 1;
@@ -21540,6 +21535,11 @@ var normalizeOnProp = (prop) => {
     prop = prop.toLowerCase();
   }
   return scope + ":" + prop;
+};
+
+// packages/qwik/src/core/use/use-core.ts
+var getWrappingContainer = (el) => {
+  return el.closest(QContainerSelector);
 };
 
 // packages/qwik/src/core/state/context.ts

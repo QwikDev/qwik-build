@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.18.0
+ * @builder.io/qwik/server 1.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -397,7 +397,7 @@ function flattenPrefetchResources(prefetchResources) {
 import { getPlatform } from "@builder.io/qwik";
 var getBundles = (snapshotResult) => {
   const platform = getPlatform();
-  return snapshotResult?.qrls?.map((qrl) => {
+  const bundles2 = snapshotResult?.qrls?.map((qrl) => {
     const symbol = qrl.$refSymbol$ || qrl.$symbol$;
     const chunk = qrl.$chunk$;
     const result = platform.chunkForSymbol(symbol, chunk, qrl.dev?.file);
@@ -406,6 +406,7 @@ var getBundles = (snapshotResult) => {
     }
     return chunk;
   }).filter(Boolean);
+  return [...new Set(bundles2)];
 };
 function getPreloadPaths(snapshotResult, opts, resolvedManifest) {
   const prefetchStrategy = opts.prefetchStrategy;
@@ -650,7 +651,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL || "/"}build/`;
 }
 var versions = {
-  qwik: "1.18.0",
+  qwik: "1.19.0",
   qwikDom: "2.1.19"
 };
 
