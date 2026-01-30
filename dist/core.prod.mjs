@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.17.1-dev+f1126f1
+ * @builder.io/qwik 1.17.1-dev+fe2d923
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -581,7 +581,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.17.1-dev+f1126f1";
+const version = "1.17.1-dev+fe2d923";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -952,7 +952,7 @@ const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags,
     }
     let virtualComment = "\x3c!--qv" + renderVirtualAttributes(props);
     const isSlot = "q:s" in props;
-    const key = null != node.key ? String(node.key) : null;
+    const key = null != node.key ? escapeHtml(String(node.key)) : null;
     isSlot && (assertDefined(rCtx.$cmpCtx$?.$id$, "hostId must be defined for a slot"), 
     virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), null != key && (virtualComment += " q:key=" + key), 
     virtualComment += "--\x3e", stream.write(virtualComment);
@@ -996,7 +996,7 @@ const renderAttributes = attributes => {
             continue;
         }
         const value = attributes[prop];
-        null != value && (text += " " + ("" === value ? prop : prop + '="' + value + '"'));
+        null != value && (text += " " + ("" === value ? prop : prop + '="' + escapeValue(value) + '"'));
     }
     return text;
 };
@@ -1008,7 +1008,7 @@ const renderVirtualAttributes = attributes => {
             continue;
         }
         const value = attributes[prop];
-        null != value && (text += " " + ("" === value ? prop : prop + "=" + value));
+        null != value && (text += " " + ("" === value ? prop : prop + "=" + escapeValue(value)));
     }
     return text;
 };
@@ -1074,10 +1074,11 @@ maybeThen(executeComponent(rCtx, elCtx), res => {
         let missingSlotsDone;
         if (projectedChildren) {
             const nodes = Object.keys(projectedChildren).map(slotName => {
-                const content = projectedChildren[slotName];
+                const escapedSlotName = slotName ? escapeHtml(slotName) : slotName;
+                const content = projectedChildren[escapedSlotName];
                 if (content) {
                     return _jsxQ("q:template", {
-                        [QSlot]: slotName || !0,
+                        [QSlot]: escapedSlotName || !0,
                         hidden: !0,
                         "aria-hidden": "true"
                     }, null, content, 0, null);
@@ -1099,7 +1100,7 @@ const splitProjectedChildren = (children, ssrCtx) => {
     const slotMap = {};
     for (const child of flatChildren) {
         let slotName = "";
-        isJSXNode(child) && (slotName = child.props[QSlot] || ""), (slotMap[slotName] ||= []).push(child);
+        isJSXNode(child) && (slotName = escapeHtml(child.props[QSlot] || "")), (slotMap[slotName] ||= []).push(child);
     }
     return slotMap;
 };
@@ -1461,6 +1462,8 @@ const ESCAPE_HTML = /[&<>'"]/g;
 const registerQwikEvent$1 = (prop, containerState) => {
     containerState.$events$.add(getEventName(prop));
 };
+
+const escapeValue = value => "string" == typeof value ? escapeHtml(value) : value;
 
 const escapeHtml = s => s.replace(ESCAPE_HTML, c => {
     switch (c) {
