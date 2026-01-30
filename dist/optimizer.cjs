@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.17.1-dev+fe2d923
+ * @builder.io/qwik/optimizer 1.17.1-dev+6f10d8a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1235,7 +1235,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.17.1-dev+fe2d923"
+    qwik: "1.17.1-dev+6f10d8a"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1759,6 +1759,13 @@ globalThis.qwikOptimizer = function(module) {
       }
       return canonPath(bundle.fileName);
     };
+    let coreBundleName;
+    let preloaderBundleName;
+    for (const outputBundle of Object.values(outputBundles)) {
+      const bundleFileName = getBundleName(outputBundle.fileName);
+      "core" === outputBundle.name && (coreBundleName = bundleFileName);
+      "preloader" === outputBundle.name && (preloaderBundleName = bundleFileName);
+    }
     const qrlNames = new Set(segments.map(h => h.name));
     for (const outputBundle of Object.values(outputBundles)) {
       if ("asset" === outputBundle.type) {
@@ -1777,7 +1784,7 @@ globalThis.qwikOptimizer = function(module) {
       for (const symbol of outputBundle.exports) {
         qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
       }
-      const bundleImports = outputBundle.imports.filter(i => outputBundle.code.includes(path.basename(i))).map(i => getBundleName(i)).filter(Boolean);
+      const bundleImports = outputBundle.imports.filter(i => outputBundle.code.includes(path.basename(i))).map(i => getBundleName(i)).filter(i => i !== preloaderBundleName && i !== coreBundleName).filter(Boolean);
       bundleImports.length > 0 && (bundle.imports = bundleImports);
       const bundleDynamicImports = outputBundle.dynamicImports.filter(i => outputBundle.code.includes(path.basename(i))).map(i => getBundleName(i)).filter(Boolean);
       bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
