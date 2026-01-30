@@ -3143,11 +3143,18 @@ export declare interface TrackHTMLAttributes<T extends Element> extends Attrs<'t
 }
 
 /**
- * Don't track listeners for this callback
+ * Get the value of the expression without tracking listeners. A function will be invoked, signals
+ * will return their value, and stores will be unwrapped (they return the backing object).
  *
+ * When you pass a function, you can also pass additional arguments that the function will receive.
+ *
+ * Note that stores are not unwrapped recursively.
+ *
+ * @param expr - The function or object to evaluate without tracking.
+ * @param args - Additional arguments to pass when `expr` is a function.
  * @public
  */
-export declare const untrack: <T>(fn: () => T) => T;
+export declare const untrack: <T, A extends any[]>(expr: ((...args: A) => T) | Signal<T> | T, ...args: A) => T;
 
 declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'innerHTML' | 'outerHTML' | 'inputMode' | 'outerText' | 'nodeValue' | 'textContent';
 
@@ -3858,7 +3865,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.17.2-dev+a35f2ae
+ * 1.18.0-dev+25dbde0
  *
  * @public
  */
