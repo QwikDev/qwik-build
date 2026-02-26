@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.19.0-dev+7777a3c
+ * @builder.io/qwik/optimizer 1.19.0-dev+fe45eb6
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1233,9 +1233,40 @@ globalThis.qwikOptimizer = function(module) {
       }
     };
   }
-  var QWIK_BINDING_MAP = {};
+  var QWIK_BINDING_MAP = {
+    darwin: {
+      arm64: [ {
+        platform: "darwin",
+        arch: "arm64",
+        abi: null,
+        platformArchABI: "qwik.darwin-arm64.node"
+      } ],
+      x64: [ {
+        platform: "darwin",
+        arch: "x64",
+        abi: null,
+        platformArchABI: "qwik.darwin-x64.node"
+      } ]
+    },
+    win32: {
+      x64: [ {
+        platform: "win32",
+        arch: "x64",
+        abi: "msvc",
+        platformArchABI: "qwik.win32-x64-msvc.node"
+      } ]
+    },
+    linux: {
+      x64: [ {
+        platform: "linux",
+        arch: "x64",
+        abi: "gnu",
+        platformArchABI: "qwik.linux-x64-gnu.node"
+      } ]
+    }
+  };
   var versions = {
-    qwik: "1.19.0-dev+7777a3c"
+    qwik: "1.19.0-dev+fe45eb6"
   };
   async function getSystem() {
     const sysEnv = getEnv();

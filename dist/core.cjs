@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.19.0-dev+7777a3c
+ * @builder.io/qwik 1.19.0-dev+fe45eb6
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -330,6 +330,8 @@
                     if (regSym) {
                         return regSym;
                     }
+                    // we never lazy import on the server
+                    throw qError(QError_dynamicImportFailed, symbolName);
                 }
                 if (!url) {
                     throw qError(QError_qrlMissingChunk, symbolName);
@@ -922,7 +924,7 @@
      *
      * @public
      */
-    const version = "1.19.0-dev+7777a3c";
+    const version = "1.19.0-dev+fe45eb6";
 
     /**
      * @internal
