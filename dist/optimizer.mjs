@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.19.0-dev+9bf82cc
+ * @builder.io/qwik/optimizer 1.19.0-dev+e2ff04a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1291,7 +1291,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.19.0-dev+9bf82cc"
+  qwik: "1.19.0-dev+e2ff04a"
 };
 
 async function getSystem() {
@@ -3836,7 +3836,7 @@ function qwikVite(qwikViteOpts = {}) {
         } else {
           "object" === typeof viteConfig.build?.lib && (pluginOpts.input = viteConfig.build?.lib.entry);
         }
-        if ("node" === sys.env || "bun" === sys.env) {
+        if (hasNodeCompat(sys.env)) {
           const fs = await sys.dynamicImport("node:fs");
           try {
             const rootDir2 = pluginOpts.rootDir ?? sys.cwd();
@@ -4060,7 +4060,7 @@ function qwikVite(qwikViteOpts = {}) {
             }
           });
           const sys = qwikPlugin.getSys();
-          if (tmpClientManifestPath && ("node" === sys.env || "bun" === sys.env)) {
+          if (tmpClientManifestPath && hasNodeCompat(sys.env)) {
             const fs = await sys.dynamicImport("node:fs");
             await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
           }
@@ -4071,7 +4071,7 @@ function qwikVite(qwikViteOpts = {}) {
       const opts = qwikPlugin.getOptions();
       if ("ssr" === opts.target) {
         const sys = qwikPlugin.getSys();
-        if ("node" === sys.env || "bun" === sys.env) {
+        if (hasNodeCompat(sys.env)) {
           const outputs = Object.keys(rollupBundle);
           const patchModuleFormat = async bundeName => {
             try {
@@ -4178,7 +4178,7 @@ function getViteDevModule(opts) {
 
 var findQwikRoots = async (sys, packageJsonDir) => {
   const paths = new Map;
-  if ("node" === sys.env || "bun" === sys.env) {
+  if (hasNodeCompat(sys.env)) {
     const fs = await sys.dynamicImport("node:fs");
     let prevPackageJsonDir;
     do {
@@ -4222,6 +4222,8 @@ var findQwikRoots = async (sys, packageJsonDir) => {
     id: id
   }));
 };
+
+var hasNodeCompat = env => "node" === env || "bun" === env || "deno" === env;
 
 var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
 

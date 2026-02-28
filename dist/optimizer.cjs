@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.19.0-dev+9bf82cc
+ * @builder.io/qwik/optimizer 1.19.0-dev+e2ff04a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1266,7 +1266,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.19.0-dev+9bf82cc"
+    qwik: "1.19.0-dev+e2ff04a"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3709,7 +3709,7 @@ globalThis.qwikOptimizer = function(module) {
           } else {
             "object" === typeof (null == (_l = viteConfig.build) ? void 0 : _l.lib) && (pluginOpts.input = null == (_m = viteConfig.build) ? void 0 : _m.lib.entry);
           }
-          if ("node" === sys.env || "bun" === sys.env) {
+          if (hasNodeCompat(sys.env)) {
             const fs = await sys.dynamicImport("node:fs");
             try {
               const rootDir2 = pluginOpts.rootDir ?? sys.cwd();
@@ -3934,7 +3934,7 @@ globalThis.qwikOptimizer = function(module) {
               }
             });
             const sys = qwikPlugin.getSys();
-            if (tmpClientManifestPath && ("node" === sys.env || "bun" === sys.env)) {
+            if (tmpClientManifestPath && hasNodeCompat(sys.env)) {
               const fs = await sys.dynamicImport("node:fs");
               await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
             }
@@ -3945,7 +3945,7 @@ globalThis.qwikOptimizer = function(module) {
         const opts = qwikPlugin.getOptions();
         if ("ssr" === opts.target) {
           const sys = qwikPlugin.getSys();
-          if ("node" === sys.env || "bun" === sys.env) {
+          if (hasNodeCompat(sys.env)) {
             const outputs = Object.keys(rollupBundle);
             const patchModuleFormat = async bundeName => {
               try {
@@ -4048,7 +4048,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var findQwikRoots = async (sys, packageJsonDir) => {
     const paths = new Map;
-    if ("node" === sys.env || "bun" === sys.env) {
+    if (hasNodeCompat(sys.env)) {
       const fs = await sys.dynamicImport("node:fs");
       let prevPackageJsonDir;
       do {
@@ -4092,6 +4092,7 @@ globalThis.qwikOptimizer = function(module) {
       id: id
     }));
   };
+  var hasNodeCompat = env => "node" === env || "bun" === env || "deno" === env;
   var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
   var CLIENT_DEV_INPUT = "entry.dev";
   return module.exports;
