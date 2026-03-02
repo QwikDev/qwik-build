@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.19.0-dev+f71fb94
+ * @builder.io/qwik/optimizer 1.19.0-dev+426ee94
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1266,7 +1266,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.19.0-dev+f71fb94"
+    qwik: "1.19.0-dev+426ee94"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3448,7 +3448,7 @@ globalThis.qwikOptimizer = function(module) {
                       location: "head",
                       attributes: {
                         rel: "stylesheet",
-                        href: `${base}${url2.slice(1)}`
+                        href: toDevServerHref(base, url2)
                       }
                     });
                   }
@@ -3490,7 +3490,7 @@ globalThis.qwikOptimizer = function(module) {
                     return importerPath && JS_EXTENSIONS.test(importerPath);
                   });
                   if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
-                    res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                    res.write(`<link rel="stylesheet" href="${toDevServerHref(base, v.url)}">`);
                     added.add(v.url);
                   }
                 }
@@ -3609,6 +3609,13 @@ globalThis.qwikOptimizer = function(module) {
       url.startsWith("/") || (url = "/" + url);
     }
     return url;
+  }
+  function toDevServerHref(base, url) {
+    if (url.startsWith("/")) {
+      return `${base}${url.slice(1)}`;
+    }
+    const cleanUrl = url.startsWith("\0") ? url.slice(1) : url;
+    return `${base}${VALID_ID_PREFIX.slice(1)}${cleanUrl}`;
   }
   var DEV_QWIK_INSPECTOR = (opts, srcDir) => {
     const qwikdevtools = {
