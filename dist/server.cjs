@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.18.0-dev+25dbde0
+ * @builder.io/qwik/server 1.19.0-dev+426ee94
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -63,6 +63,158 @@ var import_qwik6 = require("@builder.io/qwik");
 
 // packages/qwik/src/server/platform.ts
 var import_qwik = require("@builder.io/qwik");
+
+// packages/qwik/src/core/util/element.ts
+var isNode = (value) => {
+  return value && typeof value.nodeType === "number";
+};
+var isElement = (value) => {
+  return value.nodeType === 1;
+};
+
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev !== false;
+var qInspector = globalThis.qInspector === true;
+var qSerialize = globalThis.qSerialize !== false;
+var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
+var qTest = globalThis.qTest === true;
+var qRuntimeQrl = globalThis.qRuntimeQrl === true;
+
+// packages/qwik/src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logErrorAndStop = (message, ...optionalParams) => {
+  const err = createAndLogError(qDev, message, ...optionalParams);
+  debugger;
+  return err;
+};
+var tryGetContext = (element) => {
+  return element["_qc_"];
+};
+var printParams = (optionalParams) => {
+  if (qDev) {
+    return optionalParams.map((p) => {
+      if (isNode(p) && isElement(p)) {
+        return printElement(p);
+      }
+      return p;
+    });
+  }
+  return optionalParams;
+};
+var printElement = (el) => {
+  var _a;
+  const ctx = tryGetContext(el);
+  const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
+  return {
+    tagName: el.tagName,
+    renderQRL: (_a = ctx == null ? void 0 : ctx.$componentQrl$) == null ? void 0 : _a.getSymbol(),
+    element: isServer ? void 0 : el,
+    ctx: isServer ? void 0 : ctx
+  };
+};
+var createAndLogError = (asyncThrow, message, ...optionalParams) => {
+  const err = message instanceof Error ? message : new Error(message);
+  console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
+  asyncThrow && !qTest && setTimeout(() => {
+    throw err;
+  }, 0);
+  return err;
+};
+
+// packages/qwik/src/core/error/error.ts
+var codeToText = (code, ...parts) => {
+  if (qDev) {
+    const MAP = [
+      "Error while serializing class or style attributes",
+      // 0
+      "Can not serialize a HTML Node that is not an Element",
+      // 1
+      "Runtime but no instance found on element.",
+      // 2
+      "Only primitive and object literals can be serialized",
+      // 3
+      "Crash while rendering",
+      // 4
+      "You can render over a existing q:container. Skipping render().",
+      // 5
+      "Set property {{0}}",
+      // 6
+      "Only function's and 'string's are supported.",
+      // 7
+      "Only objects can be wrapped in 'QObject'",
+      // 8
+      `Only objects literals can be wrapped in 'QObject'`,
+      // 9
+      "QRL is not a function",
+      // 10
+      "Dynamic import not found",
+      // 11
+      "Unknown type argument",
+      // 12
+      `Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.`,
+      // 13
+      "Invoking 'use*()' method outside of invocation context.",
+      // 14
+      "Cant access renderCtx for existing context",
+      // 15
+      "Cant access document for existing context",
+      // 16
+      "props are immutable",
+      // 17
+      "<div> component can only be used at the root of a Qwik component$()",
+      // 18
+      "Props are immutable by default.",
+      // 19
+      `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.
+See https://qwik.dev/docs/core/tasks/#use-method-rules`,
+      // 20
+      "Container is already paused. Skipping",
+      // 21
+      "",
+      // 22 -- unused
+      "When rendering directly on top of Document, the root node must be a <html>",
+      // 23
+      "A <html> node must have 2 children. The first one <head> and the second one a <body>",
+      // 24
+      'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:',
+      // 25
+      "Tracking value changes can only be done to useStore() objects and component props",
+      // 26
+      "Missing Object ID for captured object",
+      // 27
+      'The provided Context reference "{{0}}" is not a valid context created by createContextId()',
+      // 28
+      "<html> is the root container, it can not be rendered inside a component",
+      // 29
+      "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.",
+      // 30
+      "QRLs can not be dynamically resolved, because it does not have a chunk path",
+      // 31
+      "The JSX ref attribute must be a Signal"
+      // 32
+    ];
+    let text = MAP[code] ?? "";
+    if (parts.length) {
+      text = text.replaceAll(/{{(\d+)}}/g, (_, index) => {
+        let v = parts[index];
+        if (v && typeof v === "object" && v.constructor === Object) {
+          v = JSON.stringify(v).slice(0, 50);
+        }
+        return v;
+      });
+    }
+    return `Code(${code}): ${text}`;
+  } else {
+    return `Code(${code}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
+  }
+};
+var QError_dynamicImportFailed = 11;
+var qError = (code, ...parts) => {
+  const text = codeToText(code, ...parts);
+  return logErrorAndStop(text, ...parts);
+};
+
+// packages/qwik/src/server/platform.ts
 var SYNC_QRL = "<sync>";
 function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
@@ -96,15 +248,7 @@ function createPlatform(opts, resolvedManifest) {
       if (regSym) {
         return regSym;
       }
-      let modulePath = String(url);
-      if (!modulePath.endsWith(".js")) {
-        modulePath += ".js";
-      }
-      const module2 = require(modulePath);
-      if (!(symbolName in module2)) {
-        throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${modulePath}'.`);
-      }
-      return module2[symbolName];
+      throw qError(QError_dynamicImportFailed, symbolName);
     },
     raf: () => {
       console.error("server can not rerender");
@@ -703,7 +847,7 @@ function getBuildBase(opts) {
   return `${"globalThis.BASE_URL||'/'"}build/`;
 }
 var versions = {
-  qwik: "1.18.0-dev+25dbde0",
+  qwik: "1.19.0-dev+426ee94",
   qwikDom: "2.1.19"
 };
 
