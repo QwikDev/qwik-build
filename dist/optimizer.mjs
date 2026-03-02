@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.19.0
+ * @builder.io/qwik/optimizer 1.19.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1257,10 +1257,41 @@ function createPath(opts = {}) {
   };
 }
 
-var QWIK_BINDING_MAP = {};
+var QWIK_BINDING_MAP = {
+  darwin: {
+    arm64: [ {
+      platform: "darwin",
+      arch: "arm64",
+      abi: null,
+      platformArchABI: "qwik.darwin-arm64.node"
+    } ],
+    x64: [ {
+      platform: "darwin",
+      arch: "x64",
+      abi: null,
+      platformArchABI: "qwik.darwin-x64.node"
+    } ]
+  },
+  win32: {
+    x64: [ {
+      platform: "win32",
+      arch: "x64",
+      abi: "msvc",
+      platformArchABI: "qwik.win32-x64-msvc.node"
+    } ]
+  },
+  linux: {
+    x64: [ {
+      platform: "linux",
+      arch: "x64",
+      abi: "gnu",
+      platformArchABI: "qwik.linux-x64-gnu.node"
+    } ]
+  }
+};
 
 var versions = {
-  qwik: "1.19.0"
+  qwik: "1.19.1"
 };
 
 async function getSystem() {
@@ -3527,7 +3558,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
                     location: "head",
                     attributes: {
                       rel: "stylesheet",
-                      href: `${base}${url2.slice(1)}`
+                      href: toDevServerHref(base, url2)
                     }
                   });
                 }
@@ -3569,7 +3600,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
                   return importerPath && JS_EXTENSIONS.test(importerPath);
                 });
                 if ((isEntryCSS || hasJSImporter) && !hasCSSImporter && !cssImportedByCSS.has(v.url)) {
-                  res.write(`<link rel="stylesheet" href="${base}${v.url.slice(1)}">`);
+                  res.write(`<link rel="stylesheet" href="${toDevServerHref(base, v.url)}">`);
                   added.add(v.url);
                 }
               }
@@ -3700,6 +3731,14 @@ function relativeURL(url, base) {
   return url;
 }
 
+function toDevServerHref(base, url) {
+  if (url.startsWith("/")) {
+    return `${base}${url.slice(1)}`;
+  }
+  const cleanUrl = url.startsWith("\0") ? url.slice(1) : url;
+  return `${base}${VALID_ID_PREFIX.slice(1)}${cleanUrl}`;
+}
+
 var DEV_QWIK_INSPECTOR = (opts, srcDir) => {
   const qwikdevtools = {
     hotKeys: opts.clickToSource ?? [],
@@ -3805,7 +3844,7 @@ function qwikVite(qwikViteOpts = {}) {
         } else {
           "object" === typeof viteConfig.build?.lib && (pluginOpts.input = viteConfig.build?.lib.entry);
         }
-        if ("node" === sys.env || "bun" === sys.env) {
+        if (hasNodeCompat(sys.env)) {
           const fs = await sys.dynamicImport("node:fs");
           try {
             const rootDir2 = pluginOpts.rootDir ?? sys.cwd();
@@ -4029,7 +4068,7 @@ function qwikVite(qwikViteOpts = {}) {
             }
           });
           const sys = qwikPlugin.getSys();
-          if (tmpClientManifestPath && ("node" === sys.env || "bun" === sys.env)) {
+          if (tmpClientManifestPath && hasNodeCompat(sys.env)) {
             const fs = await sys.dynamicImport("node:fs");
             await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
           }
@@ -4040,7 +4079,7 @@ function qwikVite(qwikViteOpts = {}) {
       const opts = qwikPlugin.getOptions();
       if ("ssr" === opts.target) {
         const sys = qwikPlugin.getSys();
-        if ("node" === sys.env || "bun" === sys.env) {
+        if (hasNodeCompat(sys.env)) {
           const outputs = Object.keys(rollupBundle);
           const patchModuleFormat = async bundeName => {
             try {
@@ -4147,7 +4186,7 @@ function getViteDevModule(opts) {
 
 var findQwikRoots = async (sys, packageJsonDir) => {
   const paths = new Map;
-  if ("node" === sys.env || "bun" === sys.env) {
+  if (hasNodeCompat(sys.env)) {
     const fs = await sys.dynamicImport("node:fs");
     let prevPackageJsonDir;
     do {
@@ -4191,6 +4230,8 @@ var findQwikRoots = async (sys, packageJsonDir) => {
     id: id
   }));
 };
+
+var hasNodeCompat = env => "node" === env || "bun" === env || "deno" === env;
 
 var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
 
